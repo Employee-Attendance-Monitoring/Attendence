@@ -9,14 +9,13 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (submitting) return; // ⛔ prevent double call
+    if (submitting) return;
 
     try {
       setSubmitting(true);
-      await login(email, password);
-    } catch {
-      alert("Invalid credentials");
+      await login(email.trim(), password);
+    } catch (error) {
+      alert(error.response?.data?.detail || "Invalid credentials");
       setSubmitting(false);
     }
   };

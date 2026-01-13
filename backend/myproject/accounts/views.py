@@ -5,12 +5,14 @@ from rest_framework import status
 from .models import User
 from .serializers import UserSerializer, CreateEmployeeSerializer
 from .permissions import IsAdmin
+from rest_framework.permissions import IsAuthenticated
 
 class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
-
 
 class CreateEmployeeView(APIView):
     permission_classes = [IsAdmin]
