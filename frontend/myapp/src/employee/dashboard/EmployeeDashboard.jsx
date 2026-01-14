@@ -1,127 +1,125 @@
 import { useEffect, useState } from "react";
-import { signIn, signOut, getTodayAttendance } from "../../api/attendanceApi";
-import { getMyProfile } from "../../api/employeeApi";
-import Loader from "../../components/Loader";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+const COLORS = ["#2563eb", "#22c55e", "#f97316"];
 
 const EmployeeDashboard = () => {
-  const [profile, setProfile] = useState(null);
-  const [attendance, setAttendance] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
+  const [stats, setStats] = useState({
+    present: 18,
+    absent: 2,
+    leave: 3,
+  });
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
+  const attendanceData = [
+    { name: "Present", value: stats.present },
+    { name: "Absent", value: stats.absent },
+    { name: "Leave", value: stats.leave },
+  ];
 
-  const loadDashboard = async () => {
-    try {
-      const [profileRes, attendanceRes] = await Promise.all([
-        getMyProfile(),
-        getTodayAttendance(),
-      ]);
-
-      setProfile(profileRes.data);
-      setAttendance(attendanceRes.data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignIn = async () => {
-    try {
-      const res = await signIn();
-      setAttendance(res.data);
-      setMessage("Signed in successfully");
-    } catch (err) {
-      alert(err.response?.data?.detail || "Already signed in");
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      const res = await signOut();
-      setAttendance(res.data);
-      setMessage("Signed out successfully");
-    } catch (err) {
-      alert(err.response?.data?.detail || "Already signed out");
-    }
-  };
-
-  if (loading) return <Loader />;
+  const monthlyData = [
+    { month: "Jan", days: 20 },
+    { month: "Feb", days: 18 },
+    { month: "Mar", days: 22 },
+    { month: "Apr", days: 19 },
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold">Welcome, {profile?.full_name}</h2>
-        <p className="text-gray-600">
-          Employee Code: {profile?.employee_code}
-        </p>
+      {/* TOP CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card title="Today Status" value="Absent" />
+        <Card title="Working Hours" value="0 hrs" />
+        <Card title="Leave Balance" value="10 Days" />
+        <Card title="Holidays This Month" value="2" />
       </div>
 
-      {/* Attendance Card */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">Today Attendance</h3>
+      {/* TODAY ATTENDANCE */}
+      <div className="bg-white p-6 rounded shadow">
+        <h3 className="font-semibold mb-4">Today Attendance</h3>
+        <div className="flex justify-between items-center">
+          <div>
+            <p><b>Sign In:</b> Not signed in</p>
+            <p><b>Sign Out:</b> Not signed out</p>
+            <p className="mt-2">
+              <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-sm">
+                Absent
+              </span>
+            </p>
+          </div>
 
-        <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-          <p>
-            <strong>Sign In:</strong>{" "}
-            {attendance?.sign_in || "Not signed in"}
-          </p>
-          <p>
-            <strong>Sign Out:</strong>{" "}
-            {attendance?.sign_out || "Not signed out"}
-          </p>
-          <p>
-            <strong>Working Hours:</strong>{" "}
-            {attendance?.working_hours || "0"}
-          </p>
-          <p>
-            <strong>Status:</strong> {attendance?.status || "Absent"}
-          </p>
+          <button className="bg-green-600 text-white px-6 py-2 rounded">
+            Sign In
+          </button>
         </div>
-
-        <div className="flex gap-4">
-          {!attendance?.sign_in && (
-            <button
-              onClick={handleSignIn}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              Sign In
-            </button>
-          )}
-
-          {attendance?.sign_in && !attendance?.sign_out && (
-            <button
-              onClick={handleSignOut}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Sign Out
-            </button>
-          )}
-        </div>
-
-        {message && (
-          <p className="mt-3 text-green-600 font-medium">{message}</p>
-        )}
       </div>
 
-      {/* Quick Links */}
+      {/* CHARTS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* PIE */}
+        <div className="bg-white p-6 rounded shadow">
+          <h3 className="font-semibold mb-4">Attendance Summary</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={attendanceData}
+                dataKey="value"
+                innerRadius={60}
+                outerRadius={90}
+              >
+                {attendanceData.map((_, index) => (
+                  <Cell key={index} fill={COLORS[index]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* BAR */}
+        <div className="bg-white p-6 rounded shadow">
+          <h3 className="font-semibold mb-4">Monthly Attendance</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={monthlyData}>
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="days" fill="#2563eb" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* QUICK ACTIONS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <DashboardCard title="My Profile" desc="View personal details" />
-        <DashboardCard title="My Attendance" desc="Attendance history" />
-        <DashboardCard title="Apply Leave" desc="Request leave" />
+        <QuickCard title="My Profile" desc="View personal details" />
+        <QuickCard title="My Attendance" desc="Attendance history" />
+        <QuickCard title="Apply Leave" desc="Request leave" />
       </div>
     </div>
   );
 };
 
-const DashboardCard = ({ title, desc }) => (
-  <div className="bg-white shadow p-5 rounded-lg hover:shadow-lg transition">
-    <h4 className="font-semibold text-lg mb-2">{title}</h4>
-    <p className="text-gray-600 text-sm">{desc}</p>
+const Card = ({ title, value }) => (
+  <div className="bg-white p-6 rounded shadow">
+    <p className="text-gray-500">{title}</p>
+    <h2 className="text-2xl font-bold">{value}</h2>
+  </div>
+);
+
+const QuickCard = ({ title, desc }) => (
+  <div className="bg-white p-6 rounded shadow hover:shadow-md cursor-pointer">
+    <h3 className="font-semibold">{title}</h3>
+    <p className="text-sm text-gray-500">{desc}</p>
   </div>
 );
 
