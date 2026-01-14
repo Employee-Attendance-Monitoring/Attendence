@@ -5,20 +5,34 @@ from django.shortcuts import get_object_or_404
 
 from .models import EmployeeProfile
 from .serializers import EmployeeProfileSerializer
+from accounts.models import User
 from accounts.permissions import IsAdmin
+from rest_framework.permissions import IsAuthenticated
 
 
 class EmployeeCreateView(APIView):
     """
-    Admin creates employee master profile
+    ADMIN: Create employee profile after account creation
     """
     permission_classes = [IsAdmin]
 
     def post(self, request):
-        serializer = EmployeeProfileSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        user_id = request.data.get("user_id")
 
-        serializer.save(user_id=request.data.get("user_id"))
+        if not user_id:
+            return Response(
+                {"user_id": "This field is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = get_object_or_404(User, id=user_id)
+
+        serializer = EmployeeProfileSerializer(
+            data=request.data,
+            context={"user": user}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
         return Response(
             {"message": "Employee profile created"},
@@ -27,6 +41,9 @@ class EmployeeCreateView(APIView):
 
 
 class EmployeeListView(APIView):
+    """
+    ADMIN: List all employees
+    """
     permission_classes = [IsAdmin]
 
     def get(self, request):
@@ -37,9 +54,10 @@ class EmployeeListView(APIView):
 
 class EmployeeDetailView(APIView):
     """
-    Admin: view/update any employee
-    Employee: view own profile
+    ADMIN: View/update any employee
+    EMPLOYEE: View own profile
     """
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, pk=None):
         if request.user.role == "EMPLOYEE":
@@ -56,12 +74,17 @@ class EmployeeDetailView(APIView):
     def put(self, request, pk=None):
         if request.user.role != "ADMIN":
             return Response(
-                {"detail": "Not allowed"},
+                {"detail": "Only admin can update employee"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
         employee = get_object_or_404(EmployeeProfile, pk=pk)
-        serializer = EmployeeProfileSerializer(employee, data=request.data)
+
+        serializer = EmployeeProfileSerializer(
+            employee,
+            data=request.data,
+            context={"user": employee.user}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 

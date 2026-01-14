@@ -1,6 +1,7 @@
 from django.db import models
 from accounts.models import User
 
+
 class EmployeeProfile(models.Model):
     user = models.OneToOneField(
         User,
@@ -13,7 +14,11 @@ class EmployeeProfile(models.Model):
     date_of_joining = models.DateField()
     department = models.CharField(max_length=100)
     company_name = models.CharField(max_length=150)
-    photo = models.ImageField(upload_to="employees/photos/", null=True, blank=True)
+    photo = models.ImageField(
+        upload_to="employees/photos/",
+        null=True,
+        blank=True
+    )
 
     def __str__(self):
         return f"{self.employee_code} - {self.full_name}"

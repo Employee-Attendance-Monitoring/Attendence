@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import api from "../../services/api";
+import api from "../../api/axios";
+
 import { Link } from "react-router-dom";
 
 const EmployeeList = () => {

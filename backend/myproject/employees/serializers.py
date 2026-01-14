@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from .models import EmployeeProfile, FamilyMember, BankDetail
-from accounts.models import User
 
 
 class FamilyMemberSerializer(serializers.ModelSerializer):
@@ -39,7 +38,12 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
         family_data = validated_data.pop("family_members", [])
         bank_data = validated_data.pop("bank_detail", None)
 
-        employee = EmployeeProfile.objects.create(**validated_data)
+        user = self.context["user"]
+
+        employee = EmployeeProfile.objects.create(
+            user=user,
+            **validated_data
+        )
 
         for member in family_data:
             FamilyMember.objects.create(employee=employee, **member)
