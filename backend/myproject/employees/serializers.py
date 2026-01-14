@@ -2,6 +2,11 @@ from rest_framework import serializers
 from .models import EmployeeProfile, FamilyMember, BankDetail
 
 
+from django.db import transaction
+from accounts.models import User
+
+
+
 class FamilyMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = FamilyMember
@@ -17,13 +22,25 @@ class BankDetailSerializer(serializers.ModelSerializer):
 class EmployeeProfileSerializer(serializers.ModelSerializer):
     family_members = FamilyMemberSerializer(many=True, required=False)
     bank_detail = BankDetailSerializer(required=False)
-    email = serializers.EmailField(source="user.email", read_only=True)
+
+    # NEW fields
+    email = serializers.EmailField(write_only=True)
+    password = serializers.CharField(write_only=True)
+
+    email_display = serializers.EmailField(source="user.email", read_only=True)
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
+
+
 
     class Meta:
         model = EmployeeProfile
         fields = [
             "id",
+            "user_id",
             "email",
+            "password",
+            "email_display",
+            
             "employee_code",
             "full_name",
             "date_of_joining",
@@ -38,38 +55,25 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
         family_data = validated_data.pop("family_members", [])
         bank_data = validated_data.pop("bank_detail", None)
 
-        user = self.context["user"]
+        email = validated_data.pop("email")
+        password = validated_data.pop("password")
 
-        employee = EmployeeProfile.objects.create(
-            user=user,
-            **validated_data
-        )
-
-        for member in family_data:
-            FamilyMember.objects.create(employee=employee, **member)
-
-        if bank_data:
-            BankDetail.objects.create(employee=employee, **bank_data)
-
-        return employee
-
-    def update(self, instance, validated_data):
-        family_data = validated_data.pop("family_members", None)
-        bank_data = validated_data.pop("bank_detail", None)
-
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-
-        if family_data is not None:
-            instance.family_members.all().delete()
-            for member in family_data:
-                FamilyMember.objects.create(employee=instance, **member)
-
-        if bank_data is not None:
-            BankDetail.objects.update_or_create(
-                employee=instance,
-                defaults=bank_data
+        with transaction.atomic():
+            user = User.objects.create_user(
+                email=email,
+                password=password,
+                role="EMPLOYEE"
             )
 
-        return instance
+            employee = EmployeeProfile.objects.create(
+                user=user,
+                **validated_data
+            )
+
+            for member in family_data:
+                FamilyMember.objects.create(employee=employee, **member)
+
+            if bank_data:
+                BankDetail.objects.create(employee=employee, **bank_data)
+
+        return employee
