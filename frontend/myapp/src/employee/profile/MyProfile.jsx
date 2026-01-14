@@ -8,11 +8,13 @@ const MyProfile = () => {
 
   useEffect(() => {
     getMyProfile()
-      .then((res) => setProfile(res.data))
+      .then(res => setProfile(res.data))
+      .catch(err => console.error(err))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <Loader />;
+  if (!profile) return <p>No profile data</p>;
 
   return (
     <div>
@@ -21,12 +23,21 @@ const MyProfile = () => {
       <div className="bg-white shadow rounded p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* PHOTO */}
         <div className="flex flex-col items-center">
-          <img
-            src={profile.photo}
-            alt="Profile"
-            className="w-40 h-40 rounded-full object-cover border"
-          />
-          <h3 className="mt-4 font-semibold text-lg">{profile.name}</h3>
+          {profile.photo ? (
+            <img
+              src={profile.photo}
+              alt="Profile"
+              className="w-40 h-40 rounded-full object-cover border"
+            />
+          ) : (
+            <div className="w-40 h-40 rounded-full bg-gray-200 flex items-center justify-center">
+              No Photo
+            </div>
+          )}
+
+          <h3 className="mt-4 font-semibold text-lg">
+            {profile.full_name}
+          </h3>
           <p className="text-sm text-gray-600">
             {profile.employee_code}
           </p>
@@ -37,7 +48,6 @@ const MyProfile = () => {
           <ProfileItem label="Date of Joining" value={profile.date_of_joining} />
           <ProfileItem label="Department" value={profile.department} />
           <ProfileItem label="Company" value={profile.company_name} />
-          <ProfileItem label="Family Info" value={profile.family_info} />
         </div>
       </div>
 
@@ -45,20 +55,24 @@ const MyProfile = () => {
       <div className="bg-white shadow rounded p-6 mt-6">
         <h3 className="font-semibold mb-4">Bank Details</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <ProfileItem
-            label="Bank Name"
-            value={profile.bank_details.bank_name}
-          />
-          <ProfileItem
-            label="Account Number"
-            value={profile.bank_details.account_number}
-          />
-          <ProfileItem
-            label="IFSC Code"
-            value={profile.bank_details.ifsc}
-          />
-        </div>
+        {profile.bank_detail ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <ProfileItem
+              label="Bank Name"
+              value={profile.bank_detail.bank_name}
+            />
+            <ProfileItem
+              label="Account Number"
+              value={profile.bank_detail.account_number}
+            />
+            <ProfileItem
+              label="IFSC Code"
+              value={profile.bank_detail.ifsc_code}
+            />
+          </div>
+        ) : (
+          <p className="text-gray-500">No bank details added</p>
+        )}
       </div>
     </div>
   );
