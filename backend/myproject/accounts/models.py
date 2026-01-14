@@ -42,15 +42,21 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     email = models.EmailField(unique=True)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="EMPLOYEE")
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = []  # 🔴 REQUIRED
+    REQUIRED_FIELDS = []
 
     objects = UserManager()
 
     def __str__(self):
         return f"{self.email} ({self.role})"
+
+    def get_full_name(self):
+        return self.email
+
+    def get_short_name(self):
+        return self.email

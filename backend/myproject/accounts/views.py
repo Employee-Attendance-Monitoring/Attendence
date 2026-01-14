@@ -34,3 +34,64 @@ class CreateEmployeeView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+from django.shortcuts import get_object_or_404
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from accounts.permissions import IsAdmin
+from accounts.models import User
+
+
+class ResetEmployeePasswordView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request, user_id):
+        password = request.data.get("password")
+
+        if not password:
+            return Response(
+                {"password": "This field is required"},
+                status=400
+            )
+
+        user = get_object_or_404(User, id=user_id)
+        user.set_password(password)
+        user.save()
+
+        return Response(
+            {"message": "Password reset successful"},
+            status=200
+        )
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from accounts.permissions import IsAdmin
+from employees.models import EmployeeProfile
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
+class AdminDashboardView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        total_employees = EmployeeProfile.objects.count()
+        active_employees = User.objects.filter(
+            role="EMPLOYEE",
+            is_active=True
+        ).count()
+
+        data = {
+            "total_employees": total_employees,
+            "active_employees": active_employees,
+            # placeholders (we will fill later)
+            "present_today": 0,
+            "on_leave": 0,
+        }
+
+        return Response(data)

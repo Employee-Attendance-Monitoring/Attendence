@@ -12,30 +12,20 @@ from rest_framework.permissions import IsAuthenticated
 
 class EmployeeCreateView(APIView):
     """
-    ADMIN: Create employee profile after account creation
+    ADMIN: Create employee + user account
     """
     permission_classes = [IsAdmin]
 
     def post(self, request):
-        user_id = request.data.get("user_id")
-
-        if not user_id:
-            return Response(
-                {"user_id": "This field is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        user = get_object_or_404(User, id=user_id)
-
-        serializer = EmployeeProfileSerializer(
-            data=request.data,
-            context={"user": user}
-        )
+        serializer = EmployeeProfileSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response(
-            {"message": "Employee profile created"},
+            {
+                "message": "Employee created successfully",
+                "employee": serializer.data
+            },
             status=status.HTTP_201_CREATED
         )
 
@@ -49,6 +39,7 @@ class EmployeeListView(APIView):
     def get(self, request):
         employees = EmployeeProfile.objects.select_related("user").all()
         serializer = EmployeeProfileSerializer(employees, many=True)
+        
         return Response(serializer.data)
 
 
@@ -89,3 +80,46 @@ class EmployeeDetailView(APIView):
         serializer.save()
 
         return Response({"message": "Employee updated"})
+    
+class EmployeeDeleteView(APIView):
+    permission_classes = [IsAdmin]
+
+    def delete(self, request, pk):
+        employee = get_object_or_404(EmployeeProfile, pk=pk)
+        employee.user.delete()  # cascades employee profile
+        return Response(
+            {"message": "Employee deleted successfully"},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from accounts.permissions import IsAdmin
+from employees.models import EmployeeProfile
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
+class AdminDashboardView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        total_employees = EmployeeProfile.objects.count()
+        active_employees = User.objects.filter(
+            role="EMPLOYEE",
+            is_active=True
+        ).count()
+
+        data = {
+            "total_employees": total_employees,
+            "active_employees": active_employees,
+            # placeholders (we will fill later)
+            "present_today": 0,
+            "on_leave": 0,
+        }
+
+        return Response(data)

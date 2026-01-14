@@ -1,10 +1,16 @@
 import api from "./axios";
 
-export const getHolidays = () =>
-  api.get("/holidays/");
+// GET all holidays
+export const getHolidays = () => {
+  return api.get("/holidays/");
+};
 
-export const createHoliday = (data) =>
-  api.post("/holidays/", data);
+// CREATE holiday (ADMIN)
+export const createHoliday = (data) => {
+  return api.post("/holidays/create/", data);
+};
 
-export const deleteHoliday = (id) =>
-  api.delete(`/holidays/${id}/`);
+// DELETE holiday (ADMIN)
+export const deleteHoliday = (id) => {
+  return api.delete(`/holidays/${id}/`);
+};
