@@ -1,12 +1,6 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
-
-import EmployeeDashboard from "../employee/dashboard/EmployeeDashboard";
-import MyProfile from "../employee/profile/MyProfile";
-import MyAttendance from "../employee/attendance/MyAttendance";
-import ApplyLeave from "../employee/leave/ApplyLeave";
-import AttendanceReport from "../employee/reports/AttendanceReport";
 
 const EmployeeLayout = () => {
   const links = [
@@ -14,24 +8,19 @@ const EmployeeLayout = () => {
     { label: "My Profile", to: "/employee/profile" },
     { label: "Attendance", to: "/employee/attendance" },
     { label: "Apply Leave", to: "/employee/leave" },
-    { label: "Reports", to: "/employee/reports" },
+    { label: "Holidays", to: "/employee/holiday" },
   ];
 
   return (
-    <div className="flex">
+    <div className="flex min-h-screen">
       <Sidebar links={links} />
-      <div className="flex-1">
+
+      <div className="flex-1 flex flex-col">
         <Header />
-        <div className="p-6">
-          <Routes>
-            <Route index element={<EmployeeDashboard />} />
-            <Route path="profile" element={<MyProfile />} />
-            <Route path="attendance" element={<MyAttendance />} />
-            <Route path="leave" element={<ApplyLeave />} />
-            <Route path="reports" element={<AttendanceReport />} />
-            <Route path="*" element={<Navigate to="/employee" />} />
-          </Routes>
-        </div>
+
+        <main className="p-6 flex-1 bg-gray-100">
+          <Outlet />
+        </main>
       </div>
     </div>
   );

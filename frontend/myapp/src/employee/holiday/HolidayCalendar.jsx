@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react";
-import { getHolidays } from "../../api/holidayApi";
+import { getHolidayCalendar, getHolidays } from "../../api/holidayApi";
 import Loader from "../../components/Loader";
 
 const HolidayCalendar = () => {
+  const [calendar, setCalendar] = useState(null);
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getHolidays()
-      .then((res) => setHolidays(res.data))
+    Promise.all([getHolidayCalendar(), getHolidays()])
+      .then(([calendarRes, holidayRes]) => {
+        setCalendar(calendarRes.data);
+        setHolidays(holidayRes.data);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -16,35 +20,54 @@ const HolidayCalendar = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Holiday Calendar</h2>
+      <h2 className="text-2xl font-bold mb-6">Holidays</h2>
 
-      <div className="bg-white shadow rounded overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Holiday</th>
-              <th className="px-4 py-2">Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {holidays.map((h) => (
-              <tr key={h.id} className="border-t">
-                <td className="px-4 py-2">{h.date}</td>
-                <td className="px-4 py-2 font-medium">{h.name}</td>
-                <td className="px-4 py-2">{h.description}</td>
-              </tr>
-            ))}
+      {/* CALENDAR FILE */}
+      <div className="bg-white p-6 shadow rounded mb-6">
+        <h3 className="font-semibold mb-2">Holiday Calendar</h3>
 
-            {holidays.length === 0 && (
+        {calendar ? (
+          <a
+            href={calendar.file}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline"
+          >
+            View Holiday Calendar
+          </a>
+        ) : (
+          <p className="text-gray-500">
+            No holiday calendar uploaded
+          </p>
+        )}
+      </div>
+
+      {/* MANUAL HOLIDAYS */}
+      <div className="bg-white p-6 shadow rounded">
+        <h3 className="font-semibold mb-4">Additional Holidays</h3>
+
+        {holidays.length === 0 ? (
+          <p className="text-gray-500">No holidays announced</p>
+        ) : (
+          <table className="min-w-full text-sm text-center">
+            <thead className="bg-gray-100">
               <tr>
-                <td colSpan="3" className="text-center py-6">
-                  No holidays configured
-                </td>
+                <th className="px-4 py-2">Date</th>
+                <th className="px-4 py-2">Holiday</th>
+                <th className="px-4 py-2">Description</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {holidays.map((h) => (
+                <tr key={h.id} className="border-t">
+                  <td className="px-4 py-2">{h.date}</td>
+                  <td className="px-4 py-2">{h.name}</td>
+                  <td className="px-4 py-2">{h.description || "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

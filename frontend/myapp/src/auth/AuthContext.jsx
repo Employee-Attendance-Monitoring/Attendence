@@ -10,11 +10,9 @@ export const AuthProvider = ({ children }) => {
 
   const navigate = useNavigate();
 
-  // Load logged-in user (used on refresh)
   const loadUser = async () => {
     const token = localStorage.getItem("access");
 
-    // ✅ IMPORTANT GUARD
     if (!token) {
       setLoading(false);
       return;
@@ -23,7 +21,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.get("/accounts/me/");
       setUser(res.data);
-    } catch (error) {
+    } catch {
       localStorage.removeItem("access");
       localStorage.removeItem("refresh");
       setUser(null);
@@ -32,46 +30,33 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Run once on app load
   useEffect(() => {
     loadUser();
   }, []);
 
-  // Login
   const login = async (email, password) => {
-    // 1. Authenticate
     const res = await api.post("/auth/login/", { email, password });
 
-    // 2. Save tokens
     localStorage.setItem("access", res.data.access);
     localStorage.setItem("refresh", res.data.refresh);
 
-    // 3. Fetch user info
     const meRes = await api.get("/accounts/me/");
     setUser(meRes.data);
 
-    // 4. Redirect based on role
-    if (meRes.data.role === "ADMIN") {
-      navigate("/admin");
-    } else {
-      navigate("/employee");
-    }
+    navigate(meRes.data.role === "ADMIN" ? "/admin" : "/employee");
   };
 
-  // Logout
   const logout = () => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
+    localStorage.clear();
     setUser(null);
     navigate("/login");
   };
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook
 export const useAuth = () => useContext(AuthContext);
