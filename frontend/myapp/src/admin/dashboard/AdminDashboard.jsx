@@ -121,7 +121,7 @@ const AdminDashboard = () => {
   </div>
 
   {/* Footer */}
-  <div className="px-5 py-3 bg-gray-50 text-sm flex justify-between items-center">
+  {/* <div className="px-5 py-3 bg-gray-50 text-sm flex justify-between items-center">
     <span className="text-blue-600">
       Attendance: Coming soon
     </span>
@@ -134,7 +134,7 @@ const AdminDashboard = () => {
     >
       View Profile →
     </button>
-  </div>
+  </div> */}
 </div>
 
           ))}
