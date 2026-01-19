@@ -2,7 +2,7 @@ import api from "./axios";
 
 /* ================= EMPLOYEE ================= */
 
-// Sign in (once per day)
+// Sign in
 export const employeeSignIn = () =>
   api.post("/attendance/signin/");
 
@@ -10,25 +10,30 @@ export const employeeSignIn = () =>
 export const employeeSignOut = () =>
   api.post("/attendance/signout/");
 
-// Attendance history (table)
+// Attendance history
 export const getMyAttendanceHistory = () =>
   api.get("/attendance/my-history/");
 
-// Attendance summary (counts)
+// Attendance summary
 export const getMyAttendanceSummary = () =>
   api.get("/attendance/my-summary/");
 
 
 /* ================= ADMIN ================= */
 
-// Admin attendance report (filter by date / user_id)
-// attendanceApi.js
-export const getAdminAttendanceReport = ({ date, employee }) => {
+// Admin attendance report
+export const getAdminAttendanceReport = ({
+  date,
+  month,
+  year,
+  employee,
+}) => {
   const params = new URLSearchParams();
 
   if (date) params.append("date", date);
+  if (month) params.append("month", month);
+  if (year) params.append("year", year);
   if (employee) params.append("employee", employee);
 
   return api.get(`/attendance/admin-report/?${params.toString()}`);
 };
-

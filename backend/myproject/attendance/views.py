@@ -1,13 +1,18 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django.db.models import Sum
+from django.contrib.auth import get_user_model
 
 from .models import Attendance
 from .serializers import AttendanceSerializer
-from accounts.permissions import IsAdmin
-from rest_framework.permissions import IsAuthenticated
+
+User = get_user_model()
+
+
+# ================= EMPLOYEE =================
 
 class SignInView(APIView):
     permission_classes = [IsAuthenticated]
@@ -31,6 +36,7 @@ class SignInView(APIView):
         attendance.save()
 
         return Response({"message": "Sign-in successful"})
+
 
 class SignOutView(APIView):
     permission_classes = [IsAuthenticated]
@@ -75,6 +81,8 @@ class SignOutView(APIView):
             "working_hours": hours,
             "status": attendance.status
         })
+
+
 class MyAttendanceHistoryView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -85,6 +93,8 @@ class MyAttendanceHistoryView(APIView):
 
         serializer = AttendanceSerializer(records, many=True)
         return Response(serializer.data)
+
+
 class AttendanceSummaryView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -99,20 +109,40 @@ class AttendanceSummaryView(APIView):
                 total=Sum("working_hours")
             )["total"] or 0,
         })
+
+
+# ================= ADMIN =================
+
 class AttendanceReportAdminView(APIView):
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        employee_id = request.query_params.get("employee")
         date = request.query_params.get("date")
+        month = request.query_params.get("month")
+        year = request.query_params.get("year")
 
-        qs = Attendance.objects.select_related("user").all()
+        # ✅ THIS IS THE KEY FIX
+        # Get all employees (exclude admin/superuser)
+        employees = User.objects.exclude(is_superuser=True)
 
-        if employee_id:
-            qs = qs.filter(user_id=employee_id)
+        response = []
 
-        if date:
-            qs = qs.filter(date=date)
+        for emp in employees:
+            attendance_qs = Attendance.objects.filter(user=emp)
 
-        serializer = AttendanceSerializer(qs, many=True)
-        return Response(serializer.data)
+            if date:
+                attendance_qs = attendance_qs.filter(date=date)
+
+            if month:
+                attendance_qs = attendance_qs.filter(date__month=int(month))
+
+            if year:
+                attendance_qs = attendance_qs.filter(date__year=int(year))
+
+            response.append({
+                "employee_id": emp.id,
+                "employee_name": emp.get_full_name() or emp.email,
+                "attendance": AttendanceSerializer(attendance_qs, many=True).data
+            })
+
+        return Response(response)
