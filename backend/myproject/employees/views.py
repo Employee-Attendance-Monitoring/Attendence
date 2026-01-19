@@ -74,6 +74,7 @@ class EmployeeDetailView(APIView):
         serializer = EmployeeProfileSerializer(
             employee,
             data=request.data,
+            partial=True,  
             context={"user": employee.user}
         )
         serializer.is_valid(raise_exception=True)
