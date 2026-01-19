@@ -123,3 +123,17 @@ class AdminDashboardView(APIView):
         }
 
         return Response(data)
+    
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from accounts.permissions import IsAdmin
+from accounts.models import User
+
+class EmployeeDropdownView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        users = User.objects.filter(is_staff=False).values(
+            "id", "email"
+        )
+        return Response(users)    

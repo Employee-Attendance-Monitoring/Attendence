@@ -65,7 +65,7 @@ const AddEmployee = () => {
         {/* Password */}
         <input
           type="password"
-          placeholder="Temporary Password"
+          placeholder="Employee Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="border p-2 w-full mb-3"

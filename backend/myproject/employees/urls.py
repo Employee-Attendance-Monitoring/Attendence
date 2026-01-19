@@ -3,7 +3,7 @@ from .views import (
     EmployeeCreateView,
     EmployeeListView,
     EmployeeDetailView
-    , EmployeeDeleteView
+    , EmployeeDeleteView,EmployeeDropdownView
 )
 
 urlpatterns = [
@@ -12,5 +12,6 @@ urlpatterns = [
     path("me/", EmployeeDetailView.as_view()),    
     path("<int:pk>/", EmployeeDetailView.as_view()), # GET / PUT
     path("<int:pk>/delete/", EmployeeDeleteView.as_view()),
+    path("dropdown/", EmployeeDropdownView.as_view()),
 
 ]

@@ -22,18 +22,11 @@ export const getMyAttendanceSummary = () =>
 /* ================= ADMIN ================= */
 
 // Admin attendance report
-export const getAdminAttendanceReport = ({
-  date,
-  month,
-  year,
-  employee,
-}) => {
-  const params = new URLSearchParams();
+export const getAdminAttendanceReport = (date, employee) => {
+  let url = "/attendance/admin-report/?";
 
-  if (date) params.append("date", date);
-  if (month) params.append("month", month);
-  if (year) params.append("year", year);
-  if (employee) params.append("employee", employee);
+  if (date) url += `date=${date}&`;
+  if (employee) url += `employee=${employee}&`;
 
-  return api.get(`/attendance/admin-report/?${params.toString()}`);
+  return api.get(url);
 };

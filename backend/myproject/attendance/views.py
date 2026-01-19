@@ -8,6 +8,8 @@ from django.contrib.auth import get_user_model
 
 from .models import Attendance
 from .serializers import AttendanceSerializer
+from accounts.permissions import IsAdmin
+
 
 User = get_user_model()
 
@@ -114,35 +116,19 @@ class AttendanceSummaryView(APIView):
 # ================= ADMIN =================
 
 class AttendanceReportAdminView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
 
     def get(self, request):
+        employee_email = request.query_params.get("employee")
         date = request.query_params.get("date")
-        month = request.query_params.get("month")
-        year = request.query_params.get("year")
 
-        # ✅ THIS IS THE KEY FIX
-        # Get all employees (exclude admin/superuser)
-        employees = User.objects.exclude(is_superuser=True)
+        qs = Attendance.objects.select_related("user").all()
 
-        response = []
+        if employee_email and employee_email != "all":
+            qs = qs.filter(user__email=employee_email) 
 
-        for emp in employees:
-            attendance_qs = Attendance.objects.filter(user=emp)
+        if date:
+            qs = qs.filter(date=date)
 
-            if date:
-                attendance_qs = attendance_qs.filter(date=date)
-
-            if month:
-                attendance_qs = attendance_qs.filter(date__month=int(month))
-
-            if year:
-                attendance_qs = attendance_qs.filter(date__year=int(year))
-
-            response.append({
-                "employee_id": emp.id,
-                "employee_name": emp.get_full_name() or emp.email,
-                "attendance": AttendanceSerializer(attendance_qs, many=True).data
-            })
-
-        return Response(response)
+        serializer = AttendanceSerializer(qs, many=True)
+        return Response(serializer.data)
