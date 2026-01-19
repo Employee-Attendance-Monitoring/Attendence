@@ -25,16 +25,34 @@ const EmployeeDashboard = () => {
   });
 
   /* =====================
+     DATE HELPER
+     ===================== */
+  const getTodayDate = () => {
+    return new Date().toISOString().split("T")[0];
+  };
+
+  /* =====================
      RESUME TIMER ON LOAD
      ===================== */
   useEffect(() => {
+    const storedDate = localStorage.getItem("workDate");
     const startTime = localStorage.getItem("workStartTime");
+    const today = getTodayDate();
 
-    if (startTime) {
-      setIsWorking(true);
-      const elapsed =
-        Math.floor((Date.now() - Number(startTime)) / 1000);
+    if (storedDate === today && startTime) {
+      const elapsed = Math.floor(
+        (Date.now() - Number(startTime)) / 1000
+      );
       setSeconds(elapsed);
+      setHasWorked(true);
+      setIsWorking(false);
+    } else {
+      // New day → reset
+      localStorage.removeItem("workStartTime");
+      localStorage.removeItem("workDate");
+      setSeconds(0);
+      setHasWorked(false);
+      setIsWorking(false);
     }
   }, []);
 
@@ -56,7 +74,7 @@ const EmployeeDashboard = () => {
   }, [isWorking]);
 
   /* =====================
-     HELPERS
+     FORMAT TIME
      ===================== */
   const formatTime = () => {
     const hrs = Math.floor(seconds / 3600);
@@ -69,14 +87,22 @@ const EmployeeDashboard = () => {
      BUTTON HANDLERS
      ===================== */
   const handleSignIn = () => {
+    const today = getTodayDate();
+    const storedDate = localStorage.getItem("workDate");
+
+    // Reset only if new day
+    if (storedDate !== today) {
+      setSeconds(0);
+    }
+
+    localStorage.setItem("workDate", today);
     localStorage.setItem("workStartTime", Date.now());
+
     setIsWorking(true);
     setHasWorked(false);
-    setSeconds(0);
   };
 
   const handleSignOut = () => {
-    localStorage.removeItem("workStartTime");
     setIsWorking(false);
     setHasWorked(true);
   };
