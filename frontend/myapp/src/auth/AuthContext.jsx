@@ -12,10 +12,20 @@ export const AuthProvider = ({ children }) => {
 
   // Load logged-in user (used on refresh)
   const loadUser = async () => {
+    const token = localStorage.getItem("access");
+
+    // ✅ IMPORTANT GUARD
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await api.get("/accounts/me/");
       setUser(res.data);
     } catch (error) {
+      localStorage.removeItem("access");
+      localStorage.removeItem("refresh");
       setUser(null);
     } finally {
       setLoading(false);
@@ -25,7 +35,6 @@ export const AuthProvider = ({ children }) => {
   // Run once on app load
   useEffect(() => {
     loadUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Login
