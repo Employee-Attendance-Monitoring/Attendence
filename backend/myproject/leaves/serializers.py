@@ -3,7 +3,20 @@ from .models import Leave
 from django.utils.timezone import now
 
 
+from rest_framework import serializers
+from .models import Leave
+
+
 class LeaveSerializer(serializers.ModelSerializer):
+    employee_name = serializers.CharField(
+        source="user.employee_profile.full_name",
+        read_only=True
+    )
+    employee_email = serializers.EmailField(
+        source="user.email",
+        read_only=True
+    )
+
     start_date = serializers.DateField(format="%Y-%m-%d")
     end_date = serializers.DateField(format="%Y-%m-%d")
 
@@ -11,6 +24,8 @@ class LeaveSerializer(serializers.ModelSerializer):
         model = Leave
         fields = [
             "id",
+            "employee_name",
+            "employee_email",
             "leave_type",
             "start_date",
             "end_date",
@@ -19,7 +34,6 @@ class LeaveSerializer(serializers.ModelSerializer):
             "applied_at",
             "actioned_at",
         ]
-        read_only_fields = ["status", "applied_at", "actioned_at"]
 
     def validate(self, data):
         if data["end_date"] < data["start_date"]:

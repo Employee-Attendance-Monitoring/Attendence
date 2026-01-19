@@ -55,18 +55,12 @@ class LeaveApprovalListView(APIView):
 
 
 class LeaveApprovalActionView(APIView):
-    """
-    Admin approves/rejects leave
-    """
     permission_classes = [IsAdmin]
 
     def put(self, request, pk):
         leave = get_object_or_404(Leave, pk=pk)
 
-        serializer = LeaveApprovalSerializer(
-            leave,
-            data=request.data
-        )
+        serializer = LeaveApprovalSerializer(leave, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -74,3 +68,4 @@ class LeaveApprovalActionView(APIView):
             {"message": f"Leave {leave.status.lower()}"},
             status=status.HTTP_200_OK
         )
+

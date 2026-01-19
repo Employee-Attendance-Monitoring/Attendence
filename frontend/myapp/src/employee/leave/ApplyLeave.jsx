@@ -111,37 +111,39 @@ const ApplyLeave = () => {
                 <th className="px-4 py-2">Status</th>
               </tr>
             </thead>
-            <tbody>
-              {leaves.map((leave) => (
-                <tr key={leave.id} className="border-t">
-                  <td className="px-4 py-2">{leave.leave_type}</td>
-                  <td className="px-4 py-2">{leave.start_date}</td>
-                  <td className="px-4 py-2">{leave.end_date}</td>
-                  <td className="px-4 py-2">{leave.reason}</td>
-                  <td className="px-4 py-2">
-                    <span
-                      className={`px-2 py-1 text-xs rounded text-white ${
-                        leave.status === "APPROVED"
-                          ? "bg-green-600"
-                          : leave.status === "REJECTED"
-                          ? "bg-red-600"
-                          : "bg-yellow-500"
-                      }`}
-                    >
-                      {leave.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+     <tbody>
+  {leaves.map((leave) => (
+    <tr key={leave.id} className="border-t text-center">
+      <td className="px-4 py-2">{leave.leave_type}</td>
+      <td className="px-4 py-2">{leave.start_date}</td>
+      <td className="px-4 py-2">{leave.end_date}</td>
+      <td className="px-4 py-2">{leave.reason || "-"}</td>
+      <td className="px-4 py-2">
+        <span
+          className={`px-2 py-1 text-xs rounded text-white ${
+            leave.status === "APPROVED"
+              ? "bg-green-600"
+              : leave.status === "REJECTED"
+              ? "bg-red-600"
+              : "bg-yellow-500"
+          }`}
+        >
+          {leave.status}
+        </span>
+      </td>
+    </tr>
+  ))}
 
-              {leaves.length === 0 && (
-                <tr>
-                  <td colSpan="5" className="text-center py-6">
-                    No leave records
-                  </td>
-                </tr>
-              )}
-            </tbody>
+  {leaves.length === 0 && (
+    <tr>
+      <td colSpan="5" className="text-center py-6">
+        No leave records
+      </td>
+    </tr>
+  )}
+</tbody>
+
+
           </table>
         </div>
       )}
