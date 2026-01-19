@@ -7,17 +7,15 @@ from django.db.models import Sum
 from .models import Attendance
 from .serializers import AttendanceSerializer
 from accounts.permissions import IsAdmin
-
+from rest_framework.permissions import IsAuthenticated
 
 class SignInView(APIView):
-    """
-    Employee sign-in (only once per day)
-    """
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        today = timezone.localdate()
+        today = timezone.now().date()
 
-        attendance, created = Attendance.objects.get_or_create(
+        attendance, _ = Attendance.objects.get_or_create(
             user=request.user,
             date=today
         )
@@ -29,21 +27,16 @@ class SignInView(APIView):
             )
 
         attendance.sign_in = timezone.now()
+        attendance.status = "PRESENT"
         attendance.save()
 
-        return Response(
-            {"message": "Sign-in successful"},
-            status=status.HTTP_200_OK
-        )
-
+        return Response({"message": "Sign-in successful"})
 
 class SignOutView(APIView):
-    """
-    Employee sign-out & working hours calculation
-    """
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        today = timezone.localdate()
+        today = timezone.now().date()
 
         try:
             attendance = Attendance.objects.get(
@@ -64,12 +57,10 @@ class SignOutView(APIView):
 
         attendance.sign_out = timezone.now()
 
-        # Calculate working hours
         delta = attendance.sign_out - attendance.sign_in
         hours = round(delta.total_seconds() / 3600, 2)
         attendance.working_hours = hours
 
-        # Status rules
         if hours >= 8:
             attendance.status = "PRESENT"
         elif hours >= 4:
@@ -79,67 +70,49 @@ class SignOutView(APIView):
 
         attendance.save()
 
-        return Response(
-            {
-                "message": "Sign-out successful",
-                "working_hours": attendance.working_hours,
-                "status": attendance.status,
-            },
-            status=status.HTTP_200_OK
-        )
-
-
+        return Response({
+            "message": "Sign-out successful",
+            "working_hours": hours,
+            "status": attendance.status
+        })
 class MyAttendanceHistoryView(APIView):
-    """
-    Employee attendance history
-    """
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        records = Attendance.objects.filter(user=request.user)
+        records = Attendance.objects.filter(
+            user=request.user
+        ).order_by("-date")
+
         serializer = AttendanceSerializer(records, many=True)
         return Response(serializer.data)
-
-
-class AttendanceReportAdminView(APIView):
-    """
-    Admin: employee-wise / date-wise attendance
-    """
-    permission_classes = [IsAdmin]
-
-    def get(self, request):
-        user_id = request.query_params.get("user_id")
-        date = request.query_params.get("date")
-
-        queryset = Attendance.objects.all()
-
-        if user_id:
-            queryset = queryset.filter(user_id=user_id)
-        if date:
-            queryset = queryset.filter(date=date)
-
-        serializer = AttendanceSerializer(queryset, many=True)
-        return Response(serializer.data)
-
-
 class AttendanceSummaryView(APIView):
-    """
-    Employee reports:
-    - Present days
-    - Absent days
-    - Total working hours
-    """
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         qs = Attendance.objects.filter(user=request.user)
 
-        present_days = qs.filter(status="PRESENT").count()
-        absent_days = qs.filter(status="ABSENT").count()
-        total_hours = qs.aggregate(
-            total=Sum("working_hours")
-        )["total"] or 0
-
         return Response({
-            "present_days": present_days,
-            "absent_days": absent_days,
-            "total_working_hours": total_hours
+            "present_days": qs.filter(status="PRESENT").count(),
+            "absent_days": qs.filter(status="ABSENT").count(),
+            "half_days": qs.filter(status="HALF_DAY").count(),
+            "total_working_hours": qs.aggregate(
+                total=Sum("working_hours")
+            )["total"] or 0,
         })
+class AttendanceReportAdminView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        employee_id = request.query_params.get("employee")
+        date = request.query_params.get("date")
+
+        qs = Attendance.objects.select_related("user").all()
+
+        if employee_id:
+            qs = qs.filter(user_id=employee_id)
+
+        if date:
+            qs = qs.filter(date=date)
+
+        serializer = AttendanceSerializer(qs, many=True)
+        return Response(serializer.data)
