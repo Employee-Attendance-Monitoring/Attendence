@@ -14,11 +14,72 @@ import {
 const COLORS = ["#2563eb", "#22c55e", "#f97316"];
 
 const EmployeeDashboard = () => {
-  const [stats, setStats] = useState({
+  const [isWorking, setIsWorking] = useState(false);
+  const [hasWorked, setHasWorked] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+
+  const [stats] = useState({
     present: 18,
     absent: 2,
     leave: 3,
   });
+
+  /* =====================
+     RESUME TIMER ON LOAD
+     ===================== */
+  useEffect(() => {
+    const startTime = localStorage.getItem("workStartTime");
+
+    if (startTime) {
+      setIsWorking(true);
+      const elapsed =
+        Math.floor((Date.now() - Number(startTime)) / 1000);
+      setSeconds(elapsed);
+    }
+  }, []);
+
+  /* =====================
+     RUN TIMER
+     ===================== */
+  useEffect(() => {
+    let timer = null;
+
+    if (isWorking) {
+      timer = setInterval(() => {
+        setSeconds((prev) => prev + 1);
+      }, 1000);
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isWorking]);
+
+  /* =====================
+     HELPERS
+     ===================== */
+  const formatTime = () => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hrs}h ${mins}m ${secs}s`;
+  };
+
+  /* =====================
+     BUTTON HANDLERS
+     ===================== */
+  const handleSignIn = () => {
+    localStorage.setItem("workStartTime", Date.now());
+    setIsWorking(true);
+    setHasWorked(false);
+    setSeconds(0);
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem("workStartTime");
+    setIsWorking(false);
+    setHasWorked(true);
+  };
 
   const attendanceData = [
     { name: "Present", value: stats.present },
@@ -37,8 +98,17 @@ const EmployeeDashboard = () => {
     <div className="space-y-6">
       {/* TOP CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card title="Today Status" value="Absent" />
-        <Card title="Working Hours" value="0 hrs" />
+        <Card
+          title="Today Status"
+          value={
+            isWorking
+              ? "Working"
+              : hasWorked
+              ? "Completed"
+              : "Not Started"
+          }
+        />
+        <Card title="Working Hours" value={formatTime()} />
         <Card title="Leave Balance" value="10 Days" />
         <Card title="Holidays This Month" value="2" />
       </div>
@@ -46,28 +116,53 @@ const EmployeeDashboard = () => {
       {/* TODAY ATTENDANCE */}
       <div className="bg-white p-6 rounded shadow">
         <h3 className="font-semibold mb-4">Today Attendance</h3>
+
         <div className="flex justify-between items-center">
           <div>
-            <p><b>Sign In:</b> Not signed in</p>
-            <p><b>Sign Out:</b> Not signed out</p>
+            <p>
+              <b>Sign In:</b>{" "}
+              {isWorking || hasWorked ? "Done" : "Not signed in"}
+            </p>
+            <p>
+              <b>Sign Out:</b>{" "}
+              {hasWorked ? "Done" : "Not signed out"}
+            </p>
+
             <p className="mt-2">
-              <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-sm">
-                Absent
+              <span className="px-3 py-1 bg-gray-100 rounded-full text-sm">
+                {isWorking
+                  ? "Working"
+                  : hasWorked
+                  ? "Completed"
+                  : "Not Started"}
               </span>
             </p>
           </div>
 
-          <button className="bg-green-600 text-white px-6 py-2 rounded">
-            Sign In
-          </button>
+          {!isWorking ? (
+            <button
+              onClick={handleSignIn}
+              className="bg-green-600 text-white px-6 py-2 rounded"
+            >
+              Sign In
+            </button>
+          ) : (
+            <button
+              onClick={handleSignOut}
+              className="bg-red-600 text-white px-6 py-2 rounded"
+            >
+              Sign Out
+            </button>
+          )}
         </div>
       </div>
 
       {/* CHARTS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* PIE */}
         <div className="bg-white p-6 rounded shadow">
-          <h3 className="font-semibold mb-4">Attendance Summary</h3>
+          <h3 className="font-semibold mb-4">
+            Attendance Summary
+          </h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -85,9 +180,10 @@ const EmployeeDashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* BAR */}
         <div className="bg-white p-6 rounded shadow">
-          <h3 className="font-semibold mb-4">Monthly Attendance</h3>
+          <h3 className="font-semibold mb-4">
+            Monthly Attendance
+          </h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={monthlyData}>
               <XAxis dataKey="month" />
@@ -98,13 +194,6 @@ const EmployeeDashboard = () => {
           </ResponsiveContainer>
         </div>
       </div>
-
-      {/* QUICK ACTIONS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <QuickCard title="My Profile" desc="View personal details" />
-        <QuickCard title="My Attendance" desc="Attendance history" />
-        <QuickCard title="Apply Leave" desc="Request leave" />
-      </div>
     </div>
   );
 };
@@ -113,13 +202,6 @@ const Card = ({ title, value }) => (
   <div className="bg-white p-6 rounded shadow">
     <p className="text-gray-500">{title}</p>
     <h2 className="text-2xl font-bold">{value}</h2>
-  </div>
-);
-
-const QuickCard = ({ title, desc }) => (
-  <div className="bg-white p-6 rounded shadow hover:shadow-md cursor-pointer">
-    <h3 className="font-semibold">{title}</h3>
-    <p className="text-sm text-gray-500">{desc}</p>
   </div>
 );
 
