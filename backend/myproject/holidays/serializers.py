@@ -1,20 +1,13 @@
 from rest_framework import serializers
-from .models import Holiday
-
+from .models import Holiday, HolidayCalendar
 
 class HolidaySerializer(serializers.ModelSerializer):
-    date = serializers.DateField(format="%Y-%m-%d")
-
     class Meta:
         model = Holiday
-        fields = [
-            "id",
-            "name",
-            "date",
-            "description",
-        ]
+        fields = "__all__"
 
-    def validate_date(self, value):
-        if Holiday.objects.filter(date=value).exists():
-            raise serializers.ValidationError("Holiday already exists for this date")
-        return value
+
+class HolidayCalendarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HolidayCalendar
+        fields = ["id", "file", "uploaded_at"]

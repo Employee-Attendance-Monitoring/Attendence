@@ -102,3 +102,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
 }
+# settings.py
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+

@@ -1,12 +1,13 @@
 from django.urls import path
 from .views import (
-    HolidayListView,
-    HolidayCreateView,
-    HolidayUpdateDeleteView,
+    HolidayListCreateView,
+    HolidayDeleteView,
+    HolidayCalendarView,
 )
 
 urlpatterns = [
-    path("", HolidayListView.as_view()),
-    path("create/", HolidayCreateView.as_view()),
-    path("<int:pk>/", HolidayUpdateDeleteView.as_view()),
+    path("", HolidayListCreateView.as_view()),        # GET, POST
+    path("<int:pk>/", HolidayDeleteView.as_view()),   # DELETE
+
+    path("calendar/", HolidayCalendarView.as_view()), # GET, POST
 ]

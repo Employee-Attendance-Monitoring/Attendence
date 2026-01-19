@@ -30,4 +30,8 @@ urlpatterns = [
     path("api/leaves/", include("leaves.urls")),
     path("api/holidays/", include("holidays.urls")),
 ]
+from django.conf import settings
+from django.conf.urls.static import static
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
