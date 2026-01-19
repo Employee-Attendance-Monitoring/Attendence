@@ -1,178 +1,99 @@
 import { useEffect, useState } from "react";
 import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-
-const COLORS = ["#2563eb", "#22c55e", "#f97316"];
+  employeeSignIn,
+  employeeSignOut,
+  getMyAttendanceHistory,
+} from "../../api/attendanceApi";
+import Loader from "../../components/Loader";
 
 const EmployeeDashboard = () => {
-  const [isWorking, setIsWorking] = useState(false);
-  const [hasWorked, setHasWorked] = useState(false);
+  const [records, setRecords] = useState([]);
+  const [today, setToday] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [working, setWorking] = useState(false);
   const [seconds, setSeconds] = useState(0);
 
-  const [stats] = useState({
-    present: 18,
-    absent: 2,
-    leave: 3,
-  });
+  /* ================= LOAD ATTENDANCE ================= */
+  const loadAttendance = async () => {
+    setLoading(true);
+    const res = await getMyAttendanceHistory();
+    setRecords(res.data);
 
-  /* =====================
-     DATE HELPER
-     ===================== */
-  const getTodayDate = () => {
-    return new Date().toISOString().split("T")[0];
+    const todayDate = new Date().toISOString().slice(0, 10);
+    const todayRecord = res.data.find(r => r.date === todayDate);
+    setToday(todayRecord || null);
+
+    if (todayRecord?.sign_in && !todayRecord.sign_out) {
+      const diff =
+        (Date.now() - new Date(todayRecord.sign_in)) / 1000;
+      setSeconds(Math.floor(diff));
+      setWorking(true);
+    }
+
+    setLoading(false);
   };
 
-  /* =====================
-     RESUME TIMER ON LOAD
-     ===================== */
   useEffect(() => {
-    const storedDate = localStorage.getItem("workDate");
-    const startTime = localStorage.getItem("workStartTime");
-    const today = getTodayDate();
-
-    if (storedDate === today && startTime) {
-      const elapsed = Math.floor(
-        (Date.now() - Number(startTime)) / 1000
-      );
-      setSeconds(elapsed);
-      setHasWorked(true);
-      setIsWorking(false);
-    } else {
-      // New day → reset
-      localStorage.removeItem("workStartTime");
-      localStorage.removeItem("workDate");
-      setSeconds(0);
-      setHasWorked(false);
-      setIsWorking(false);
-    }
+    loadAttendance();
   }, []);
 
-  /* =====================
-     RUN TIMER
-     ===================== */
+  /* ================= TIMER ================= */
   useEffect(() => {
-    let timer = null;
-
-    if (isWorking) {
+    let timer;
+    if (working) {
       timer = setInterval(() => {
-        setSeconds((prev) => prev + 1);
+        setSeconds(prev => prev + 1);
       }, 1000);
     }
+    return () => clearInterval(timer);
+  }, [working]);
 
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [isWorking]);
-
-  /* =====================
-     FORMAT TIME
-     ===================== */
   const formatTime = () => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hrs}h ${mins}m ${secs}s`;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h}h ${m}m ${s}s`;
   };
 
-  /* =====================
-     BUTTON HANDLERS
-     ===================== */
-  const handleSignIn = () => {
-    const today = getTodayDate();
-    const storedDate = localStorage.getItem("workDate");
-
-    // Reset only if new day
-    if (storedDate !== today) {
-      setSeconds(0);
+  /* ================= ACTIONS ================= */
+  const handleSignIn = async () => {
+    try {
+      await employeeSignIn();
+      loadAttendance();
+    } catch (err) {
+      alert(err.response?.data?.detail);
     }
-
-    localStorage.setItem("workDate", today);
-    localStorage.setItem("workStartTime", Date.now());
-
-    setIsWorking(true);
-    setHasWorked(false);
   };
 
-  const handleSignOut = () => {
-    setIsWorking(false);
-    setHasWorked(true);
+  const handleSignOut = async () => {
+    await employeeSignOut();
+    setWorking(false);
+    loadAttendance();
   };
 
-  const attendanceData = [
-    { name: "Present", value: stats.present },
-    { name: "Absent", value: stats.absent },
-    { name: "Leave", value: stats.leave },
-  ];
-
-  const monthlyData = [
-    { month: "Jan", days: 20 },
-    { month: "Feb", days: 18 },
-    { month: "Mar", days: 22 },
-    { month: "Apr", days: 19 },
-  ];
+  if (loading) return <Loader />;
 
   return (
     <div className="space-y-6">
-      {/* TOP CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card
-          title="Today Status"
-          value={
-            isWorking
-              ? "Working"
-              : hasWorked
-              ? "Completed"
-              : "Not Started"
-          }
-        />
-        <Card title="Working Hours" value={formatTime()} />
-        <Card title="Leave Balance" value="10 Days" />
-        <Card title="Holidays This Month" value="2" />
-      </div>
-
-      {/* TODAY ATTENDANCE */}
+      {/* TODAY STATUS */}
       <div className="bg-white p-6 rounded shadow">
         <h3 className="font-semibold mb-4">Today Attendance</h3>
 
-        <div className="flex justify-between items-center">
-          <div>
-            <p>
-              <b>Sign In:</b>{" "}
-              {isWorking || hasWorked ? "Done" : "Not signed in"}
-            </p>
-            <p>
-              <b>Sign Out:</b>{" "}
-              {hasWorked ? "Done" : "Not signed out"}
-            </p>
+        <p><b>Sign In:</b> {today?.sign_in || "-"}</p>
+        <p><b>Sign Out:</b> {today?.sign_out || "-"}</p>
+        <p className="mt-2"><b>Working Time:</b> {formatTime()}</p>
 
-            <p className="mt-2">
-              <span className="px-3 py-1 bg-gray-100 rounded-full text-sm">
-                {isWorking
-                  ? "Working"
-                  : hasWorked
-                  ? "Completed"
-                  : "Not Started"}
-              </span>
-            </p>
-          </div>
-
-          {!isWorking ? (
+        <div className="mt-4">
+          {!today?.sign_in && (
             <button
               onClick={handleSignIn}
               className="bg-green-600 text-white px-6 py-2 rounded"
             >
               Sign In
             </button>
-          ) : (
+          )}
+
+          {today?.sign_in && !today?.sign_out && (
             <button
               onClick={handleSignOut}
               className="bg-red-600 text-white px-6 py-2 rounded"
@@ -183,52 +104,41 @@ const EmployeeDashboard = () => {
         </div>
       </div>
 
-      {/* CHARTS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded shadow">
-          <h3 className="font-semibold mb-4">
-            Attendance Summary
-          </h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={attendanceData}
-                dataKey="value"
-                innerRadius={60}
-                outerRadius={90}
-              >
-                {attendanceData.map((_, index) => (
-                  <Cell key={index} fill={COLORS[index]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+      {/* HISTORY */}
+      <div className="bg-white shadow rounded overflow-x-auto">
+        <table className="min-w-full text-sm text-center">
+          <thead className="bg-gray-100">
+            <tr>
+              <th>Date</th>
+              <th>Sign In</th>
+              <th>Sign Out</th>
+              <th>Hours</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {records.map(r => (
+              <tr key={r.id} className="border-t">
+                <td>{r.date}</td>
+                <td>{r.sign_in || "-"}</td>
+                <td>{r.sign_out || "-"}</td>
+                <td>{r.working_hours}</td>
+                <td>{r.status}</td>
+              </tr>
+            ))}
 
-        <div className="bg-white p-6 rounded shadow">
-          <h3 className="font-semibold mb-4">
-            Monthly Attendance
-          </h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={monthlyData}>
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="days" fill="#2563eb" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+            {records.length === 0 && (
+              <tr>
+                <td colSpan="5" className="py-6">
+                  No attendance records
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 };
-
-const Card = ({ title, value }) => (
-  <div className="bg-white p-6 rounded shadow">
-    <p className="text-gray-500">{title}</p>
-    <h2 className="text-2xl font-bold">{value}</h2>
-  </div>
-);
 
 export default EmployeeDashboard;

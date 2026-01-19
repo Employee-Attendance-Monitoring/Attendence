@@ -1,25 +1,34 @@
 import api from "./axios";
 
-export const getAdminAttendanceReport = (date) =>
-  api.get(`/attendance/admin-report/?date=${date}`);
+/* ================= EMPLOYEE ================= */
 
+// Sign in (once per day)
 export const employeeSignIn = () =>
-  api.post("/attendance/sign-in/");
+  api.post("/attendance/signin/");
 
+// Sign out
 export const employeeSignOut = () =>
-  api.post("/attendance/sign-out/");
+  api.post("/attendance/signout/");
 
-export const getMyAttendance = () =>
-  api.get("/attendance/my/");
-export const getMyAttendanceReport = (month) =>
-  api.get(`/attendance/my-report/?month=${month}`);
+// Attendance history (table)
+export const getMyAttendanceHistory = () =>
+  api.get("/attendance/my-history/");
 
-
-export const signIn = () => api.post("/attendance/sign-in/");
-export const signOut = () => api.post("/attendance/sign-out/");
-export const getTodayAttendance = () => api.get("/attendance/today/");
+// Attendance summary (counts)
+export const getMyAttendanceSummary = () =>
+  api.get("/attendance/my-summary/");
 
 
-// Admin dashboard summary stats
-export const getAdminDashboardStats = () =>
-  api.get("/attendance/admin-dashboard/");
+/* ================= ADMIN ================= */
+
+// Admin attendance report (filter by date / user_id)
+// attendanceApi.js
+export const getAdminAttendanceReport = ({ date, employee }) => {
+  const params = new URLSearchParams();
+
+  if (date) params.append("date", date);
+  if (employee) params.append("employee", employee);
+
+  return api.get(`/attendance/admin-report/?${params.toString()}`);
+};
+
