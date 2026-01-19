@@ -7,13 +7,13 @@ const EditEmployee = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    email: "",
-    employee_code: "",
-    name: "",
-    department: "",
-    company: "",
-    date_of_joining: "",
-  });
+  email: "",
+  employee_code: "",
+  full_name: "",
+  department: "",
+  company_name: "",
+  date_of_joining: "",
+});
 
   const [loading, setLoading] = useState(true);
 
@@ -27,13 +27,14 @@ const fetchEmployee = async () => {
     const res = await api.get(`/employees/${id}/`);
 
     setFormData({
-      email: res.data.email_display || "",
-      employee_code: res.data.employee_code || "",
-      name: res.data.full_name || "",
-      department: res.data.department || "",
-      company: res.data.company_name || "",
-      date_of_joining: res.data.date_of_joining || "",
-    });
+  email: res.data.email_display || "",
+  employee_code: res.data.employee_code || "",
+  full_name: res.data.full_name || "",
+  department: res.data.department || "",
+  company_name: res.data.company_name || "",
+  date_of_joining: res.data.date_of_joining || "",
+});
+
   } catch (error) {
     alert("Failed to load employee details");
   } finally {
@@ -88,8 +89,8 @@ const fetchEmployee = async () => {
 
         <input
           type="text"
-          name="name"
-          value={formData.name}
+          name="full_name"
+          value={formData.full_name}
           onChange={handleChange}
           className="border p-2 w-full"
           placeholder="Full Name"
@@ -107,8 +108,8 @@ const fetchEmployee = async () => {
 
         <input
           type="text"
-          name="company"
-          value={formData.company}
+          name="company_name"
+          value={formData.company_name} 
           onChange={handleChange}
           className="border p-2 w-full"
           placeholder="Company Name"
