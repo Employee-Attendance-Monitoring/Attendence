@@ -9,20 +9,24 @@ from accounts.permissions import IsAdmin
 
 
 
-
 class HolidayListCreateView(APIView):
-    permission_classes = [IsAdmin]
 
     def get(self, request):
+        # ✅ Employees + Admins can VIEW holidays
         holidays = Holiday.objects.all()
         serializer = HolidaySerializer(holidays, many=True)
         return Response(serializer.data)
 
     def post(self, request):
+        # ❌ Only admin can ADD holidays
+        self.permission_classes = [IsAdmin]
+        self.check_permissions(request)
+
         serializer = HolidaySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=201)
+
 
 
 class HolidayDeleteView(APIView):
@@ -32,10 +36,12 @@ class HolidayDeleteView(APIView):
         holiday = get_object_or_404(Holiday, pk=pk)
         holiday.delete()
         return Response(status=204)
+from rest_framework.permissions import IsAuthenticated
+
 class HolidayCalendarView(APIView):
-    permission_classes = [IsAdmin]
 
     def get(self, request):
+        # 👇 Employees + Admins can view
         calendar = HolidayCalendar.objects.first()
         if not calendar:
             return Response(None)
@@ -43,6 +49,10 @@ class HolidayCalendarView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
+        # 👇 Only admin can upload
+        self.permission_classes = [IsAdmin]
+        self.check_permissions(request)
+
         calendar = HolidayCalendar.objects.first()
 
         serializer = HolidayCalendarSerializer(
