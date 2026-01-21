@@ -2,14 +2,25 @@ import { useEffect, useState } from "react";
 import { getMyProfile } from "../../api/employeeApi";
 import Loader from "../../components/Loader";
 
+const BASE_URL = "http://127.0.0.1:8000";
+
 const MyProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getMyProfile()
-      .then(res => setProfile(res.data))
-      .catch(err => console.error(err))
+      .then((res) => {
+        const data = res.data;
+
+        // ✅ Normalize photo URL
+        if (data.photo && !data.photo.startsWith("http")) {
+          data.photo = `${BASE_URL}${data.photo}`;
+        }
+
+        setProfile(data);
+      })
+      .catch((err) => console.error(err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -20,6 +31,7 @@ const MyProfile = () => {
     <div>
       <h2 className="text-2xl font-bold mb-6">My Profile</h2>
 
+      {/* ================= BASIC PROFILE ================= */}
       <div className="bg-white shadow rounded p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* PHOTO */}
         <div className="flex flex-col items-center">
@@ -45,13 +57,18 @@ const MyProfile = () => {
 
         {/* BASIC INFO */}
         <div className="md:col-span-2 grid grid-cols-2 gap-4">
-          <ProfileItem label="Date of Joining" value={profile.date_of_joining} />
+          <ProfileItem label="Email" value={profile.email_display} />
           <ProfileItem label="Department" value={profile.department} />
           <ProfileItem label="Company" value={profile.company_name} />
+          <ProfileItem label="Date of Joining" value={profile.date_of_joining} />
+          <ProfileItem
+  label="Phone Number"
+  value={profile.phone_number}
+/>
         </div>
       </div>
 
-      {/* BANK DETAILS */}
+      {/* ================= BANK DETAILS ================= */}
       <div className="bg-white shadow rounded p-6 mt-6">
         <h3 className="font-semibold mb-4">Bank Details</h3>
 
@@ -72,6 +89,31 @@ const MyProfile = () => {
           </div>
         ) : (
           <p className="text-gray-500">No bank details added</p>
+        )}
+      </div>
+
+      {/* ================= FAMILY MEMBERS ================= */}
+      <div className="bg-white shadow rounded p-6 mt-6">
+        <h3 className="font-semibold mb-4">Family Members</h3>
+
+        {profile.family_members && profile.family_members.length > 0 ? (
+          <div className="space-y-3">
+            {profile.family_members.map((member, index) => (
+              <div
+                key={index}
+                className="border p-3 rounded grid grid-cols-2 gap-4"
+              >
+                <ProfileItem label="Name" value={member.name} />
+          <ProfileItem label="Relationship" value={member.relationship} />
+          <ProfileItem
+            label="Phone Number"
+            value={member.phone_number}
+          />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500">No family members added</p>
         )}
       </div>
     </div>

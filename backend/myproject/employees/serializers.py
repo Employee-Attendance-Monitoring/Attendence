@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.db import transaction
 from accounts.models import User
 from .models import EmployeeProfile, FamilyMember, BankDetail
+import json
 
 
 # =========================
@@ -10,77 +11,76 @@ from .models import EmployeeProfile, FamilyMember, BankDetail
 class FamilyMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = FamilyMember
-        fields = [
-            "id",
-            "name",
-            "relationship",
-            "date_of_birth",
-        ]
+        fields = ["id", "name", "relationship", "date_of_birth","phone_number",]
 
 
 # =========================
-# BANK DETAILS
+# BANK DETAIL
 # =========================
 class BankDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankDetail
-        fields = [
-            "bank_name",
-            "account_number",
-            "ifsc_code",
-        ]
+        fields = ["bank_name", "account_number", "ifsc_code"]
 
 
 # =========================
 # EMPLOYEE PROFILE
 # =========================
 class EmployeeProfileSerializer(serializers.ModelSerializer):
-    # Nested data
     family_members = FamilyMemberSerializer(many=True, required=False)
     bank_detail = BankDetailSerializer(required=False)
 
-    # INPUT (admin create / update)
-    email = serializers.EmailField(write_only=True, required=False)
-    password = serializers.CharField(write_only=True, required=False)
+    photo = serializers.ImageField(required=False, allow_null=True)
+    phone_number = serializers.CharField(   # ✅ NEW
+        required=False,
+        allow_blank=True
+    )
 
-    # OUTPUT (display)
-    email_display = serializers.EmailField(
-        source="user.email", read_only=True
-    )
-    user_id = serializers.IntegerField(
-        source="user.id", read_only=True
-    )
+
+    # Auth
+    email = serializers.EmailField(write_only=True)
+    password = serializers.CharField(write_only=True, min_length=3)
+
+    # Display
+    email_display = serializers.EmailField(source="user.email", read_only=True)
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
 
     class Meta:
         model = EmployeeProfile
         fields = [
             "id",
             "user_id",
+             
+            "email",
+            "password",
+            "email_display",
 
-            # auth
-            "email",          # write-only
-            "password",       # write-only
-            "email_display",  # read-only
-
-            # employee info
             "employee_code",
             "full_name",
             "date_of_joining",
             "department",
             "company_name",
             "photo",
-
-            # relations
+            "phone_number",
             "family_members",
             "bank_detail",
         ]
 
     # =========================
-    # CREATE EMPLOYEE + USER
+    # CREATE
     # =========================
     def create(self, validated_data):
-        family_data = validated_data.pop("family_members", [])
-        bank_data = validated_data.pop("bank_detail", None)
+        request = self.context.get("request")
+
+        # Parse multipart JSON
+        bank_data = request.data.get("bank_detail")
+        family_data = request.data.get("family_members")
+
+        if isinstance(bank_data, str):
+            bank_data = json.loads(bank_data)
+
+        if isinstance(family_data, str):
+            family_data = json.loads(family_data)
 
         email = validated_data.pop("email")
         password = validated_data.pop("password")
@@ -97,39 +97,75 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                 **validated_data
             )
 
-            for member in family_data:
-                FamilyMember.objects.create(
-                    employee=employee, **member
-                )
-
             if bank_data:
                 BankDetail.objects.create(
                     employee=employee, **bank_data
                 )
 
+            if family_data:
+                for member in family_data:
+                    FamilyMember.objects.create(
+                        employee=employee, **member
+                    )
+
         return employee
 
     # =========================
-    # UPDATE EMPLOYEE + USER
+    # UPDATE
     # =========================
     def update(self, instance, validated_data):
-        user = instance.user
+     request = self.context.get("request")
 
-        email = validated_data.pop("email", None)
-        password = validated_data.pop("password", None)
+    # -------------------------
+    # USER UPDATE
+    # -------------------------
+     user = instance.user
+     email = validated_data.pop("email", None)
+     password = validated_data.pop("password", None)
 
-        # Update user fields
-        if email:
-            user.email = email
+     if email:
+        user.email = email
+     if password:
+        user.set_password(password)
+     user.save()
 
-        if password:
-            user.set_password(password)
-
-        user.save()
-
-        # Update employee profile fields
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
+    # -------------------------
+    # EMPLOYEE PROFILE UPDATE
+    # -------------------------
+     for attr, value in validated_data.items():
+        setattr(instance, attr, value)
         instance.save()
-        return instance
+
+    # -------------------------
+    # NESTED DATA (IMPORTANT)
+    # -------------------------
+     bank_data = request.data.get("bank_detail")
+     family_data = request.data.get("family_members")
+
+    # Parse JSON if multipart
+
+     if isinstance(bank_data, str):
+        bank_data = json.loads(bank_data)
+     if isinstance(family_data, str):
+        family_data = json.loads(family_data)
+
+    # -------- BANK DETAIL --------
+     if bank_data:
+        BankDetail.objects.update_or_create(
+            employee=instance,
+            defaults=bank_data
+        )
+
+    # -------- FAMILY MEMBERS --------
+     if family_data is not None:
+        # Remove old members
+        instance.family_members.all().delete()
+
+        # Re-create members
+        for member in family_data:
+            FamilyMember.objects.create(
+                employee=instance,
+                **member
+            )
+
+     return instance

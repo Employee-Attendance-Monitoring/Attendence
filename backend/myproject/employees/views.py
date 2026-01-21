@@ -11,13 +11,13 @@ from rest_framework.permissions import IsAuthenticated
 
 
 class EmployeeCreateView(APIView):
-    """
-    ADMIN: Create employee + user account
-    """
     permission_classes = [IsAdmin]
 
     def post(self, request):
-        serializer = EmployeeProfileSerializer(data=request.data)
+        serializer = EmployeeProfileSerializer(
+            data=request.data,
+            context={"request": request}   # ✅ REQUIRED
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -28,6 +28,8 @@ class EmployeeCreateView(APIView):
             },
             status=status.HTTP_201_CREATED
         )
+
+
 
 
 class EmployeeListView(APIView):
@@ -51,16 +53,24 @@ class EmployeeDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk=None):
-        if request.user.role == "EMPLOYEE":
-            employee = get_object_or_404(
-                EmployeeProfile,
-                user=request.user
-            )
-        else:
-            employee = get_object_or_404(EmployeeProfile, pk=pk)
+     if request.user.role == "EMPLOYEE":
+        employee = get_object_or_404(
+            EmployeeProfile.objects
+            .select_related("bank_detail", "user")
+            .prefetch_related("family_members"),
+            user=request.user
+        )
+     else:
+        employee = get_object_or_404(
+            EmployeeProfile.objects
+            .select_related("bank_detail", "user")
+            .prefetch_related("family_members"),
+            pk=pk
+        )
 
-        serializer = EmployeeProfileSerializer(employee)
-        return Response(serializer.data)
+     serializer = EmployeeProfileSerializer(employee)
+     return Response(serializer.data)
+
 
     def put(self, request, pk=None):
         if request.user.role != "ADMIN":
@@ -75,7 +85,8 @@ class EmployeeDetailView(APIView):
             employee,
             data=request.data,
             partial=True,  
-            context={"user": employee.user}
+            context={"request": request}
+
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
