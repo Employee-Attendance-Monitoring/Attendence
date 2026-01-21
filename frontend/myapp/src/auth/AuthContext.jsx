@@ -1,4 +1,3 @@
-// AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
 import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +11,9 @@ export const AuthProvider = ({ children }) => {
 
   const loadUser = async () => {
     const token = localStorage.getItem("access");
+
     if (!token) {
+      setUser(null);
       setLoading(false);
       return;
     }
@@ -20,9 +21,13 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.get("/accounts/me/");
       setUser(res.data);
-    } catch {
-      localStorage.clear();
-      setUser(null);
+    } catch (err) {
+      console.error("Auth check failed", err);
+
+      if (err.response?.status === 401) {
+        localStorage.clear();
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -32,21 +37,20 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
-const login = async (email, password) => {
-  const res = await api.post("auth/login/", {
-    email: email,      // ✅ MUST be email
-    password: password,
-  });
+  const login = async (email, password) => {
+    const res = await api.post("auth/login/", {
+      email,
+      password,
+    });
 
-  localStorage.setItem("access", res.data.access);
-  localStorage.setItem("refresh", res.data.refresh);
+    localStorage.setItem("access", res.data.access);
+    localStorage.setItem("refresh", res.data.refresh);
 
-  const meRes = await api.get("accounts/me/");
-  setUser(meRes.data);
+    const meRes = await api.get("accounts/me/");
+    setUser(meRes.data);
 
-  navigate(meRes.data.role === "ADMIN" ? "/admin" : "/employee");
-};
-
+    navigate(meRes.data.role === "ADMIN" ? "/admin" : "/employee");
+  };
 
   const logout = () => {
     localStorage.clear();

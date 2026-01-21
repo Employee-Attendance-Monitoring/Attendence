@@ -19,9 +19,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("access");
-      localStorage.removeItem("refresh");
-      window.location.href = "/login";
+      // ❗ DO NOT force redirect here
+      console.warn("Unauthorized – handled by ProtectedRoute");
     }
     return Promise.reject(error);
   }

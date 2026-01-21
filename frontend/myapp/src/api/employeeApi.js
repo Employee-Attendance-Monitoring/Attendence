@@ -9,3 +9,6 @@ export const getEmployeeEmails = () =>
 export const getEmployeeDropdown = () =>
   api.get("/employees/dropdown/");
 
+export const getEmployeeById = (id) =>
+  api.get(`/employees/${id}/`);
+

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
+import { useNavigate } from "react-router-dom";
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,42 +31,55 @@ const AdminDashboard = () => {
   if (loading) return <p>Loading dashboard...</p>;
   if (!stats) return <p>No dashboard data</p>;
 
+  // ----------------------------
+  // DERIVED STATS
+  // ----------------------------
+  const departments = [
+    ...new Set(employees.map((e) => e.department)),
+  ];
+
+  const completedProfiles = employees.filter(
+    (e) =>
+      e.phone_number &&
+      e.photo &&
+      e.bank_detail
+  ).length;
+
+  const last30Days = new Date();
+  last30Days.setDate(last30Days.getDate() - 30);
+
+  const newJoins = employees.filter(
+    (e) => new Date(e.date_of_joining) >= last30Days
+  ).length;
+
   return (
     <div>
+      {/* ===== HEADER ===== */}
+      <h1 className="text-2xl font-bold mb-6">
+        Admin Dashboard
+      </h1>
+
       {/* ===== SUMMARY CARDS ===== */}
-      <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
-        <div className="bg-white p-5 rounded shadow">
-          <p className="text-gray-500">Total Employees</p>
-          <h2 className="text-3xl font-bold">
-            {stats.total_employees}
-          </h2>
-        </div>
-
-        <div className="bg-white p-5 rounded shadow">
-          <p className="text-gray-500">Active Employees</p>
-          <h2 className="text-3xl font-bold">
-            {stats.active_employees}
-          </h2>
-        </div>
-
-        <div className="bg-white p-5 rounded shadow">
-          <p className="text-gray-500">Present Today</p>
-          <h2 className="text-3xl font-bold">
-            {stats.present_today}
-          </h2>
-        </div>
-
-        <div className="bg-white p-5 rounded shadow">
-          <p className="text-gray-500">On Leave</p>
-          <h2 className="text-3xl font-bold">
-            {stats.on_leave}
-          </h2>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-10">
+        <StatCard
+          title="Total Employees"
+          value={stats.total_employees}
+        />
+        <StatCard
+          title="Departments"
+          value={departments.length}
+        />
+        <StatCard
+          title="New Joins (30 days)"
+          value={newJoins}
+        />
+        <StatCard
+          title="Profiles Completed"
+          value={`${completedProfiles} / ${employees.length}`}
+        />
       </div>
 
-      {/* ===== EMPLOYEE DETAILS SECTION ===== */}
+      {/* ===== EMPLOYEE LIST ===== */}
       <h2 className="text-xl font-bold mb-4">
         Employee Details
       </h2>
@@ -72,76 +87,104 @@ const AdminDashboard = () => {
       {employees.length === 0 ? (
         <p>No employees found</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {employees.map((emp) => (
-            <div
-  key={emp.id}
-  className="bg-white rounded-lg shadow border hover:shadow-lg transition"
->
-  {/* Header */}
-  <div className="flex items-center justify-between px-5 py-4 border-b">
-    <h3 className="text-lg font-semibold text-gray-800">
-      {emp.full_name}
-    </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {employees.map((emp) => {
+            const isComplete =
+              emp.phone_number &&
+              emp.photo &&
+              emp.bank_detail;
 
-    <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">
-      Active
-    </span>
-  </div>
+            return (
+              <div
+                key={emp.id}
+                className="bg-white rounded-lg shadow border hover:shadow-lg transition"
+              >
+                {/* CARD HEADER */}
+                <div className="flex items-center justify-between px-5 py-4 border-b">
+                  <div className="flex items-center gap-3">
+                    {emp.photo ? (
+  <img
+    src={
+      emp.photo.startsWith("http")
+        ? emp.photo
+        : `http://127.0.0.1:8000${emp.photo}`
+    }
+    alt={emp.full_name}
+    className="w-10 h-10 rounded-full object-cover border"
+  />
+) : (
 
-  {/* Body */}
-  <div className="px-5 py-4 text-sm text-gray-700 space-y-2">
-    <div>
-      <span className="font-medium text-gray-500">
-        Email:
-      </span>{" "}
-      {emp.email_display}
-    </div>
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">
+                        {emp.full_name?.[0]}
+                      </div>
+                    )}
 
-    <div>
-      <span className="font-medium text-gray-500">
-        Department:
-      </span>{" "}
-      {emp.department}
-    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-800">
+                        {emp.full_name}
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        {emp.employee_code}
+                      </p>
+                    </div>
+                  </div>
 
-    <div>
-      <span className="font-medium text-gray-500">
-        Company:
-      </span>{" "}
-      {emp.company_name}
-    </div>
+                  <span
+                    className={`text-xs px-3 py-1 rounded-full ${
+                      isComplete
+                        ? "bg-green-100 text-green-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}
+                  >
+                    {isComplete
+                      ? "Profile Complete"
+                      : "Profile Incomplete"}
+                  </span>
+                </div>
 
-    <div>
-      <span className="font-medium text-gray-500">
-        Date of Joining:
-      </span>{" "}
-      {emp.date_of_joining}
-    </div>
-  </div>
+                {/* CARD BODY */}
+                <div className="px-5 py-4 text-sm text-gray-700 space-y-2">
+                  <InfoRow label="Email" value={emp.email_display} />
+                  <InfoRow label="Department" value={emp.department} />
+                  <InfoRow label="Company" value={emp.company_name} />
+                  <InfoRow
+                    label="Date of Joining"
+                    value={emp.date_of_joining}
+                  />
+                </div>
 
-  {/* Footer */}
-  {/* <div className="px-5 py-3 bg-gray-50 text-sm flex justify-between items-center">
-    <span className="text-blue-600">
-      Attendance: Coming soon
-    </span>
-
-    <button
-      className="text-sm text-blue-600 hover:underline"
-      onClick={() =>
-        alert("Employee profile page coming soon")
-      }
-    >
-      View Profile →
-    </button>
-  </div> */}
-</div>
-
-          ))}
+                
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 };
+
+/* ===========================
+   REUSABLE COMPONENTS
+=========================== */
+
+const StatCard = ({ title, value }) => (
+  <div className="bg-white p-5 rounded-lg shadow border">
+    <p className="text-sm text-gray-500 mb-1">
+      {title}
+    </p>
+    <h2 className="text-3xl font-bold text-gray-800">
+      {value}
+    </h2>
+  </div>
+);
+
+const InfoRow = ({ label, value }) => (
+  <div>
+    <span className="font-medium text-gray-500">
+      {label}:
+    </span>{" "}
+    {value || "-"}
+  </div>
+);
 
 export default AdminDashboard;
