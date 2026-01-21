@@ -11,6 +11,7 @@ import AdminDashboard from "../admin/dashboard/AdminDashboard";
 import EmployeeList from "../admin/employees/EmployeeList";
 import EditEmployee from "../admin/employees/EditEmployee";
 import AddEmployee from "../admin/employees/AddEmployee";
+import EmployeeView from "../admin/employees/EmployeeView";
 import AttendanceReport from "../admin/attendance/AttendanceReport";
 import HolidayManagement from "../admin/holidays/HolidayManagement";
 import LeaveApproval from "../admin/leaves/LeaveApproval";
@@ -25,27 +26,26 @@ import HolidayCalendar from "../employee/holiday/HolidayCalendar";
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* ================= PUBLIC ================= */}
+      {/* ========== PUBLIC ========== */}
       <Route path="/login" element={<Login />} />
 
-      {/* ================= ADMIN ================= */}
+      {/* ========== ADMIN ========== */}
       <Route element={<ProtectedRoute role="ADMIN" />}>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
 
-          {/* EMPLOYEES */}
           <Route path="employees" element={<EmployeeList />} />
           <Route path="employees/add" element={<AddEmployee />} />
           <Route path="employees/edit/:id" element={<EditEmployee />} />
+          <Route path="employees/view/:id" element={<EmployeeView />} />
 
-          {/* OTHER ADMIN */}
           <Route path="attendance" element={<AttendanceReport />} />
           <Route path="holidays" element={<HolidayManagement />} />
           <Route path="leaves" element={<LeaveApproval />} />
         </Route>
       </Route>
 
-      {/* ================= EMPLOYEE ================= */}
+      {/* ========== EMPLOYEE ========== */}
       <Route element={<ProtectedRoute role="EMPLOYEE" />}>
         <Route path="/employee" element={<EmployeeLayout />}>
           <Route index element={<EmployeeDashboard />} />
@@ -56,7 +56,7 @@ const AppRoutes = () => {
         </Route>
       </Route>
 
-      {/* ================= FALLBACK ================= */}
+      {/* ========== FALLBACK (LAST ONLY) ========== */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
