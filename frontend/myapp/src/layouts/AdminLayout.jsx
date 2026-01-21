@@ -13,13 +13,10 @@ const AdminLayout = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
       <Sidebar links={links} />
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col">
         <Header />
-
         <main className="p-6 flex-1 bg-gray-100">
           <Outlet />
         </main>
