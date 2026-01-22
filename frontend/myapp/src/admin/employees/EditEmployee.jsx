@@ -2,13 +2,17 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 
+const COMPANY_NAME = "Quandatum Analytics";
 const BASE_URL = "http://127.0.0.1:8000";
 
 const Label = ({ text, required }) => (
-  <label className="text-sm font-medium mb-1 block">
+  <label className="text-sm font-medium text-gray-700 mb-1 block">
     {text} {required && <span className="text-red-600">*</span>}
   </label>
 );
+
+const inputClass =
+  "border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500";
 
 const EMPTY_BANK = {
   bank_name: "",
@@ -25,45 +29,44 @@ const EditEmployee = () => {
   const [photoPreview, setPhotoPreview] = useState(null);
 
   const [formData, setFormData] = useState({
-    email: "",
     employee_code: "",
+    email: "",
     full_name: "",
     department: "",
-    company_name: "",
+    phone_number: "",
     date_of_joining: "",
+    pancard_number: "",
+    aadhaar_number: "",
     photo: null,
     bank_detail: { ...EMPTY_BANK },
     family_members: [],
   });
 
-  // ================= FETCH =================
+  /* ================= FETCH EMPLOYEE ================= */
   useEffect(() => {
     const fetchEmployee = async () => {
       try {
         const res = await api.get(`/employees/${id}/`);
         const data = res.data;
 
-        setFormData((prev) => ({
-          ...prev,
-          email: data.email_display || "",
+        setFormData({
           employee_code: data.employee_code || "",
+          email: data.email_display || "",
           full_name: data.full_name || "",
           department: data.department || "",
-          company_name: data.company_name || "",
+          phone_number: data.phone_number || "",
           date_of_joining: data.date_of_joining || "",
-          phone_number: res.data.phone_number || "", 
-
-          // ✅ SAFE MERGE
+          pancard_number: data.pancard_number || "",
+          aadhaar_number: data.aadhaar_number || "",
+          photo: null,
           bank_detail: data.bank_detail
             ? { ...EMPTY_BANK, ...data.bank_detail }
             : { ...EMPTY_BANK },
-
           family_members: Array.isArray(data.family_members)
             ? data.family_members
             : [],
-        }));
+        });
 
-        // ✅ PHOTO PREVIEW
         if (data.photo) {
           setPhotoPreview(
             data.photo.startsWith("http")
@@ -82,14 +85,13 @@ const EditEmployee = () => {
     fetchEmployee();
   }, [id]);
 
-  // ================= HANDLERS =================
+  /* ================= HANDLERS ================= */
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setFormData({ ...formData, photo: file });
     setPhotoPreview(URL.createObjectURL(file));
   };
@@ -113,132 +115,255 @@ const EditEmployee = () => {
         }
       });
 
-      await api.put(`/employees/${id}/`, payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await api.put(`/employees/${id}/`, payload);
 
       alert("Employee updated successfully ✅");
       navigate("/admin/employees");
     } catch (err) {
-      console.error(err.response?.data);
+      console.error(err);
       alert("Failed to update employee ❌");
       setSubmitting(false);
     }
   };
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <p className="p-6">Loading...</p>;
 
   return (
-    <div className="max-w-3xl bg-white p-6 shadow rounded">
-      <h1 className="text-xl font-bold mb-4">Edit Employee</h1>
+    <div className="max-w-5xl mx-auto bg-white p-8 shadow rounded">
+      <h1 className="text-2xl font-bold mb-6">Edit Employee</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Label text="Email" required />
-        <input name="email" value={formData.email} onChange={handleChange} className="border p-2 w-full" />
+      <form onSubmit={handleSubmit} className="space-y-8">
 
-        <Label text="Employee Code" required />
-        <input name="employee_code" value={formData.employee_code} onChange={handleChange} className="border p-2 w-full" />
+        {/* ================= BASIC DETAILS ================= */}
+        <section>
+          <h2 className="text-lg font-semibold text-blue-600 mb-4">
+            Basic Details
+          </h2>
 
-        <Label text="Full Name" required />
-        <input name="full_name" value={formData.full_name} onChange={handleChange} className="border p-2 w-full" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-        <Label text="Department" required />
-        <input name="department" value={formData.department} onChange={handleChange} className="border p-2 w-full" />
-        <Label text="Phone Number" />
-<input
-  name="phone_number"
-  value={formData.phone_number}
-  onChange={handleChange}
-  className="border p-2 w-full"
-  placeholder="e.g. 9876543210"
-/>
+            <div>
+              <Label text="Employee Code" />
+              <input
+                value={formData.employee_code}
+                disabled
+                className={`${inputClass} bg-gray-100 font-semibold`}
+              />
+            </div>
 
+            <div>
+              <Label text="Email" />
+              <input
+                value={formData.email}
+                disabled
+                className={`${inputClass} bg-gray-100`}
+              />
+            </div>
 
-        <Label text="Company Name" required />
-        <input name="company_name" value={formData.company_name} onChange={handleChange} className="border p-2 w-full" />
+            <div>
+              <Label text="Full Name" required />
+              <input
+                name="full_name"
+                value={formData.full_name}
+                onChange={handleChange}
+                className={inputClass}
+                required
+              />
+            </div>
 
-        <Label text="Date of Joining" required />
-        <input type="date" name="date_of_joining" value={formData.date_of_joining} onChange={handleChange} className="border p-2 w-full" />
+            <div>
+              <Label text="Department" required />
+              <input
+                name="department"
+                value={formData.department}
+                onChange={handleChange}
+                className={inputClass}
+                required
+              />
+            </div>
 
-        {/* PHOTO */}
-        <h2 className="font-semibold mt-6">Profile Photo</h2>
-        <img src={photoPreview || "/default-avatar.png"} className="w-24 h-24 rounded-full border mb-2" />
-        <input type="file" accept="image/*" onChange={handlePhotoChange} />
+            <div>
+              <Label text="Phone Number" />
+              <input
+                name="phone_number"
+                value={formData.phone_number}
+                onChange={handleChange}
+                className={inputClass}
+              />
+            </div>
 
-        {/* BANK */}
-        <h2 className="font-semibold mt-6">Bank Details</h2>
-        <input placeholder="Bank Name" className="border p-2 w-full"
-          value={formData.bank_detail.bank_name}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              bank_detail: { ...formData.bank_detail, bank_name: e.target.value },
-            })
-          }
-        />
-        <input placeholder="Account Number" className="border p-2 w-full"
-          value={formData.bank_detail.account_number}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              bank_detail: { ...formData.bank_detail, account_number: e.target.value },
-            })
-          }
-        />
-        <input placeholder="IFSC Code" className="border p-2 w-full"
-          value={formData.bank_detail.ifsc_code}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              bank_detail: { ...formData.bank_detail, ifsc_code: e.target.value },
-            })
-          }
-        />
+            <div>
+              <Label text="Company Name" />
+              <input
+                value={COMPANY_NAME}
+                disabled
+                className={`${inputClass} bg-gray-100`}
+              />
+            </div>
 
-        {/* FAMILY */}
-        <h2 className="font-semibold mt-6">Family Members</h2>
-        {formData.family_members.map((m, i) => (
-          <div key={i} className="border p-2 rounded">
-            <input placeholder="Name" className="border p-2 w-full mb-1" value={m.name}
-              onChange={(e) => {
-                const f = [...formData.family_members];
-                f[i].name = e.target.value;
-                setFormData({ ...formData, family_members: f });
-              }}
-            />
-            <input placeholder="Relationship" className="border p-2 w-full" value={m.relationship}
-              onChange={(e) => {
-                const f = [...formData.family_members];
-                f[i].relationship = e.target.value;
-                setFormData({ ...formData, family_members: f });
-              }}
-            />
-            <input
-              placeholder="Phone Number"
-              className="border p-2 w-full mb-1"
-              value={m.phone_number || ""}
-              onChange={(e) => {
-                const f = [...formData.family_members];
-                f[i].phone_number = e.target.value;
-                setFormData({ ...formData, family_members: f });
-              }}
-            />
+            <div>
+              <Label text="Date of Joining" required />
+              <input
+                type="date"
+                name="date_of_joining"
+                value={formData.date_of_joining}
+                onChange={handleChange}
+                className={inputClass}
+                required
+              />
+            </div>
 
           </div>
-        ))}
+        </section>
 
-        <button type="button" className="text-blue-600"
-          onClick={() =>
-            setFormData({
-              ...formData,
-              family_members: [...formData.family_members, { name: "", relationship: "" }],
-            })
-          }
+        {/* ================= PHOTO ================= */}
+        <section>
+          <h2 className="font-semibold mb-3">Profile Photo</h2>
+          <div className="flex items-center gap-6">
+            <img
+              src={photoPreview || "/default-avatar.png"}
+              className="w-24 h-24 rounded-full border object-cover"
+              alt="Preview"
+            />
+            <input type="file" accept="image/*" onChange={handlePhotoChange} />
+          </div>
+        </section>
+
+        {/* ================= ID PROOF ================= */}
+        <section>
+          <h2 className="font-semibold mb-3">ID Proof</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              name="pancard_number"
+              value={formData.pancard_number}
+              onChange={handleChange}
+              className={`${inputClass} uppercase`}
+              placeholder="PAN Card Number"
+            />
+            <input
+              name="aadhaar_number"
+              value={formData.aadhaar_number}
+              onChange={handleChange}
+              className={inputClass}
+              placeholder="Aadhaar Number"
+              maxLength={12}
+            />
+          </div>
+        </section>
+
+        {/* ================= BANK DETAILS ================= */}
+        <section>
+          <h2 className="font-semibold mb-3">Bank Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input
+              placeholder="Bank Name"
+              className={inputClass}
+              value={formData.bank_detail.bank_name}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  bank_detail: {
+                    ...formData.bank_detail,
+                    bank_name: e.target.value,
+                  },
+                })
+              }
+            />
+            <input
+              placeholder="Account Number"
+              className={inputClass}
+              value={formData.bank_detail.account_number}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  bank_detail: {
+                    ...formData.bank_detail,
+                    account_number: e.target.value,
+                  },
+                })
+              }
+            />
+            <input
+              placeholder="IFSC Code"
+              className={inputClass}
+              value={formData.bank_detail.ifsc_code}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  bank_detail: {
+                    ...formData.bank_detail,
+                    ifsc_code: e.target.value,
+                  },
+                })
+              }
+            />
+          </div>
+        </section>
+
+        {/* ================= FAMILY MEMBERS ================= */}
+        <section>
+          <h2 className="font-semibold mb-3">Family Members</h2>
+
+          {formData.family_members.map((m, i) => (
+            <div
+              key={i}
+              className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3"
+            >
+              <input
+                placeholder="Name"
+                className={inputClass}
+                value={m.name}
+                onChange={(e) => {
+                  const f = [...formData.family_members];
+                  f[i].name = e.target.value;
+                  setFormData({ ...formData, family_members: f });
+                }}
+              />
+              <input
+                placeholder="Relationship"
+                className={inputClass}
+                value={m.relationship}
+                onChange={(e) => {
+                  const f = [...formData.family_members];
+                  f[i].relationship = e.target.value;
+                  setFormData({ ...formData, family_members: f });
+                }}
+              />
+              <input
+                placeholder="Phone Number"
+                className={inputClass}
+                value={m.phone_number || ""}
+                onChange={(e) => {
+                  const f = [...formData.family_members];
+                  f[i].phone_number = e.target.value;
+                  setFormData({ ...formData, family_members: f });
+                }}
+              />
+            </div>
+          ))}
+
+          <button
+            type="button"
+            className="text-blue-600 font-medium"
+            onClick={() =>
+              setFormData({
+                ...formData,
+                family_members: [
+                  ...formData.family_members,
+                  { name: "", relationship: "", phone_number: "" },
+                ],
+              })
+            }
+          >
+            + Add Family Member
+          </button>
+        </section>
+
+        {/* ================= SUBMIT ================= */}
+        <button
+          type="submit"
+          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg"
         >
-          + Add Family Member
-        </button>
-
-        <button type="submit" className="bg-blue-600 text-white w-full py-2 mt-4">
           {submitting ? "Updating..." : "Update Employee"}
         </button>
       </form>
