@@ -29,6 +29,8 @@ class BankDetailSerializer(serializers.ModelSerializer):
 class EmployeeProfileSerializer(serializers.ModelSerializer):
     family_members = FamilyMemberSerializer(many=True, required=False)
     bank_detail = BankDetailSerializer(required=False)
+    pancard_number = serializers.CharField(required=False, allow_blank=True)   # ✅
+    aadhaar_number = serializers.CharField(required=False, allow_blank=True)
 
     photo = serializers.ImageField(required=False, allow_null=True)
     phone_number = serializers.CharField(   # ✅ NEW
@@ -54,6 +56,8 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             "email",
             "password",
             "email_display",
+            "pancard_number",     # ✅ ADD
+            "aadhaar_number",
 
             "employee_code",
             "full_name",

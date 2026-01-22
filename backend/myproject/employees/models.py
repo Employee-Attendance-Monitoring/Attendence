@@ -19,6 +19,19 @@ class EmployeeProfile(models.Model):
         null=True,
         blank=True
     )
+    pancard_number = models.CharField(
+    max_length=10,
+    null=True,
+    blank=True
+)
+
+    aadhaar_number = models.CharField(
+    max_length=12,
+    null=True,
+    blank=True
+)
+
+
     photo = models.ImageField(
         upload_to="employees/photos/",
         null=True,
