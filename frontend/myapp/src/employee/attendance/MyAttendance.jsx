@@ -51,7 +51,7 @@ const MyAttendance = () => {
       <div>
         <h2 className="text-2xl font-bold">Attendance History</h2>
         <p className="text-sm text-gray-500">
-          View and filter your attendance records
+          View and filter your attendance 
         </p>
       </div>
 
