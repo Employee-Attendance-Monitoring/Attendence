@@ -5,78 +5,59 @@ import {
   getMyAttendanceHistory,
 } from "../../api/attendanceApi";
 import Loader from "../../components/Loader";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const EmployeeDashboard = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [records, setRecords] = useState([]);
   const [today, setToday] = useState(null);
   const [loading, setLoading] = useState(false);
   const [working, setWorking] = useState(false);
   const [seconds, setSeconds] = useState(0);
 
-  const location = useLocation();
-
-  /* ================= LOAD ATTENDANCE ================= */
+  /* ================= LOAD DATA ================= */
   const loadAttendance = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-
       const res = await getMyAttendanceHistory();
       const data = res.data || [];
       setRecords(data);
 
       const todayDate = new Date().toISOString().slice(0, 10);
-      const todayRecord =
-        data.find((r) => r.date === todayDate) || null;
+      const todayRecord = data.find(r => r.date === todayDate);
+      setToday(todayRecord || null);
 
-      setToday(todayRecord);
-
-      // ⏱ TIMER LOGIC
       if (todayRecord?.sign_in && !todayRecord?.sign_out) {
-        // still working
-        const diff =
-          (Date.now() - new Date(todayRecord.sign_in)) / 1000;
-        setSeconds(Math.floor(diff));
         setWorking(true);
-      } else if (
-        todayRecord?.sign_in &&
-        todayRecord?.sign_out
-      ) {
-        // signed out
-        const diff =
-          (new Date(todayRecord.sign_out) -
-            new Date(todayRecord.sign_in)) /
-          1000;
-        setSeconds(Math.floor(diff));
+        setSeconds(Math.floor((Date.now() - new Date(todayRecord.sign_in)) / 1000));
+      } else if (todayRecord?.sign_in && todayRecord?.sign_out) {
         setWorking(false);
+        setSeconds(
+          Math.floor(
+            (new Date(todayRecord.sign_out) - new Date(todayRecord.sign_in)) / 1000
+          )
+        );
       } else {
-        // no attendance today
-        setSeconds(0);
         setWorking(false);
+        setSeconds(0);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  /* ================= RELOAD ON ROUTE CHANGE ================= */
   useEffect(() => {
     loadAttendance();
   }, [location.pathname]);
 
-  /* ================= TIMER ================= */
   useEffect(() => {
-    let timer = null;
-
+    let timer;
     if (working) {
-      timer = setInterval(() => {
-        setSeconds((prev) => prev + 1);
-      }, 1000);
+      timer = setInterval(() => setSeconds(s => s + 1), 1000);
     }
-
-    return () => {
-      if (timer) clearInterval(timer);
-    };
+    return () => timer && clearInterval(timer);
   }, [working]);
 
   /* ================= HELPERS ================= */
@@ -87,62 +68,63 @@ const EmployeeDashboard = () => {
     return `${h}h ${m}m ${s}s`;
   };
 
+  const summary = {
+    present: records.filter(r => r.status === "PRESENT").length,
+    absent: records.filter(r => r.status === "ABSENT").length,
+    half: records.filter(r => r.status === "HALF_DAY").length,
+    hours: records.reduce((t, r) => t + Number(r.working_hours || 0), 0).toFixed(2),
+  };
+
   /* ================= ACTIONS ================= */
   const handleSignIn = async () => {
-    try {
-      await employeeSignIn();
-      loadAttendance();
-    } catch (err) {
-      alert(err.response?.data?.detail || "Error");
-    }
+    await employeeSignIn();
+    loadAttendance();
   };
 
   const handleSignOut = async () => {
-    try {
-      await employeeSignOut();
-      setWorking(false);
-      loadAttendance();
-    } catch (err) {
-      alert(err.response?.data?.detail || "Error");
-    }
+    await employeeSignOut();
+    setWorking(false);
+    loadAttendance();
   };
 
   if (loading) return <Loader />;
 
   return (
     <div className="space-y-8">
-      {/* ================= TODAY ================= */}
-      <div className="bg-white p-6 rounded shadow">
-        <h3 className="text-lg font-semibold mb-4">
-          Today Attendance
-        </h3>
+      {/* ================= SUMMARY CARDS ================= */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <SummaryCard title="Present Days" value={summary.present} color="green" />
+        <SummaryCard title="Absent Days" value={summary.absent} color="red" />
+        <SummaryCard title="Half Days" value={summary.half} color="yellow" />
+        <SummaryCard title="Total Hours" value={`${summary.hours} hrs`} color="blue" />
+      </div>
 
-        <div className="space-y-1">
-          <p>
-            <b>Sign In:</b> {today?.sign_in || "-"}
-          </p>
-          <p>
-            <b>Sign Out:</b> {today?.sign_out || "-"}
-          </p>
-          <p className="font-medium mt-2">
-            Working Time: {formatTime()}
-          </p>
+      {/* ================= TODAY ================= */}
+      <div className="bg-gradient-to-r from-blue-50 to-white p-6 rounded-xl shadow border">
+        <h3 className="text-lg font-semibold mb-4">Today Attendance</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-sm">
+          <Info label="Status">
+            <StatusBadge status={today?.status || "NOT_MARKED"} />
+          </Info>
+          <Info label="Sign In" value={today?.sign_in || "-"} />
+          <Info label="Sign Out" value={today?.sign_out || "-"} />
+          <Info label="Working Time" value={formatTime()} />
         </div>
 
-        <div className="mt-5 flex gap-4">
+        <div className="mt-6">
           {!today?.sign_in && (
             <button
               onClick={handleSignIn}
-              className="bg-green-600 text-white px-6 py-2 rounded"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg"
             >
               Sign In
             </button>
           )}
-
           {today?.sign_in && !today?.sign_out && (
             <button
               onClick={handleSignOut}
-              className="bg-red-600 text-white px-6 py-2 rounded"
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg"
             >
               Sign Out
             </button>
@@ -150,59 +132,79 @@ const EmployeeDashboard = () => {
         </div>
       </div>
 
-      {/* ================= HISTORY ================= */}
-      <div className="bg-white shadow rounded overflow-x-auto">
-        <table className="min-w-full text-sm text-center">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Sign In</th>
-              <th className="px-4 py-3">Sign Out</th>
-              <th className="px-4 py-3">Hours</th>
-              <th className="px-4 py-3">Status</th>
-            </tr>
-          </thead>
+      {/* ================= RECENT ATTENDANCE ================= */}
+      <div className="bg-white rounded-xl shadow border p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold">Recent Attendance</h3>
+          <button
+            onClick={() => navigate("/employee/attendance")}
+            className="text-blue-600 text-sm hover:underline"
+          >
+            View Full History →
+          </button>
+        </div>
 
-          <tbody>
-            {records.map((r) => (
-              <tr key={r.id} className="border-t">
-                <td className="px-4 py-3">{r.date}</td>
-                <td className="px-4 py-3">
-                  {r.sign_in || "-"}
-                </td>
-                <td className="px-4 py-3">
-                  {r.sign_out || "-"}
-                </td>
-                <td className="px-4 py-3">
-                  {r.working_hours}
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`px-2 py-1 rounded text-white text-xs ${
-                      r.status === "PRESENT"
-                        ? "bg-green-600"
-                        : r.status === "HALF_DAY"
-                        ? "bg-yellow-500"
-                        : "bg-red-600"
-                    }`}
-                  >
-                    {r.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
+        <div className="space-y-3">
+          {records.slice(0, 3).map(r => (
+            <div
+              key={r.id}
+              className="flex justify-between items-center border rounded-lg p-4"
+            >
+              <div>
+                <p className="font-medium">{r.date}</p>
+                <p className="text-xs text-gray-500">
+                  {r.sign_in || "-"} → {r.sign_out || "-"}
+                </p>
+              </div>
 
-            {records.length === 0 && (
-              <tr>
-                <td colSpan="5" className="py-6">
-                  No attendance records
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              <div className="flex items-center gap-4">
+                <span className="text-sm">{r.working_hours} hrs</span>
+                <StatusBadge status={r.status} />
+              </div>
+            </div>
+          ))}
+
+          {records.length === 0 && (
+            <p className="text-center text-gray-500 py-6">
+              No attendance records
+            </p>
+          )}
+        </div>
       </div>
     </div>
+  );
+};
+
+/* ================= UI COMPONENTS ================= */
+
+const SummaryCard = ({ title, value, color }) => (
+  <div className="bg-white rounded-xl shadow border p-5">
+    <p className="text-sm text-gray-500">{title}</p>
+    <h2 className={`text-3xl font-bold text-${color}-600 mt-1`}>
+      {value}
+    </h2>
+  </div>
+);
+
+const Info = ({ label, value, children }) => (
+  <div>
+    <p className="text-xs text-gray-500 mb-1">{label}</p>
+    <div className="font-medium">{children || value}</div>
+  </div>
+);
+
+const StatusBadge = ({ status }) => {
+  const map = {
+    PRESENT: "bg-green-100 text-green-700",
+    ABSENT: "bg-red-100 text-red-700",
+    HALF_DAY: "bg-yellow-100 text-yellow-700",
+    NOT_MARKED: "bg-gray-100 text-gray-600",
+  };
+
+  return (
+    <span className={`px-3 py-1 text-xs rounded-full ${map[status] || map.NOT_MARKED}`}>
+      {status}
+    </span>
   );
 };
 

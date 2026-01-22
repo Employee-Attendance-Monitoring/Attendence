@@ -61,10 +61,23 @@ const MyProfile = () => {
           <ProfileItem label="Department" value={profile.department} />
           <ProfileItem label="Company" value={profile.company_name} />
           <ProfileItem label="Date of Joining" value={profile.date_of_joining} />
+          <ProfileItem label="Phone Number" value={profile.phone_number} />
+        </div>
+      </div>
+
+      {/* ================= ID PROOF ================= */}
+      <div className="bg-white shadow rounded p-6 mt-6">
+        <h3 className="font-semibold mb-4">ID Proof</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ProfileItem
-  label="Phone Number"
-  value={profile.phone_number}
-/>
+            label="PAN Card Number"
+            value={profile.pancard_number}
+          />
+          <ProfileItem
+            label="Aadhaar Number"
+            value={profile.aadhaar_number}
+          />
         </div>
       </div>
 
@@ -104,11 +117,14 @@ const MyProfile = () => {
                 className="border p-3 rounded grid grid-cols-2 gap-4"
               >
                 <ProfileItem label="Name" value={member.name} />
-          <ProfileItem label="Relationship" value={member.relationship} />
-          <ProfileItem
-            label="Phone Number"
-            value={member.phone_number}
-          />
+                <ProfileItem
+                  label="Relationship"
+                  value={member.relationship}
+                />
+                <ProfileItem
+                  label="Phone Number"
+                  value={member.phone_number}
+                />
               </div>
             ))}
           </div>

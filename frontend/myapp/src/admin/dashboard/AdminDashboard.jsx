@@ -2,6 +2,24 @@ import { useEffect, useState } from "react";
 import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 
+const BACKEND_URL = "http://127.0.0.1:8000";
+
+/* ===========================
+   PROFILE COMPLETION CHECK
+=========================== */
+const isProfileComplete = (emp) => {
+  return Boolean(
+    emp.phone_number &&
+    emp.photo &&
+    emp.pancard_number &&
+    emp.aadhaar_number &&
+    emp.bank_detail &&
+    emp.bank_detail.bank_name &&
+    emp.bank_detail.account_number &&
+    emp.bank_detail.ifsc_code
+  );
+};
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
@@ -31,19 +49,14 @@ const AdminDashboard = () => {
   if (loading) return <p>Loading dashboard...</p>;
   if (!stats) return <p>No dashboard data</p>;
 
-  // ----------------------------
-  // DERIVED STATS
-  // ----------------------------
+  /* ===========================
+     DERIVED STATS
+  =========================== */
   const departments = [
-    ...new Set(employees.map((e) => e.department)),
+    ...new Set(employees.map((e) => e.department).filter(Boolean)),
   ];
 
-  const completedProfiles = employees.filter(
-    (e) =>
-      e.phone_number &&
-      e.photo &&
-      e.bank_detail
-  ).length;
+  const completedProfiles = employees.filter(isProfileComplete).length;
 
   const last30Days = new Date();
   last30Days.setDate(last30Days.getDate() - 30);
@@ -61,18 +74,9 @@ const AdminDashboard = () => {
 
       {/* ===== SUMMARY CARDS ===== */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-10">
-        <StatCard
-          title="Total Employees"
-          value={stats.total_employees}
-        />
-        <StatCard
-          title="Departments"
-          value={departments.length}
-        />
-        <StatCard
-          title="New Joins (30 days)"
-          value={newJoins}
-        />
+        <StatCard title="Total Employees" value={stats.total_employees} />
+        <StatCard title="Departments" value={departments.length} />
+        <StatCard title="New Joins (30 days)" value={newJoins} />
         <StatCard
           title="Profiles Completed"
           value={`${completedProfiles} / ${employees.length}`}
@@ -89,10 +93,7 @@ const AdminDashboard = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {employees.map((emp) => {
-            const isComplete =
-              emp.phone_number &&
-              emp.photo &&
-              emp.bank_detail;
+            const isComplete = isProfileComplete(emp);
 
             return (
               <div
@@ -103,17 +104,16 @@ const AdminDashboard = () => {
                 <div className="flex items-center justify-between px-5 py-4 border-b">
                   <div className="flex items-center gap-3">
                     {emp.photo ? (
-  <img
-    src={
-      emp.photo.startsWith("http")
-        ? emp.photo
-        : `http://127.0.0.1:8000${emp.photo}`
-    }
-    alt={emp.full_name}
-    className="w-10 h-10 rounded-full object-cover border"
-  />
-) : (
-
+                      <img
+                        src={
+                          emp.photo.startsWith("http")
+                            ? emp.photo
+                            : `${BACKEND_URL}${emp.photo}`
+                        }
+                        alt={emp.full_name}
+                        className="w-10 h-10 rounded-full object-cover border"
+                      />
+                    ) : (
                       <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">
                         {emp.full_name?.[0]}
                       </div>
@@ -151,9 +151,14 @@ const AdminDashboard = () => {
                     label="Date of Joining"
                     value={emp.date_of_joining}
                   />
-                </div>
 
-                
+                  {/* OPTIONAL: SHOW WHY INCOMPLETE */}
+                  {!isComplete && (
+                    <p className="text-xs text-red-500 pt-2">
+                      Profile missing details
+                    </p>
+                  )}
+                </div>
               </div>
             );
           })}

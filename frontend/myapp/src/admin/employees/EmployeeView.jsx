@@ -87,7 +87,17 @@ const EmployeeView = () => {
             value={employee.bank_detail?.ifsc_code}
           />
         </div>
+        <div className="bg-white shadow rounded p-6">
+        <h2 className="font-semibold text-lg mb-3">ID Proof</h2>
+
+      <InfoRow label="PAN Number" value={employee.pancard_number || "-"} />
+
+      <InfoRow label="Aadhaar Number" value={employee.aadhaar_number || "-"} />
       </div>
+      </div>
+      
+      
+
 
       {/* FAMILY MEMBERS */}
       {employee.family_members?.length > 0 && (
