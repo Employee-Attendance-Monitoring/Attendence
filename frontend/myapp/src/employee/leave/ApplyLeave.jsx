@@ -25,7 +25,19 @@ const ApplyLeave = () => {
   }, []);
 
   const submitLeave = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+
+  if (!form.start_date || !form.end_date) {
+    alert("Please select both dates");
+    return;
+  }
+
+  if (form.end_date < form.start_date) {
+    alert("End date cannot be before start date");
+    return;
+  }
+
+  try {
     await applyLeave(form);
     setForm({
       leave_type: "PAID",
@@ -34,7 +46,15 @@ const ApplyLeave = () => {
       reason: "",
     });
     loadLeaves();
-  };
+  } catch (err) {
+    alert(
+      err.response?.data?.detail ||
+      err.response?.data?.non_field_errors?.[0] ||
+      "Failed to apply leave"
+    );
+  }
+};
+
 
   return (
     <div>

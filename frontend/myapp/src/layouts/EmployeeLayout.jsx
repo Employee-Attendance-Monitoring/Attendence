@@ -7,7 +7,7 @@ const EmployeeLayout = () => {
     { label: "Dashboard", to: "/employee" },
     { label: "My Profile", to: "/employee/profile" },
     { label: "Attendance", to: "/employee/attendance" },
-    { label: "Apply Leave", to: "/employee/leave" },
+    // { label: "Apply Leave", to: "/employee/leave" },
     { label: "Holidays", to: "/employee/holiday" },
   ];
 
