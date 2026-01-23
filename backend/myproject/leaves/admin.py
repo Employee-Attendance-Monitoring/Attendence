@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Leave
+from .models import Leave, LeaveBalance
 
 
 @admin.register(Leave)
@@ -13,4 +13,14 @@ class LeaveAdmin(admin.ModelAdmin):
         "applied_at",
     )
     list_filter = ("leave_type", "status")
+    search_fields = ("user__email",)
+
+
+@admin.register(LeaveBalance)
+class LeaveBalanceAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "total_leaves",
+        "updated_at",
+    )
     search_fields = ("user__email",)

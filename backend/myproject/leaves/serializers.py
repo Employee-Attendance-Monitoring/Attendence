@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Leave
+from .models import Leave,LeaveBalance
 from django.utils.timezone import now
 
 
@@ -69,3 +69,17 @@ class LeaveApprovalSerializer(serializers.ModelSerializer):
         instance.actioned_at = now()
         instance.save()
         return instance
+
+class LeaveBalanceSerializer(serializers.ModelSerializer):
+    employee_email = serializers.EmailField(
+        source="user.email",
+        read_only=True
+    )
+
+    class Meta:
+        model = LeaveBalance
+        fields = [
+            "employee_email",
+            "total_leaves",
+            "updated_at",
+        ]

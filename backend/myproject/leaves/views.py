@@ -1,17 +1,21 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 
-from .models import Leave
-from .serializers import LeaveSerializer, LeaveApprovalSerializer
+from .models import Leave, LeaveBalance
+from .serializers import (
+    LeaveSerializer,
+    LeaveApprovalSerializer,
+    LeaveBalanceSerializer
+)
 from accounts.permissions import IsAdmin
+from accounts.models import User
 
 
+# ================= EMPLOYEE APPLY LEAVE =================
 class ApplyLeaveView(APIView):
-    """
-    Employee applies leave
-    """
 
     def post(self, request):
         serializer = LeaveSerializer(
@@ -19,6 +23,32 @@ class ApplyLeaveView(APIView):
             context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
+
+        # Get leave balance
+        balance, _ = LeaveBalance.objects.get_or_create(
+            user=request.user,
+            defaults={"total_leaves": 12}
+        )
+
+        approved_leaves = Leave.objects.filter(
+            user=request.user,
+            status="APPROVED"
+        )
+
+        taken = 0
+        for leave in approved_leaves:
+            taken += (leave.end_date - leave.start_date).days + 1
+
+        requested_days = (
+            serializer.validated_data["end_date"]
+            - serializer.validated_data["start_date"]
+        ).days + 1
+
+        if taken + requested_days > balance.total_leaves:
+            return Response(
+                {"detail": "Insufficient leave balance"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         Leave.objects.create(
             user=request.user,
@@ -31,10 +61,8 @@ class ApplyLeaveView(APIView):
         )
 
 
+# ================= EMPLOYEE LEAVE LIST =================
 class MyLeaveListView(APIView):
-    """
-    Employee leave list
-    """
 
     def get(self, request):
         leaves = Leave.objects.filter(user=request.user)
@@ -42,10 +70,8 @@ class MyLeaveListView(APIView):
         return Response(serializer.data)
 
 
+# ================= ADMIN LEAVE LIST =================
 class LeaveApprovalListView(APIView):
-    """
-    Admin: view all leave requests
-    """
     permission_classes = [IsAdmin]
 
     def get(self, request):
@@ -54,6 +80,7 @@ class LeaveApprovalListView(APIView):
         return Response(serializer.data)
 
 
+# ================= ADMIN APPROVE / REJECT =================
 class LeaveApprovalActionView(APIView):
     permission_classes = [IsAdmin]
 
@@ -69,3 +96,87 @@ class LeaveApprovalActionView(APIView):
             status=status.HTTP_200_OK
         )
 
+
+# ================= ADMIN LEAVE SUMMARY =================
+class LeaveSummaryView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        email = request.query_params.get("employee")
+
+        if not email:
+            return Response(
+                {"detail": "Employee email is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = get_object_or_404(User, email=email)
+
+        balance, _ = LeaveBalance.objects.get_or_create(
+            user=user,
+            defaults={"total_leaves": 12}
+        )
+
+        approved_leaves = Leave.objects.filter(
+            user=user,
+            status="APPROVED"
+        )
+
+        taken = 0
+        for leave in approved_leaves:
+            taken += (leave.end_date - leave.start_date).days + 1
+
+        return Response({
+            "total": balance.total_leaves,
+            "taken": taken,
+            "balance": max(balance.total_leaves - taken, 0)
+        })
+
+
+# ================= ADMIN SET LEAVE BALANCE =================
+class SetLeaveBalanceView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        total = request.data.get("total_leaves")
+        email = request.data.get("employee")
+
+        if not total:
+            return Response(
+                {"detail": "total_leaves is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        total = int(total)
+
+        if email:
+            user = get_object_or_404(User, email=email)
+            LeaveBalance.objects.update_or_create(
+                user=user,
+                defaults={"total_leaves": total}
+            )
+        else:
+            for user in User.objects.filter(role="EMPLOYEE"):
+                LeaveBalance.objects.update_or_create(
+                    user=user,
+                    defaults={"total_leaves": total}
+                )
+
+        return Response(
+            {"message": "Leave balance updated successfully"},
+            status=status.HTTP_200_OK
+        )
+
+
+# ================= EMPLOYEE MY LEAVE BALANCE =================
+class MyLeaveBalanceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        balance, _ = LeaveBalance.objects.get_or_create(
+            user=request.user,
+            defaults={"total_leaves": 12}
+        )
+
+        serializer = LeaveBalanceSerializer(balance)
+        return Response(serializer.data)

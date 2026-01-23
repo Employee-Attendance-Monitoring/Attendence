@@ -1,25 +1,31 @@
 import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { getAdminAttendanceReport } from "../../api/attendanceApi";
 import { getEmployeeDropdown } from "../../api/employeeApi";
+import { getLeaveSummary } from "../../api/leaveApi";
 import Loader from "../../components/Loader";
 
 const AttendanceReport = () => {
+  const navigate = useNavigate();
+
   const [viewMode, setViewMode] = useState("DAILY"); // DAILY | MONTHLY
   const [date, setDate] = useState("");
   const [month, setMonth] = useState("");
   const [employee, setEmployee] = useState("all");
+
   const [employees, setEmployees] = useState([]);
   const [records, setRecords] = useState([]);
+  const [leaveSummary, setLeaveSummary] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  /* LOAD EMPLOYEES */
+  /* ================= LOAD EMPLOYEES ================= */
   useEffect(() => {
     getEmployeeDropdown().then((res) => {
       setEmployees(res.data || []);
     });
   }, []);
 
-  /* LOAD ATTENDANCE */
+  /* ================= LOAD ATTENDANCE ================= */
   useEffect(() => {
     loadAttendance();
   }, [date, month, employee, viewMode]);
@@ -37,12 +43,21 @@ const AttendanceReport = () => {
     }
   };
 
+  /* ================= LOAD LEAVE SUMMARY ================= */
+  useEffect(() => {
+    if (employee !== "all") {
+      getLeaveSummary(employee)
+        .then((res) => setLeaveSummary(res.data))
+        .catch(() => setLeaveSummary(null));
+    } else {
+      setLeaveSummary(null);
+    }
+  }, [employee]);
+
   /* ================= FILTER ================= */
   const filteredRecords = useMemo(() => {
     if (viewMode === "MONTHLY" && month) {
-      return records.filter((r) =>
-        r.date.startsWith(month)
-      );
+      return records.filter((r) => r.date.startsWith(month));
     }
     if (viewMode === "DAILY" && date) {
       return records.filter((r) => r.date === date);
@@ -73,7 +88,7 @@ const AttendanceReport = () => {
         Attendance Report (Admin)
       </h2>
 
-      {/* ================= VIEW MODE ================= */}
+      {/* ================= VIEW MODE BUTTONS ================= */}
       <div className="flex gap-3">
         <button
           onClick={() => setViewMode("DAILY")}
@@ -95,6 +110,14 @@ const AttendanceReport = () => {
           }`}
         >
           Monthly View
+        </button>
+
+        {/* ✅ NEW BUTTON */}
+        <button
+          onClick={() => navigate("/admin/leave-balance")}
+          className="px-4 py-2 rounded bg-purple-600 text-white"
+        >
+          Leave Balance
         </button>
       </div>
 
@@ -140,6 +163,15 @@ const AttendanceReport = () => {
           </select>
         </div>
       </div>
+
+      {/* ================= LEAVE BALANCE CARDS ================= */}
+      {leaveSummary && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <LeaveCard title="Total Leave" value={leaveSummary.total} />
+          <LeaveCard title="Leave Taken" value={leaveSummary.taken} />
+          <LeaveCard title="Leave Balance" value={leaveSummary.balance} />
+        </div>
+      )}
 
       {/* ================= MONTH SUMMARY ================= */}
       {viewMode === "MONTHLY" && (
@@ -208,6 +240,13 @@ const Summary = ({ title, value }) => (
   </div>
 );
 
+const LeaveCard = ({ title, value }) => (
+  <div className="bg-white p-4 rounded shadow">
+    <p className="text-sm text-gray-500">{title}</p>
+    <p className="text-3xl font-bold">{value}</p>
+  </div>
+);
+
 const StatusBadge = ({ status }) => {
   const map = {
     PRESENT: "bg-green-100 text-green-700",
@@ -216,9 +255,7 @@ const StatusBadge = ({ status }) => {
   };
   return (
     <span
-      className={`px-3 py-1 rounded-full text-xs ${
-        map[status]
-      }`}
+      className={`px-3 py-1 rounded-full text-xs ${map[status]}`}
     >
       {status}
     </span>

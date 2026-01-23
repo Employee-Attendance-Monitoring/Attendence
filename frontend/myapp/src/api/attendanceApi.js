@@ -21,12 +21,29 @@ export const getMyAttendanceSummary = () =>
 
 /* ================= ADMIN ================= */
 
-// Admin attendance report
-export const getAdminAttendanceReport = (date, employee) => {
-  let url = "/attendance/admin-report/?";
+// ✅ FIXED Admin attendance report
+export const getAdminAttendanceReport = (
+  date,
+  employee,
+  department,
+  status
+) => {
+  let params = {};
 
-  if (date) url += `date=${date}&`;
-  if (employee) url += `employee=${employee}&`;
+  if (date) params.date = date;
 
-  return api.get(url);
+  // ✅ do NOT send "all"
+  if (employee && employee !== "all") {
+    params.employee = employee;
+  }
+
+  if (department && department !== "ALL") {
+    params.department = department;
+  }
+
+  if (status && status !== "ALL") {
+    params.status = status;
+  }
+
+  return api.get("/attendance/admin-report/", { params });
 };

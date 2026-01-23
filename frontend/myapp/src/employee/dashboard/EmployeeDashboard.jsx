@@ -4,12 +4,12 @@ import {
   employeeSignOut,
   getMyAttendanceHistory,
 } from "../../api/attendanceApi";
-import { getMyLeaves } from "../../api/leaveApi";
+import {
+  getMyLeaves,
+  getMyLeaveBalance,
+} from "../../api/leaveApi";
 import Loader from "../../components/Loader";
-import { useLocation, useNavigate } from "react-router-dom";
-
-/* ================= CONSTANT ================= */
-const TOTAL_LEAVES_PER_YEAR = 24;
+import { useNavigate, useLocation } from "react-router-dom";
 
 const EmployeeDashboard = () => {
   const navigate = useNavigate();
@@ -21,11 +21,10 @@ const EmployeeDashboard = () => {
   const [working, setWorking] = useState(false);
   const [seconds, setSeconds] = useState(0);
 
-  const [leaves, setLeaves] = useState([]);
   const [leaveSummary, setLeaveSummary] = useState({
+    total: 0,
     taken: 0,
-    total: TOTAL_LEAVES_PER_YEAR,
-    balance: TOTAL_LEAVES_PER_YEAR,
+    balance: 0,
   });
 
   /* ================= LOAD ATTENDANCE ================= */
@@ -63,33 +62,35 @@ const EmployeeDashboard = () => {
     }
   };
 
-  /* ================= LOAD LEAVE SUMMARY ================= */
+  /* ================= LOAD LEAVE DATA ================= */
   const loadLeaveSummary = async () => {
-    const res = await getMyLeaves();
-    const data = res.data || [];
-    setLeaves(data);
+    const [leaveRes, balanceRes] = await Promise.all([
+      getMyLeaves(),
+      getMyLeaveBalance(),
+    ]);
+
+    const leaves = leaveRes.data || [];
+    const balance = balanceRes.data;
 
     const currentYear = new Date().getFullYear();
 
-    const approvedLeaves = data.filter(
-      (l) =>
-        l.status === "APPROVED" &&
-        new Date(l.start_date).getFullYear() === currentYear
-    );
-
     let taken = 0;
-
-    approvedLeaves.forEach((leave) => {
-      const start = new Date(leave.start_date);
-      const end = new Date(leave.end_date);
-      const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-      taken += days;
+    leaves.forEach((leave) => {
+      if (
+        leave.status === "APPROVED" &&
+        new Date(leave.start_date).getFullYear() === currentYear
+      ) {
+        const start = new Date(leave.start_date);
+        const end = new Date(leave.end_date);
+        taken +=
+          Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      }
     });
 
     setLeaveSummary({
+      total: balance.total_leaves,
       taken,
-      total: TOTAL_LEAVES_PER_YEAR,
-      balance: TOTAL_LEAVES_PER_YEAR - taken,
+      balance: balance.total_leaves - taken,
     });
   };
 
@@ -115,12 +116,9 @@ const EmployeeDashboard = () => {
   };
 
   const summary = {
-    present: records.filter((r) => r.status === "PRESENT").length,
-    absent: records.filter((r) => r.status === "ABSENT").length,
-    half: records.filter((r) => r.status === "HALF_DAY").length,
-    hours: records.reduce((t, r) => t + Number(r.working_hours || 0), 0).toFixed(
-      2
-    ),
+    hours: records
+      .reduce((t, r) => t + Number(r.working_hours || 0), 0)
+      .toFixed(2),
   };
 
   /* ================= ACTIONS ================= */
@@ -140,28 +138,16 @@ const EmployeeDashboard = () => {
   return (
     <div className="space-y-8">
 
-      {/* ================= LEAVE SUMMARY ================= */}
+      {/* ================= LEAVE CARDS ================= */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <LeaveCard
-          title="Total Leaves (Year)"
-          value={leaveSummary.total}
-          color="blue"
-        />
-        <LeaveCard
-          title="Leaves Taken"
-          value={leaveSummary.taken}
-          color="red"
-        />
-        <LeaveCard
-          title="Balance Leaves"
-          value={leaveSummary.balance}
-          color="green"
-        />
-         <SummaryCard title="Total Hours" value={`${summary.hours} hrs`} color="blue" />
+        <LeaveCard title="Total Leaves (Year)" value={leaveSummary.total} />
+        <LeaveCard title="Leaves Taken" value={leaveSummary.taken} />
+        <LeaveCard title="Balance Leaves" value={leaveSummary.balance} />
+        <LeaveCard title="Total Hours" value={`${summary.hours} hrs`} />
       </div>
 
       {/* ================= TODAY ================= */}
-      <div className="bg-gradient-to-r from-blue-50 to-white p-6 rounded-xl shadow border">
+      <div className="bg-white p-6 rounded-xl shadow border">
         <h3 className="text-lg font-semibold mb-4">Today Attendance</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-sm">
@@ -177,7 +163,7 @@ const EmployeeDashboard = () => {
           {!today?.sign_in && (
             <button
               onClick={handleSignIn}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg"
+              className="bg-green-600 text-white px-6 py-2 rounded"
             >
               Sign In
             </button>
@@ -185,7 +171,7 @@ const EmployeeDashboard = () => {
           {today?.sign_in && !today?.sign_out && (
             <button
               onClick={handleSignOut}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg"
+              className="bg-red-600 text-white px-6 py-2 rounded"
             >
               Sign Out
             </button>
@@ -194,62 +180,45 @@ const EmployeeDashboard = () => {
       </div>
 
       {/* ================= RECENT ATTENDANCE ================= */}
-      <div className="bg-white rounded-xl shadow border p-6">
-        <div className="flex justify-between items-center mb-4">
+      <div className="bg-white p-6 rounded-xl shadow border">
+        <div className="flex justify-between mb-4">
           <h3 className="font-semibold">Recent Attendance</h3>
           <button
             onClick={() => navigate("/employee/attendance")}
-            className="text-blue-600 text-sm hover:underline"
+            className="text-blue-600 text-sm"
           >
-            View Full History →
+            View All →
           </button>
         </div>
 
-        <div className="space-y-3">
-          {records.slice(0, 3).map((r) => (
-            <div
-              key={r.id}
-              className="flex justify-between items-center border rounded-lg p-4"
-            >
-              <div>
-                <p className="font-medium">{r.date}</p>
-                <p className="text-xs text-gray-500">
-                  {r.sign_in || "-"} → {r.sign_out || "-"}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <span className="text-sm">{r.working_hours} hrs</span>
-                <StatusBadge status={r.status} />
-              </div>
+        {records.slice(0, 3).map((r) => (
+          <div
+            key={r.id}
+            className="flex justify-between items-center border rounded p-4 mb-2"
+          >
+            <div>
+              <p className="font-medium">{r.date}</p>
+              <p className="text-xs text-gray-500">
+                {r.sign_in || "-"} → {r.sign_out || "-"}
+              </p>
             </div>
-          ))}
-
-          {records.length === 0 && (
-            <p className="text-center text-gray-500 py-6">
-              No attendance records
-            </p>
-          )}
-        </div>
+            <div className="flex items-center gap-4">
+              <span>{r.working_hours} hrs</span>
+              <StatusBadge status={r.status} />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 };
 
-/* ================= UI COMPONENTS ================= */
+/* ================= UI ================= */
 
-const SummaryCard = ({ title, value, color }) => (
-  <div className="bg-white rounded-xl shadow border p-5">
+const LeaveCard = ({ title, value }) => (
+  <div className="bg-white p-5 rounded-xl shadow border">
     <p className="text-sm text-gray-500">{title}</p>
-    <h2 className={`text-3xl font-bold text-${color}-600 mt-1`}>{value}</h2>
-  </div>
-);
-
-const LeaveCard = ({ title, value, color }) => (
-  <div className="bg-white rounded-xl shadow border p-5">
-    <p className="text-sm text-gray-500">{title}</p>
-    <h2 className={`text-3xl font-bold text-${color}-600 mt-2`}>{value}</h2>
-    <p className="text-xs text-gray-400 mt-1">{new Date().getFullYear()}</p>
+    <h2 className="text-3xl font-bold mt-2">{value}</h2>
   </div>
 );
 
@@ -269,11 +238,7 @@ const StatusBadge = ({ status }) => {
   };
 
   return (
-    <span
-      className={`px-3 py-1 text-xs rounded-full ${
-        map[status] || map.NOT_MARKED
-      }`}
-    >
+    <span className={`px-3 py-1 text-xs rounded-full ${map[status]}`}>
       {status}
     </span>
   );

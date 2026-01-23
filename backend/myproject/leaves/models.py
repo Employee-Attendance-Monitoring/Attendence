@@ -44,3 +44,19 @@ class Leave(models.Model):
 
     def __str__(self):
         return f"{self.user.email} | {self.leave_type} | {self.status}"
+
+
+# ✅ NEW MODEL (CORRECT)
+# leaves/models.py
+class LeaveBalance(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="leave_balance"
+    )
+    total_leaves = models.PositiveIntegerField(default=12)
+    leaves_taken = models.PositiveIntegerField(default=0)  # ✅ ADD THIS
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.email} | Total: {self.total_leaves}"

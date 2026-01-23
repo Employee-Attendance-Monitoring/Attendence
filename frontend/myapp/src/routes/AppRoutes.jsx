@@ -22,6 +22,7 @@ import MyAttendance from "../employee/attendance/MyAttendance";
 import ApplyLeave from "../employee/leave/ApplyLeave";
 import HolidayCalendar from "../employee/holiday/HolidayCalendar";
 import AdminAttendancePage from "../admin/attendance/AdminAttendancePage";
+import LeaveBalancePage from "../admin/leaves/LeaveBalancePage";
 
 const AppRoutes = () => {
   return (
@@ -39,7 +40,9 @@ const AppRoutes = () => {
           <Route path="employees/edit/:id" element={<EditEmployee />} />
           <Route path="employees/view/:id" element={<EmployeeView />} />
           <Route path="holidays" element={<HolidayManagement />} />
-          <Route path="/admin/attendance" element={<AdminAttendancePage />}/>
+          <Route path="attendance" element={<AdminAttendancePage />} />
+          <Route path="leave-balance" element={<LeaveBalancePage />} />
+
         </Route>
       </Route>
 
