@@ -12,9 +12,8 @@ import EmployeeList from "../admin/employees/EmployeeList";
 import EditEmployee from "../admin/employees/EditEmployee";
 import AddEmployee from "../admin/employees/AddEmployee";
 import EmployeeView from "../admin/employees/EmployeeView";
-import AttendanceReport from "../admin/attendance/AttendanceReport";
 import HolidayManagement from "../admin/holidays/HolidayManagement";
-import LeaveApproval from "../admin/leaves/LeaveApproval";
+
 
 /* ---------- EMPLOYEE PAGES ---------- */
 import EmployeeDashboard from "../employee/dashboard/EmployeeDashboard";
@@ -22,6 +21,7 @@ import MyProfile from "../employee/profile/MyProfile";
 import MyAttendance from "../employee/attendance/MyAttendance";
 import ApplyLeave from "../employee/leave/ApplyLeave";
 import HolidayCalendar from "../employee/holiday/HolidayCalendar";
+import AdminAttendancePage from "../admin/attendance/AdminAttendancePage";
 
 const AppRoutes = () => {
   return (
@@ -38,10 +38,8 @@ const AppRoutes = () => {
           <Route path="employees/add" element={<AddEmployee />} />
           <Route path="employees/edit/:id" element={<EditEmployee />} />
           <Route path="employees/view/:id" element={<EmployeeView />} />
-
-          <Route path="attendance" element={<AttendanceReport />} />
           <Route path="holidays" element={<HolidayManagement />} />
-          <Route path="leaves" element={<LeaveApproval />} />
+          <Route path="/admin/attendance" element={<AdminAttendancePage />}/>
         </Route>
       </Route>
 
