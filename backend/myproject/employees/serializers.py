@@ -173,3 +173,14 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             )
 
      return instance
+    
+class EmployeeDropdownSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email")
+
+    class Meta:
+        model = EmployeeProfile
+        fields = [
+            "email",
+            "department",   # ✅ THIS IS THE KEY
+        ]
+

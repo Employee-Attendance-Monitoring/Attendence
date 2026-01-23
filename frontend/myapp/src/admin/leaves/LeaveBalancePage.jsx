@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { getEmployeeDropdown } from "../../api/employeeApi";
-import { setLeaveBalance } from "../../api/leaveApi";
+import {
+  setLeaveBalance,
+  getLeaveSummary,
+} from "../../api/leaveApi";
 
 const LeaveBalancePage = () => {
   const [tab, setTab] = useState("ALL"); // ALL | INDIVIDUAL
@@ -9,12 +12,28 @@ const LeaveBalancePage = () => {
   const [totalLeave, setTotalLeave] = useState(12);
   const [loading, setLoading] = useState(false);
 
+  const [summary, setSummary] = useState(null);
+
+  /* ================= LOAD EMPLOYEES ================= */
   useEffect(() => {
     getEmployeeDropdown().then((res) => {
       setEmployees(res.data || []);
     });
   }, []);
 
+  /* ================= LOAD INDIVIDUAL SUMMARY ================= */
+  useEffect(() => {
+    if (tab === "INDIVIDUAL" && employee) {
+      getLeaveSummary(employee).then((res) => {
+        setSummary(res.data);
+        setTotalLeave(res.data.total);
+      });
+    } else {
+      setSummary(null);
+    }
+  }, [employee, tab]);
+
+  /* ================= SAVE ================= */
   const handleSave = async () => {
     if (!totalLeave || totalLeave <= 0) {
       alert("Please enter valid total leave");
@@ -80,6 +99,15 @@ const LeaveBalancePage = () => {
         </button>
       </div>
 
+      {/* ================= SUMMARY CARDS ================= */}
+      {summary && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card title="Total Leaves" value={summary.total} color="blue" />
+          <Card title="Leaves Taken" value={summary.taken} color="red" />
+          <Card title="Balance Leaves" value={summary.balance} color="green" />
+        </div>
+      )}
+
       {/* ================= FORM ================= */}
       <div className="bg-white p-6 rounded shadow space-y-4 max-w-md">
         {tab === "INDIVIDUAL" && (
@@ -126,5 +154,16 @@ const LeaveBalancePage = () => {
     </div>
   );
 };
+
+/* ================= UI CARD ================= */
+
+const Card = ({ title, value, color }) => (
+  <div className="bg-white rounded-xl shadow border p-5">
+    <p className="text-sm text-gray-500">{title}</p>
+    <h2 className={`text-3xl font-bold text-${color}-600 mt-2`}>
+      {value}
+    </h2>
+  </div>
+);
 
 export default LeaveBalancePage;

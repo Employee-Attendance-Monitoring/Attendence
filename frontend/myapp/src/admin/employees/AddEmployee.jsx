@@ -1,8 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 
 const COMPANY_NAME = "Quandatum Analytics";
+
+/* ================= OPTIONS ================= */
+const DEPARTMENTS = [
+  "Sales Department",
+  "Development Department",
+  "HR Department",
+  "Finance Department",
+  "Support Department",
+];
+
+const ROLES = [
+  "Full Stack Developer",
+  "Backend Developer",
+  "UI / UX Designer",
+  "QA Engineer",
+  "Project Manager",
+];
+
+const GRADES = ["Senior", "Junior", "Intern"];
 
 const Label = ({ text, required }) => (
   <label className="text-sm font-medium text-gray-700 mb-1 block">
@@ -25,6 +44,10 @@ const AddEmployee = () => {
     employee_code: "",
     full_name: "",
     department: "",
+
+    role: "",
+    grade: "",
+    address: "",
     date_of_joining: "",
     phone_number: "",
     pancard_number: "",
@@ -37,6 +60,28 @@ const AddEmployee = () => {
     },
     family_members: [],
   });
+
+  /* ================= AUTO EMPLOYEE CODE ================= */
+  useEffect(() => {
+  const generateEmpCode = async () => {
+    try {
+      const res = await api.get("/employees/list/");
+      const count = res.data.length + 1;
+      const code = `EMP${String(count).padStart(3, "0")}`;
+      setFormData((prev) => ({
+        ...prev,
+        employee_code: code,
+      }));
+    } catch {
+      setFormData((prev) => ({
+        ...prev,
+        employee_code: "EMP001",
+      }));
+    }
+  };
+
+  generateEmpCode();
+}, []);
 
   /* ================= HANDLERS ================= */
   const handleChange = (e) =>
@@ -95,8 +140,7 @@ const AddEmployee = () => {
     } catch (err) {
       console.error(err);
       alert(
-        err.response?.data?.detail ||
-          "Failed to create employee ❌"
+        err.response?.data?.detail || "Failed to create employee ❌"
       );
       setSubmitting(false);
     }
@@ -139,7 +183,7 @@ const AddEmployee = () => {
                 />
                 <span
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-2.5 cursor-pointer text-gray-600"
+                  className="absolute right-3 top-2.5 cursor-pointer"
                 >
                   👁
                 </span>
@@ -147,13 +191,11 @@ const AddEmployee = () => {
             </div>
 
             <div>
-              <Label text="Employee Code" required />
+              <Label text="Employee ID" />
               <input
-                name="employee_code"
-                placeholder="EMP001"
-                onChange={handleChange}
-                className={inputClass}
-                required
+                value={formData.employee_code}
+                disabled
+                className={inputClass + " bg-gray-100"}
               />
             </div>
 
@@ -167,14 +209,58 @@ const AddEmployee = () => {
               />
             </div>
 
+            {/* DEPARTMENT DROPDOWN */}
             <div>
               <Label text="Department" required />
-              <input
+              <select
                 name="department"
                 onChange={handleChange}
                 className={inputClass}
                 required
-              />
+              >
+                <option value="">Select Department</option>
+                {DEPARTMENTS.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* ROLE DROPDOWN */}
+            <div>
+              <Label text="Role" required />
+              <select
+                name="role"
+                onChange={handleChange}
+                className={inputClass}
+                required
+              >
+                <option value="">Select Role</option>
+                {ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* GRADE */}
+            <div>
+              <Label text="Grade" required />
+              <select
+                name="grade"
+                onChange={handleChange}
+                className={inputClass}
+                required
+              >
+                <option value="">Select Grade</option>
+                {GRADES.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -185,8 +271,7 @@ const AddEmployee = () => {
                 className={inputClass}
               />
             </div>
-
-            <div>
+             <div>
               <Label text="Company Name" />
               <input
                 value={COMPANY_NAME}
@@ -208,6 +293,18 @@ const AddEmployee = () => {
           </div>
         </section>
 
+        {/* ADDRESS */}
+        <section>
+          <h2 className="text-lg font-semibold mb-4">Address</h2>
+          <textarea
+            name="address"
+            rows="3"
+            onChange={handleChange}
+            className={inputClass}
+            placeholder="Employee address"
+          />
+        </section>
+
         {/* PHOTO */}
         <section>
           <h2 className="text-lg font-semibold mb-4">Profile Photo</h2>
@@ -220,7 +317,6 @@ const AddEmployee = () => {
             <input type="file" accept="image/*" onChange={handlePhotoChange} />
           </div>
         </section>
-
         {/* ID PROOF */}
         <section>
           <h2 className="text-lg font-semibold mb-4">ID Proof</h2>
@@ -311,7 +407,7 @@ const AddEmployee = () => {
                 onChange={(e) =>
                   updateFamilyMember(i, "relationship", e.target.value)
                 }
-              />
+                  />
               <input
                 placeholder="Phone Number"
                 className={inputClass}
@@ -331,6 +427,7 @@ const AddEmployee = () => {
             + Add Family Member
           </button>
         </section>
+
 
         {/* SUBMIT */}
         <button

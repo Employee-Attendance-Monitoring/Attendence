@@ -4,7 +4,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 
 from .models import EmployeeProfile
-from .serializers import EmployeeProfileSerializer
+from .serializers import EmployeeProfileSerializer,EmployeeDropdownSerializer
 from accounts.models import User
 from accounts.permissions import IsAdmin
 from rest_framework.permissions import IsAuthenticated
@@ -148,4 +148,10 @@ class EmployeeDropdownView(APIView):
         users = User.objects.filter(is_staff=False).values(
             "id", "email"
         )
-        return Response(users)    
+        return Response(users)   
+     
+class EmployeeDropdownView(APIView):
+    def get(self, request):
+        employees = EmployeeProfile.objects.select_related("user")
+        serializer = EmployeeDropdownSerializer(employees, many=True)
+        return Response(serializer.data)

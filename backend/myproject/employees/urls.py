@@ -13,5 +13,6 @@ urlpatterns = [
     path("<int:pk>/", EmployeeDetailView.as_view()), # GET / PUT
     path("<int:pk>/delete/", EmployeeDeleteView.as_view()),
     path("dropdown/", EmployeeDropdownView.as_view()),
+    
 
 ]

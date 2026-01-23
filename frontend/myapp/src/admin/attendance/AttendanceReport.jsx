@@ -13,7 +13,12 @@ const AttendanceReport = () => {
   const [month, setMonth] = useState("");
   const [employee, setEmployee] = useState("all");
 
+  /* ✅ NEW */
+  const [department, setDepartment] = useState("all");
+
   const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState([]); // ✅ NEW
+
   const [records, setRecords] = useState([]);
   const [leaveSummary, setLeaveSummary] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +26,14 @@ const AttendanceReport = () => {
   /* ================= LOAD EMPLOYEES ================= */
   useEffect(() => {
     getEmployeeDropdown().then((res) => {
-      setEmployees(res.data || []);
+      const data = res.data || [];
+      setEmployees(data);
+
+      // ✅ extract unique departments
+      const uniqueDepartments = [
+        ...new Set(data.map((e) => e.department).filter(Boolean)),
+      ];
+      setDepartments(uniqueDepartments);
     });
   }, []);
 
@@ -56,14 +68,24 @@ const AttendanceReport = () => {
 
   /* ================= FILTER ================= */
   const filteredRecords = useMemo(() => {
+    let data = [...records];
+
+    if (department !== "all") {
+      data = data.filter(
+        (r) => r.department === department
+      );
+    }
+
     if (viewMode === "MONTHLY" && month) {
-      return records.filter((r) => r.date.startsWith(month));
+      data = data.filter((r) => r.date.startsWith(month));
     }
+
     if (viewMode === "DAILY" && date) {
-      return records.filter((r) => r.date === date);
+      data = data.filter((r) => r.date === date);
     }
-    return records;
-  }, [records, date, month, viewMode]);
+
+    return data;
+  }, [records, date, month, viewMode, department]);
 
   /* ================= MONTH SUMMARY ================= */
   const summary = useMemo(() => {
@@ -112,7 +134,6 @@ const AttendanceReport = () => {
           Monthly View
         </button>
 
-        {/* ✅ NEW BUTTON */}
         <button
           onClick={() => navigate("/admin/leave-balance")}
           className="px-4 py-2 rounded bg-purple-600 text-white"
@@ -122,7 +143,7 @@ const AttendanceReport = () => {
       </div>
 
       {/* ================= FILTERS ================= */}
-      <div className="bg-white p-4 rounded shadow grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-white p-4 rounded shadow grid grid-cols-1 md:grid-cols-4 gap-4">
         {viewMode === "DAILY" && (
           <div>
             <label className="text-sm">Date</label>
@@ -147,6 +168,24 @@ const AttendanceReport = () => {
           </div>
         )}
 
+        {/* ✅ DEPARTMENT FILTER */}
+        <div>
+          <label className="text-sm">Department</label>
+          <select
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+          >
+            <option value="all">All Departments</option>
+            {departments.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* EMPLOYEE FILTER */}
         <div>
           <label className="text-sm">Employee</label>
           <select
@@ -254,9 +293,7 @@ const StatusBadge = ({ status }) => {
     HALF_DAY: "bg-yellow-100 text-yellow-700",
   };
   return (
-    <span
-      className={`px-3 py-1 rounded-full text-xs ${map[status]}`}
-    >
+    <span className={`px-3 py-1 rounded-full text-xs ${map[status]}`}>
       {status}
     </span>
   );
