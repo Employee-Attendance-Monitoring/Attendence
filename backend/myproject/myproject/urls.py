@@ -29,6 +29,9 @@ urlpatterns = [
     path("api/attendance/", include("attendance.urls")),
     path("api/leaves/", include("leaves.urls")),
     path("api/holidays/", include("holidays.urls")),
+    path("api/organization/", include("organization.urls")),
+
+
 ]
 from django.conf import settings
 from django.conf.urls.static import static

@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "attendance",
     "leaves",
     "holidays",
+    "organization",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

@@ -1,26 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import {
+  getDepartments,
+  getRoles,
+} from "../../api/organizationApi";
 
 const COMPANY_NAME = "Quandatum Analytics";
-
-/* ================= OPTIONS ================= */
-const DEPARTMENTS = [
-  "Sales Department",
-  "Development Department",
-  "HR Department",
-  "Finance Department",
-  "Support Department",
-];
-
-const ROLES = [
-  "Full Stack Developer",
-  "Backend Developer",
-  "UI / UX Designer",
-  "QA Engineer",
-  "Project Manager",
-];
-
 const GRADES = ["Senior", "Junior", "Intern"];
 
 const Label = ({ text, required }) => (
@@ -34,9 +20,13 @@ const inputClass =
 
 const AddEmployee = () => {
   const navigate = useNavigate();
+
   const [submitting, setSubmitting] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  const [departments, setDepartments] = useState([]);
+  const [roles, setRoles] = useState([]);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -44,7 +34,6 @@ const AddEmployee = () => {
     employee_code: "",
     full_name: "",
     department: "",
-
     role: "",
     grade: "",
     address: "",
@@ -63,25 +52,32 @@ const AddEmployee = () => {
 
   /* ================= AUTO EMPLOYEE CODE ================= */
   useEffect(() => {
-  const generateEmpCode = async () => {
-    try {
-      const res = await api.get("/employees/list/");
-      const count = res.data.length + 1;
-      const code = `EMP${String(count).padStart(3, "0")}`;
-      setFormData((prev) => ({
-        ...prev,
-        employee_code: code,
-      }));
-    } catch {
-      setFormData((prev) => ({
-        ...prev,
-        employee_code: "EMP001",
-      }));
-    }
-  };
+    const generateEmpCode = async () => {
+      try {
+        const res = await api.get("/employees/list/");
+        const count = res.data.length + 1;
+        setFormData((prev) => ({
+          ...prev,
+          employee_code: `EMP${String(count).padStart(3, "0")}`,
+        }));
+      } catch {
+        setFormData((prev) => ({ ...prev, employee_code: "EMP001" }));
+      }
+    };
 
-  generateEmpCode();
-}, []);
+    generateEmpCode();
+  }, []);
+
+  /* ================= LOAD DEPARTMENT & ROLE ================= */
+  useEffect(() => {
+    getDepartments()
+      .then((res) => setDepartments(res.data || []))
+      .catch(() => setDepartments([]));
+
+    getRoles()
+      .then((res) => setRoles(res.data || []))
+      .catch(() => setRoles([]));
+  }, []);
 
   /* ================= HANDLERS ================= */
   const handleChange = (e) =>
@@ -139,9 +135,7 @@ const AddEmployee = () => {
       navigate("/admin/employees");
     } catch (err) {
       console.error(err);
-      alert(
-        err.response?.data?.detail || "Failed to create employee ❌"
-      );
+      alert("Failed to create employee ❌");
       setSubmitting(false);
     }
   };
@@ -160,15 +154,10 @@ const AddEmployee = () => {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
             <div>
               <Label text="Email" required />
-              <input
-                name="email"
-                type="email"
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
+              <input name="email" type="email" onChange={handleChange} className={inputClass} required />
             </div>
 
             <div>
@@ -192,54 +181,35 @@ const AddEmployee = () => {
 
             <div>
               <Label text="Employee ID" />
-              <input
-                value={formData.employee_code}
-                disabled
-                className={inputClass + " bg-gray-100"}
-              />
+              <input value={formData.employee_code} disabled className={inputClass + " bg-gray-100"} />
             </div>
 
             <div>
               <Label text="Full Name" required />
-              <input
-                name="full_name"
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
+              <input name="full_name" onChange={handleChange} className={inputClass} required />
             </div>
 
-            {/* DEPARTMENT DROPDOWN */}
+            {/* DEPARTMENT */}
             <div>
               <Label text="Department" required />
-              <select
-                name="department"
-                onChange={handleChange}
-                className={inputClass}
-                required
-              >
+              <select name="department" onChange={handleChange} className={inputClass} required>
                 <option value="">Select Department</option>
-                {DEPARTMENTS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
+                {departments.map((d) => (
+                  <option key={d.id} value={d.name}>
+                    {d.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* ROLE DROPDOWN */}
+            {/* ROLE */}
             <div>
               <Label text="Role" required />
-              <select
-                name="role"
-                onChange={handleChange}
-                className={inputClass}
-                required
-              >
+              <select name="role" onChange={handleChange} className={inputClass} required>
                 <option value="">Select Role</option>
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
+                {roles.map((r) => (
+                  <option key={r.id} value={r.name}>
+                    {r.name}
                   </option>
                 ))}
               </select>
@@ -248,48 +218,29 @@ const AddEmployee = () => {
             {/* GRADE */}
             <div>
               <Label text="Grade" required />
-              <select
-                name="grade"
-                onChange={handleChange}
-                className={inputClass}
-                required
-              >
+              <select name="grade" onChange={handleChange} className={inputClass} required>
                 <option value="">Select Grade</option>
                 {GRADES.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
+                  <option key={g} value={g}>{g}</option>
                 ))}
               </select>
             </div>
 
             <div>
               <Label text="Phone Number" />
-              <input
-                name="phone_number"
-                onChange={handleChange}
-                className={inputClass}
-              />
+              <input name="phone_number" placeholder="+91XXXXXXXXXX" onChange={handleChange} className={inputClass} />
             </div>
-             <div>
+
+            <div>
               <Label text="Company Name" />
-              <input
-                value={COMPANY_NAME}
-                disabled
-                className={inputClass + " bg-gray-100"}
-              />
+              <input value={COMPANY_NAME} disabled className={inputClass + " bg-gray-100"} />
             </div>
 
             <div>
               <Label text="Date of Joining" required />
-              <input
-                type="date"
-                name="date_of_joining"
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
+              <input type="date" name="date_of_joining" onChange={handleChange} className={inputClass} required />
             </div>
+
           </div>
         </section>
 
@@ -317,117 +268,26 @@ const AddEmployee = () => {
             <input type="file" accept="image/*" onChange={handlePhotoChange} />
           </div>
         </section>
-        {/* ID PROOF */}
-        <section>
-          <h2 className="text-lg font-semibold mb-4">ID Proof</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input
-              name="pancard_number"
-              onChange={handleChange}
-              className={inputClass + " uppercase"}
-              placeholder="PAN Card Number"
-            />
-            <input
-              name="aadhaar_number"
-              onChange={handleChange}
-              className={inputClass}
-              placeholder="Aadhaar Number"
-              maxLength={12}
-            />
-          </div>
-        </section>
-
-        {/* BANK DETAILS */}
-        <section>
-          <h2 className="text-lg font-semibold mb-4">Bank Details</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <input
-              placeholder="Bank Name"
-              className={inputClass}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  bank_detail: {
-                    ...formData.bank_detail,
-                    bank_name: e.target.value,
-                  },
-                })
-              }
-            />
-            <input
-              placeholder="Account Number"
-              className={inputClass}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  bank_detail: {
-                    ...formData.bank_detail,
-                    account_number: e.target.value,
-                  },
-                })
-              }
-            />
-            <input
-              placeholder="IFSC Code"
-              className={inputClass}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  bank_detail: {
-                    ...formData.bank_detail,
-                    ifsc_code: e.target.value,
-                  },
-                })
-              }
-            />
-          </div>
-        </section>
 
         {/* FAMILY MEMBERS */}
         <section>
           <h2 className="text-lg font-semibold mb-4">Family Members</h2>
 
           {formData.family_members.map((m, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3"
-            >
-              <input
-                placeholder="Name"
-                className={inputClass}
-                value={m.name}
-                onChange={(e) =>
-                  updateFamilyMember(i, "name", e.target.value)
-                }
-              />
-              <input
-                placeholder="Relationship"
-                className={inputClass}
-                value={m.relationship}
-                onChange={(e) =>
-                  updateFamilyMember(i, "relationship", e.target.value)
-                }
-                  />
-              <input
-                placeholder="Phone Number"
-                className={inputClass}
-                value={m.phone_number}
-                onChange={(e) =>
-                  updateFamilyMember(i, "phone_number", e.target.value)
-                }
-              />
+            <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+              <input placeholder="Name" className={inputClass} value={m.name}
+                onChange={(e) => updateFamilyMember(i, "name", e.target.value)} />
+              <input placeholder="Relationship" className={inputClass} value={m.relationship}
+                onChange={(e) => updateFamilyMember(i, "relationship", e.target.value)} />
+              <input placeholder="Phone Number" className={inputClass} value={m.phone_number}
+                onChange={(e) => updateFamilyMember(i, "phone_number", e.target.value)} />
             </div>
           ))}
 
-          <button
-            type="button"
-            onClick={addFamilyMember}
-            className="text-blue-600 font-medium"
-          >
+          <button type="button" onClick={addFamilyMember} className="text-blue-600 font-medium">
             + Add Family Member
           </button>
         </section>
-
 
         {/* SUBMIT */}
         <button

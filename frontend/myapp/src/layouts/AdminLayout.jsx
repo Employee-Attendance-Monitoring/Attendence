@@ -8,6 +8,9 @@ const AdminLayout = () => {
     { label: "Employees", to: "/admin/employees" },
     { label: "Attendance", to: "/admin/attendance" },
     { label: "Holidays", to: "/admin/holidays" },
+
+  //Organization
+ { label: "Organization", to: "/admin/organization" },
   ];
 
   return (

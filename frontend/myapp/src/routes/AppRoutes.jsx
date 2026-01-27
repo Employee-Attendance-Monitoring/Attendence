@@ -23,6 +23,7 @@ import ApplyLeave from "../employee/leave/ApplyLeave";
 import HolidayCalendar from "../employee/holiday/HolidayCalendar";
 import AdminAttendancePage from "../admin/attendance/AdminAttendancePage";
 import LeaveBalancePage from "../admin/leaves/LeaveBalancePage";
+import OrganizationPage from "../admin/organization/OrganizationPage";
 
 const AppRoutes = () => {
   return (
@@ -42,7 +43,7 @@ const AppRoutes = () => {
           <Route path="holidays" element={<HolidayManagement />} />
           <Route path="attendance" element={<AdminAttendancePage />} />
           <Route path="leave-balance" element={<LeaveBalancePage />} />
-
+         <Route path="organization" element={<OrganizationPage />} />
         </Route>
       </Route>
 
@@ -56,6 +57,7 @@ const AppRoutes = () => {
           <Route path="holiday" element={<HolidayCalendar />} />
         </Route>
       </Route>
+
 
       {/* ========== FALLBACK (LAST ONLY) ========== */}
       <Route path="*" element={<Navigate to="/login" replace />} />
