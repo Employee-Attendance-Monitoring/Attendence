@@ -1,7 +1,11 @@
 from django.db import models
+from django.core.validators import RegexValidator
 from accounts.models import User
 
 
+# =========================
+# EMPLOYEE PROFILE
+# =========================
 class EmployeeProfile(models.Model):
     user = models.OneToOneField(
         User,
@@ -19,21 +23,56 @@ class EmployeeProfile(models.Model):
 
     employee_code = models.CharField(max_length=20, unique=True)
     full_name = models.CharField(max_length=100)
-    date_of_joining = models.DateField()
 
-    department = models.CharField(max_length=100)  # KEEP THIS
+    date_of_joining = models.DateField()
+    date_of_birth = models.DateField(null=True, blank=True)
+
+    GENDER_CHOICES = (
+        ("MALE", "Male"),
+        ("FEMALE", "Female"),
+        ("OTHER", "Other"),
+    )
+    gender = models.CharField(
+        max_length=10,
+        choices=GENDER_CHOICES,
+        null=True,
+        blank=True
+    )
+
+    department = models.CharField(max_length=100)
+    role = models.CharField(max_length=100, null=True, blank=True)
+    grade = models.CharField(max_length=50, null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
 
     company_name = models.CharField(max_length=150)
-    phone_number = models.CharField(max_length=15, null=True, blank=True)
+
+    phone_number = models.CharField(
+        max_length=13,
+        validators=[
+            RegexValidator(
+                regex=r'^(\+91)?[6-9]\d{9}$',
+                message="Invalid Indian phone number"
+            )
+        ],
+        null=True,
+        blank=True
+    )
+
     pancard_number = models.CharField(max_length=10, null=True, blank=True)
     aadhaar_number = models.CharField(max_length=12, null=True, blank=True)
 
     photo = models.ImageField(upload_to="employees/photos/", null=True, blank=True)
 
+    created_at = models.DateTimeField(auto_now_add=True)
+
     def __str__(self):
         return f"{self.employee_code} - {self.full_name}"
 
 
+
+# =========================
+# FAMILY MEMBER
+# =========================
 class FamilyMember(models.Model):
     employee = models.ForeignKey(
         EmployeeProfile,
@@ -44,8 +83,15 @@ class FamilyMember(models.Model):
     name = models.CharField(max_length=100)
     relationship = models.CharField(max_length=50)
     date_of_birth = models.DateField(null=True, blank=True)
-    phone_number = models.CharField(   # ✅ NEW
-        max_length=15,
+
+    phone_number = models.CharField(
+        max_length=13,
+        validators=[
+            RegexValidator(
+                regex=r'^\+91[6-9]\d{9}$',
+                message="Phone number must be in +91XXXXXXXXXX format"
+            )
+        ],
         null=True,
         blank=True
     )
@@ -54,6 +100,9 @@ class FamilyMember(models.Model):
         return f"{self.name} ({self.relationship})"
 
 
+# =========================
+# BANK DETAILS
+# =========================
 class BankDetail(models.Model):
     employee = models.OneToOneField(
         EmployeeProfile,

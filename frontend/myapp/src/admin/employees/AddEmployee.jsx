@@ -8,6 +8,7 @@ import {
 
 const COMPANY_NAME = "Quandatum Analytics";
 const GRADES = ["Senior", "Junior", "Intern"];
+const GENDERS = ["MALE", "FEMALE", "OTHER"];
 
 const Label = ({ text, required }) => (
   <label className="text-sm font-medium text-gray-700 mb-1 block">
@@ -31,16 +32,22 @@ const AddEmployee = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    employee_code: "",
+    // employee_code: "",
     full_name: "",
     department: "",
     role: "",
     grade: "",
+
+    gender: "",
+    date_of_birth: "",
+
     address: "",
     date_of_joining: "",
     phone_number: "",
+
     pancard_number: "",
     aadhaar_number: "",
+
     photo: null,
     bank_detail: {
       bank_name: "",
@@ -51,22 +58,7 @@ const AddEmployee = () => {
   });
 
   /* ================= AUTO EMPLOYEE CODE ================= */
-  useEffect(() => {
-    const generateEmpCode = async () => {
-      try {
-        const res = await api.get("/employees/list/");
-        const count = res.data.length + 1;
-        setFormData((prev) => ({
-          ...prev,
-          employee_code: `EMP${String(count).padStart(3, "0")}`,
-        }));
-      } catch {
-        setFormData((prev) => ({ ...prev, employee_code: "EMP001" }));
-      }
-    };
-
-    generateEmpCode();
-  }, []);
+  
 
   /* ================= LOAD DEPARTMENT & ROLE ================= */
   useEffect(() => {
@@ -78,6 +70,10 @@ const AddEmployee = () => {
       .then((res) => setRoles(res.data || []))
       .catch(() => setRoles([]));
   }, []);
+
+  /* ================= HELPERS ================= */
+  const isValidIndianPhone = (phone) =>
+    /^(\+91)?[6-9]\d{9}$/.test(phone);
 
   /* ================= HANDLERS ================= */
   const handleChange = (e) =>
@@ -107,38 +103,57 @@ const AddEmployee = () => {
   };
 
   /* ================= SUBMIT ================= */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (submitting) return;
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (submitting) return;
 
-    try {
-      setSubmitting(true);
-      const payload = new FormData();
+  if (formData.phone_number && !isValidIndianPhone(formData.phone_number)) {
+    alert("Enter valid Indian phone number (+91XXXXXXXXXX)");
+    return;
+  }
 
-      payload.append("company_name", COMPANY_NAME);
+  try {
+    setSubmitting(true);
 
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === "bank_detail" || key === "family_members") {
-          payload.append(key, JSON.stringify(value));
-        } else if (key === "photo") {
-          if (value) payload.append("photo", value);
-        } else {
-          payload.append(key, value);
-        }
-      });
+    const payload = new FormData();
 
-      await api.post("/employees/create/", payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+    // REQUIRED field from backend
+    payload.append("company_name", COMPANY_NAME);
 
-      alert("Employee created successfully ✅");
-      navigate("/admin/employees");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to create employee ❌");
-      setSubmitting(false);
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key === "bank_detail" || key === "family_members") {
+        payload.append(key, JSON.stringify(value));
+      } else if (key === "photo") {
+        if (value) payload.append("photo", value);
+      } else {
+        payload.append(key, value ?? "");
+      }
+    });
+
+    // ✅ DO NOT set headers manually
+    await api.post("/employees/create/", payload);
+
+    alert("Employee created successfully ✅");
+    navigate("/admin/employees");
+
+  } catch (err) {
+    console.error("AXIOS ERROR:", err);
+
+    if (err.response) {
+      console.error("DJANGO ERROR:", err.response.data);
+      alert(
+        typeof err.response.data === "string"
+          ? err.response.data
+          : JSON.stringify(err.response.data, null, 2)
+      );
+    } else {
+      alert("Server not reachable");
     }
-  };
+
+    setSubmitting(false);
+  }
+};
+
 
   /* ================= UI ================= */
   return (
@@ -179,14 +194,36 @@ const AddEmployee = () => {
               </div>
             </div>
 
-            <div>
+            {/* <div>
               <Label text="Employee ID" />
               <input value={formData.employee_code} disabled className={inputClass + " bg-gray-100"} />
-            </div>
+            </div> */}
 
             <div>
               <Label text="Full Name" required />
               <input name="full_name" onChange={handleChange} className={inputClass} required />
+            </div>
+
+            {/* GENDER */}
+            <div>
+              <Label text="Gender" />
+              <select name="gender" onChange={handleChange} className={inputClass}>
+                <option value="">Select Gender</option>
+                {GENDERS.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* DOB */}
+            <div>
+              <Label text="Date of Birth" />
+              <input
+                type="date"
+                name="date_of_birth"
+                onChange={handleChange}
+                className={inputClass}
+              />
             </div>
 
             {/* DEPARTMENT */}
@@ -195,9 +232,7 @@ const AddEmployee = () => {
               <select name="department" onChange={handleChange} className={inputClass} required>
                 <option value="">Select Department</option>
                 {departments.map((d) => (
-                  <option key={d.id} value={d.name}>
-                    {d.name}
-                  </option>
+                  <option key={d.id} value={d.name}>{d.name}</option>
                 ))}
               </select>
             </div>
@@ -208,9 +243,7 @@ const AddEmployee = () => {
               <select name="role" onChange={handleChange} className={inputClass} required>
                 <option value="">Select Role</option>
                 {roles.map((r) => (
-                  <option key={r.id} value={r.name}>
-                    {r.name}
-                  </option>
+                  <option key={r.id} value={r.name}>{r.name}</option>
                 ))}
               </select>
             </div>
@@ -228,7 +261,12 @@ const AddEmployee = () => {
 
             <div>
               <Label text="Phone Number" />
-              <input name="phone_number" placeholder="+91XXXXXXXXXX" onChange={handleChange} className={inputClass} />
+              <input
+                name="phone_number"
+                placeholder="+91XXXXXXXXXX"
+                onChange={handleChange}
+                className={inputClass}
+              />
             </div>
 
             <div>
@@ -275,11 +313,11 @@ const AddEmployee = () => {
 
           {formData.family_members.map((m, i) => (
             <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-              <input placeholder="Name" className={inputClass} value={m.name}
+              <input className={inputClass} placeholder="Name" value={m.name}
                 onChange={(e) => updateFamilyMember(i, "name", e.target.value)} />
-              <input placeholder="Relationship" className={inputClass} value={m.relationship}
+              <input className={inputClass} placeholder="Relationship" value={m.relationship}
                 onChange={(e) => updateFamilyMember(i, "relationship", e.target.value)} />
-              <input placeholder="Phone Number" className={inputClass} value={m.phone_number}
+              <input className={inputClass} placeholder="+91XXXXXXXXXX" value={m.phone_number}
                 onChange={(e) => updateFamilyMember(i, "phone_number", e.target.value)} />
             </div>
           ))}
@@ -289,11 +327,10 @@ const AddEmployee = () => {
           </button>
         </section>
 
-        {/* SUBMIT */}
         <button
           type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg"
           disabled={submitting}
+          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg"
         >
           {submitting ? "Creating..." : "Create Employee"}
         </button>
