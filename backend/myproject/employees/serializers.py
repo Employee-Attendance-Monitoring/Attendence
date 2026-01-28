@@ -1,10 +1,22 @@
 from rest_framework import serializers
 from django.db import transaction
-from django.db.models import Max
+from django.core.mail import send_mail
+from django.conf import settings
+import secrets
+import string
+import json
+
 from accounts.models import User
 from organization.models import Organization
 from .models import EmployeeProfile, FamilyMember, BankDetail
-import json
+
+
+# =========================
+# PASSWORD GENERATOR
+# =========================
+def generate_password(length=10):
+    chars = string.ascii_letters + string.digits + "@#$%"
+    return "".join(secrets.choice(chars) for _ in range(length))
 
 
 # =========================
@@ -43,9 +55,9 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
     family_members = FamilyMemberSerializer(many=True, required=False)
     bank_detail = BankDetailSerializer(required=False)
 
-    # auth fields
+    # auth
+
     email = serializers.EmailField(write_only=True)
-    password = serializers.CharField(write_only=True, min_length=3)
 
     # display
     email_display = serializers.EmailField(
@@ -73,7 +85,6 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             "id",
 
             "email",
-            "password",
             "email_display",
 
             "employee_code",
@@ -99,6 +110,15 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
         ]
 
     # ================= CREATE =================
+
+    def validate_email(self, value):
+     if User.objects.filter(email=value).exists():
+        raise serializers.ValidationError(
+            "Employee with this email already exists."
+        )
+     return value
+    
+    
     def create(self, validated_data):
         request = self.context.get("request")
 
@@ -111,7 +131,9 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             family_data = json.loads(family_data)
 
         email = validated_data.pop("email")
-        password = validated_data.pop("password")
+
+        # ✅ AUTO-GENERATE PASSWORD
+        raw_password = generate_password()
 
         # ✅ GET ACTIVE ORGANIZATION
         organization = Organization.objects.filter(is_active=True).first()
@@ -120,7 +142,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                 {"organization": "Active organization not found"}
             )
 
-        # ✅ GENERATE UNIQUE EMPLOYEE CODE (SAFE)
+        # ✅ GENERATE EMPLOYEE CODE
         last_employee = (
             EmployeeProfile.objects
             .filter(organization=organization)
@@ -128,24 +150,22 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             .first()
         )
 
-        next_number = 1
-        if last_employee:
-            next_number = last_employee.id + 1
-
+        next_number = last_employee.id + 1 if last_employee else 1
         employee_code = f"{organization.emp_prefix}{str(next_number).zfill(3)}"
 
-       
-
-        # ✅ FORCE COMPANY NAME FROM ORGANIZATION
+        # ✅ FORCE COMPANY NAME
         validated_data["company_name"] = organization.name
 
         with transaction.atomic():
+            # CREATE USER
             user = User.objects.create_user(
                 email=email,
-                password=password,
-                role="EMPLOYEE"
+                password=raw_password,
+                role="EMPLOYEE",
+                is_active=True
             )
 
+            # CREATE EMPLOYEE PROFILE
             employee = EmployeeProfile.objects.create(
                 user=user,
                 organization=organization,
@@ -153,15 +173,32 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                 **validated_data
             )
 
+            # BANK DETAIL
             if bank_data:
                 BankDetail.objects.create(employee=employee, **bank_data)
 
+            # FAMILY MEMBERS
             if family_data:
                 for member in family_data:
                     FamilyMember.objects.create(
                         employee=employee,
                         **member
                     )
+
+        # ✅ SEND EMAIL WITH PASSWORD
+        send_mail(
+            subject="Your Employee Account Credentials",
+            message=(
+                f"Hello {employee.full_name},\n\n"
+                f"Your employee account has been created.\n\n"
+                f"Login Email: {email}\n"
+                f"Temporary Password: {raw_password}\n\n"
+                f"Please login and change your password immediately."
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+        )
 
         return employee
 

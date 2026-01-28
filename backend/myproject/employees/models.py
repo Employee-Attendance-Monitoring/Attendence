@@ -1,5 +1,4 @@
 from django.db import models
-from django.core.validators import RegexValidator
 from accounts.models import User
 
 
@@ -46,14 +45,9 @@ class EmployeeProfile(models.Model):
 
     company_name = models.CharField(max_length=150)
 
+    # 🌍 International phone number support
     phone_number = models.CharField(
-        max_length=13,
-        validators=[
-            RegexValidator(
-                regex=r'^(\+91)?[6-9]\d{9}$',
-                message="Invalid Indian phone number"
-            )
-        ],
+        max_length=20,
         null=True,
         blank=True
     )
@@ -61,13 +55,16 @@ class EmployeeProfile(models.Model):
     pancard_number = models.CharField(max_length=10, null=True, blank=True)
     aadhaar_number = models.CharField(max_length=12, null=True, blank=True)
 
-    photo = models.ImageField(upload_to="employees/photos/", null=True, blank=True)
+    photo = models.ImageField(
+        upload_to="employees/photos/",
+        null=True,
+        blank=True
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.employee_code} - {self.full_name}"
-
 
 
 # =========================
@@ -85,13 +82,7 @@ class FamilyMember(models.Model):
     date_of_birth = models.DateField(null=True, blank=True)
 
     phone_number = models.CharField(
-        max_length=13,
-        validators=[
-            RegexValidator(
-                regex=r'^\+91[6-9]\d{9}$',
-                message="Phone number must be in +91XXXXXXXXXX format"
-            )
-        ],
+        max_length=20,
         null=True,
         blank=True
     )
