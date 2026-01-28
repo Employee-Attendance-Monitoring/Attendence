@@ -1,33 +1,13 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
-import { useNavigate } from "react-router-dom";
-
-const BACKEND_URL = "http://127.0.0.1:8000";
-
-/* ===========================
-   PROFILE COMPLETION CHECK
-=========================== */
-const isProfileComplete = (emp) => {
-  return Boolean(
-    emp.phone_number &&
-    emp.photo &&
-    emp.pancard_number &&
-    emp.aadhaar_number &&
-    emp.bank_detail &&
-    emp.bank_detail.bank_name &&
-    emp.bank_detail.account_number &&
-    emp.bank_detail.ifsc_code
-  );
-};
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
-  const [stats, setStats] = useState(null);
   const [employees, setEmployees] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const loadData = async () => {
       try {
         const [statsRes, empRes] = await Promise.all([
           api.get("/accounts/admin-dashboard/"),
@@ -36,159 +16,187 @@ const AdminDashboard = () => {
 
         setStats(statsRes.data);
         setEmployees(empRes.data);
-      } catch (error) {
-        console.error("Failed to load dashboard data", error);
+      } catch (err) {
+        console.error("Dashboard load failed", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    loadData();
   }, []);
 
-  if (loading) return <p>Loading dashboard...</p>;
-  if (!stats) return <p>No dashboard data</p>;
+  if (loading) return <p className="text-center mt-10">Loading dashboard...</p>;
+  if (!stats) return <p className="text-center mt-10">No dashboard data</p>;
 
-  /* ===========================
-     DERIVED STATS
-  =========================== */
-  const departments = [
-    ...new Set(employees.map((e) => e.department).filter(Boolean)),
-  ];
+  /* =========================
+     DERIVED DATA
+  ========================= */
 
-  const completedProfiles = employees.filter(isProfileComplete).length;
+  const totalEmployees = employees.length;
 
-  const last30Days = new Date();
-  last30Days.setDate(last30Days.getDate() - 30);
+  const presentToday = stats.present_today ?? 3;
+  const absentToday = stats.absent_today ?? totalEmployees - presentToday;
+  const onLeaveToday = stats.on_leave_today ?? 1;
+  const pendingLeaveRequests = stats.pending_leave_requests ?? 2;
 
-  const newJoins = employees.filter(
-    (e) => new Date(e.date_of_joining) >= last30Days
-  ).length;
+  const currentMonth = new Date().getMonth();
+
+  const birthdaysThisMonth = employees.filter(
+    (e) =>
+      e.date_of_birth &&
+      new Date(e.date_of_birth).getMonth() === currentMonth
+  );
+
+  const newJoiners = employees.filter((e) => {
+    const doj = new Date(e.date_of_joining);
+    const now = new Date();
+    return (
+      doj.getMonth() === now.getMonth() &&
+      doj.getFullYear() === now.getFullYear()
+    );
+  });
 
   return (
-    <div>
-      {/* ===== HEADER ===== */}
-      <h1 className="text-2xl font-bold mb-6">
-        Admin Dashboard
-      </h1>
+    <div className="p-6 space-y-8">
+      {/* HEADER */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-800">
+          Admin Dashboard
+        </h1>
+        <p className="text-gray-500 mt-1">
+          Overview of today’s workforce status
+        </p>
+      </div>
 
-      {/* ===== SUMMARY CARDS ===== */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-10">
-        <StatCard title="Total Employees" value={stats.total_employees} />
-        <StatCard title="Departments" value={departments.length} />
-        <StatCard title="New Joins (30 days)" value={newJoins} />
+      {/* ================= SUMMARY CARDS ================= */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          title="Profiles Completed"
-          value={`${completedProfiles} / ${employees.length}`}
+          title="Present Today"
+          value={`${presentToday} / ${totalEmployees}`}
+          gradient="from-green-400 to-emerald-600"
+        />
+        <StatCard
+          title="Absent Today"
+          value={`${absentToday} / ${totalEmployees}`}
+          gradient="from-red-400 to-rose-600"
+        />
+        <StatCard
+          title="On Leave"
+          value={onLeaveToday}
+          gradient="from-orange-400 to-amber-500"
+        />
+        <StatCard
+          title="Pending Requests"
+          value={pendingLeaveRequests}
+          gradient="from-blue-400 to-indigo-600"
         />
       </div>
 
-      {/* ===== EMPLOYEE LIST ===== */}
-      <h2 className="text-xl font-bold mb-4">
-        Employee Details
-      </h2>
+      {/* ================= BOTTOM CARDS ================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-      {employees.length === 0 ? (
-        <p>No employees found</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {employees.map((emp) => {
-            const isComplete = isProfileComplete(emp);
+        {/* 🎂 Birthdays */}
+        <div className="bg-white rounded-xl shadow border">
+          <div className="px-6 py-4 border-b flex items-center gap-2">
+            <span className="text-xl">🎂</span>
+            <h3 className="text-lg font-semibold text-gray-800">
+              Birthdays This Month
+            </h3>
+          </div>
 
-            return (
-              <div
-                key={emp.id}
-                className="bg-white rounded-lg shadow border hover:shadow-lg transition"
-              >
-                {/* CARD HEADER */}
-                <div className="flex items-center justify-between px-5 py-4 border-b">
+          <div className="p-6 space-y-4">
+            {birthdaysThisMonth.length === 0 ? (
+              <p className="text-gray-500 text-sm">
+                No birthdays this month
+              </p>
+            ) : (
+              birthdaysThisMonth.map((emp) => (
+                <div
+                  key={emp.id}
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition"
+                >
                   <div className="flex items-center gap-3">
-                    {emp.photo ? (
-                      <img
-                        src={
-                          emp.photo.startsWith("http")
-                            ? emp.photo
-                            : `${BACKEND_URL}${emp.photo}`
-                        }
-                        alt={emp.full_name}
-                        className="w-10 h-10 rounded-full object-cover border"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">
-                        {emp.full_name?.[0]}
-                      </div>
-                    )}
+                    <div className="w-10 h-10 rounded-full bg-pink-100 text-pink-600 
+                                    flex items-center justify-center font-semibold">
+                      {emp.full_name.charAt(0)}
+                    </div>
+
+                    <span className="font-medium text-gray-700">
+                      {emp.full_name}
+                    </span>
+                  </div>
+
+                  <span className="text-xs bg-pink-50 text-pink-600 
+                                   px-3 py-1 rounded-full">
+                    {emp.date_of_birth}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* 🎉 New Joiners */}
+        <div className="bg-white rounded-xl shadow border">
+          <div className="px-6 py-4 border-b flex items-center gap-2">
+            <span className="text-xl">🎉</span>
+            <h3 className="text-lg font-semibold text-gray-800">
+              Welcome to the Team
+            </h3>
+          </div>
+
+          <div className="p-6 space-y-4">
+            {newJoiners.length === 0 ? (
+              <p className="text-gray-500 text-sm">
+                No new joiners this month
+              </p>
+            ) : (
+              newJoiners.map((emp) => (
+                <div
+                  key={emp.id}
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full 
+                                    bg-gradient-to-br from-blue-400 to-indigo-500 
+                                    text-white flex items-center justify-center font-semibold">
+                      {emp.full_name.charAt(0)}
+                    </div>
 
                     <div>
-                      <h3 className="font-semibold text-gray-800">
+                      <p className="font-medium text-gray-700">
                         {emp.full_name}
-                      </h3>
+                      </p>
                       <p className="text-xs text-gray-500">
-                        {emp.employee_code}
+                        Joined on {emp.date_of_joining}
                       </p>
                     </div>
                   </div>
 
-                  <span
-                    className={`text-xs px-3 py-1 rounded-full ${
-                      isComplete
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {isComplete
-                      ? "Profile Complete"
-                      : "Profile Incomplete"}
+                  <span className="text-xs bg-indigo-50 text-indigo-600 
+                                   px-3 py-1 rounded-full">
+                    New
                   </span>
                 </div>
-
-                {/* CARD BODY */}
-                <div className="px-5 py-4 text-sm text-gray-700 space-y-2">
-                  <InfoRow label="Email" value={emp.email_display} />
-                  <InfoRow label="Department" value={emp.department} />
-                  <InfoRow label="Company" value={emp.company_name} />
-                  <InfoRow
-                    label="Date of Joining"
-                    value={emp.date_of_joining}
-                  />
-
-                  {/* OPTIONAL: SHOW WHY INCOMPLETE */}
-                  {!isComplete && (
-                    <p className="text-xs text-red-500 pt-2">
-                      Profile missing details
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+              ))
+            )}
+          </div>
         </div>
-      )}
+
+      </div>
     </div>
   );
 };
 
-/* ===========================
-   REUSABLE COMPONENTS
-=========================== */
+/* ================= COMPONENT ================= */
 
-const StatCard = ({ title, value }) => (
-  <div className="bg-white p-5 rounded-lg shadow border">
-    <p className="text-sm text-gray-500 mb-1">
-      {title}
-    </p>
-    <h2 className="text-3xl font-bold text-gray-800">
-      {value}
-    </h2>
-  </div>
-);
-
-const InfoRow = ({ label, value }) => (
-  <div>
-    <span className="font-medium text-gray-500">
-      {label}:
-    </span>{" "}
-    {value || "-"}
+const StatCard = ({ title, value, gradient }) => (
+  <div
+    className={`bg-gradient-to-br ${gradient} text-white rounded-xl p-5 shadow-lg`}
+  >
+    <p className="text-sm opacity-90">{title}</p>
+    <h2 className="text-3xl font-bold mt-2">{value}</h2>
   </div>
 );
 
