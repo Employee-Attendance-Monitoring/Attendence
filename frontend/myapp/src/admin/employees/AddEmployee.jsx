@@ -242,9 +242,12 @@ const AddEmployee = () => {
               <Label text="Phone Number" />
               <PhoneInput
                 country="in"
-                value={formData.phone_number}
+                value={formData.phone_number.replace("+", "")}
                 onChange={(value) =>
-                  setFormData({ ...formData, phone_number: value })
+                  setFormData({
+                    ...formData,
+                    phone_number: `+${value}`,
+                  })
                 }
                 inputStyle={{ width: "100%" }}
               />
@@ -323,9 +326,9 @@ const AddEmployee = () => {
               />
               <PhoneInput
                 country="in"
-                value={m.phone_number}
+                value={m.phone_number.replace("+", "")}
                 onChange={(value) =>
-                  updateFamilyMember(i, "phone_number", value)
+                  updateFamilyMember(i, "phone_number", `+${value}`)
                 }
                 inputStyle={{ width: "100%" }}
               />

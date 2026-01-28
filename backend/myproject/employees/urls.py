@@ -2,8 +2,10 @@ from django.urls import path
 from .views import (
     EmployeeCreateView,
     EmployeeListView,
-    EmployeeDetailView
-    , EmployeeDeleteView,EmployeeDropdownView
+    EmployeeDetailView,
+    EmployeeDeleteView,
+    EmployeeDropdownView,
+    ChangePasswordView,
 )
 
 urlpatterns = [
@@ -13,6 +15,8 @@ urlpatterns = [
     path("<int:pk>/", EmployeeDetailView.as_view()), # GET / PUT
     path("<int:pk>/delete/", EmployeeDeleteView.as_view()),
     path("dropdown/", EmployeeDropdownView.as_view()),
+    path("change-password/", ChangePasswordView.as_view()),
+
     
 
 ]
