@@ -9,7 +9,7 @@ const EmployeeList = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // ================= FETCH =================
+  /* ================= FETCH ================= */
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -26,7 +26,7 @@ const EmployeeList = () => {
     fetchEmployees();
   }, []);
 
-  // ================= SEARCH =================
+  /* ================= SEARCH ================= */
   useEffect(() => {
     const value = search.toLowerCase();
     setFilteredEmployees(
@@ -40,18 +40,28 @@ const EmployeeList = () => {
     );
   }, [search, employees]);
 
+  /* ================= RELIEVE ================= */
+  const handleRelieve = async (id) => {
+    if (!window.confirm("Relieve this employee from the company?")) return;
+
+    try {
+      await api.patch(`/employees/${id}/relieve/`);
+      alert("Employee relieved successfully");
+      setEmployees((prev) => prev.filter((e) => e.id !== id));
+    } catch (error) {
+      alert("Failed to relieve employee");
+    }
+  };
+
   if (loading) return <p>Loading employees...</p>;
 
   return (
     <div>
-      {/* ================= PAGE HEADER ================= */}
       <h1 className="text-2xl font-bold text-gray-800 mb-6">
         Employees
       </h1>
 
-      {/* ================= SEARCH + ADD (FULL WIDTH) ================= */}
       <div className="flex items-center justify-between gap-4 mb-6">
-        {/* SEARCH BAR */}
         <div className="relative w-full">
           <input
             type="text"
@@ -66,7 +76,6 @@ const EmployeeList = () => {
           </span>
         </div>
 
-        {/* ADD EMPLOYEE */}
         <Link
           to="/admin/employees/add"
           className="bg-blue-600 hover:bg-blue-700 text-white
@@ -76,7 +85,6 @@ const EmployeeList = () => {
         </Link>
       </div>
 
-      {/* ================= TABLE ================= */}
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-600">
@@ -98,10 +106,7 @@ const EmployeeList = () => {
               </tr>
             ) : (
               filteredEmployees.map((emp) => (
-                <tr
-                  key={emp.id}
-                  className="border-t hover:bg-gray-50"
-                >
+                <tr key={emp.id} className="border-t hover:bg-gray-50">
                   <td className="px-6 py-4 font-medium">
                     {emp.employee_code}
                   </td>
@@ -122,11 +127,14 @@ const EmployeeList = () => {
                   </td>
 
                   <td className="px-6 py-4 text-right space-x-2">
-                    <button onClick={() => navigate(`/admin/employees/view/${emp.id}`)} className="text-blue-600 hover:underline">
-                     View
+                    <button
+                      onClick={() =>
+                        navigate(`/admin/employees/view/${emp.id}`)
+                      }
+                      className="text-blue-600 hover:underline"
+                    >
+                      View
                     </button>
-
-
 
                     <button
                       onClick={() =>
@@ -139,37 +147,11 @@ const EmployeeList = () => {
                     </button>
 
                     <button
-                      onClick={async () => {
-                        const newPass = prompt(
-                          "Enter new temporary password"
-                        );
-                        if (!newPass) return;
-
-                        await api.post(
-                          `/accounts/reset-password/${emp.user_id}/`,
-                          { password: newPass }
-                        );
-
-                        alert("Password reset successfully");
-                      }}
-                      className="bg-indigo-600 hover:bg-indigo-700
-                                 text-white px-3 py-1 rounded text-xs"
-                    >
-                      Reset
-                    </button>
-
-                    <button
-                      onClick={async () => {
-                        if (!window.confirm("Delete this employee?")) return;
-                        await api.delete(`/employees/${emp.id}/delete/`);
-                        setEmployees(
-                          employees.filter((e) => e.id !== emp.id)
-                        );
-                      }}
+                      onClick={() => handleRelieve(emp.id)}
                       className="bg-red-600 hover:bg-red-700
                                  text-white px-3 py-1 rounded text-xs"
                     >
-                      Delete
+                      Relieving
                     </button>
                   </td>
                 </tr>
