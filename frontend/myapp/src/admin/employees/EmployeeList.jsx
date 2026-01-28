@@ -7,6 +7,7 @@ const EmployeeList = () => {
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
 
   /* ================= FETCH ================= */
@@ -40,7 +41,7 @@ const EmployeeList = () => {
     );
   }, [search, employees]);
 
-  /* ================= RELIEVE ================= */
+  /* ================= RELIEVE (SOFT DELETE) ================= */
   const handleRelieve = async (id) => {
     if (!window.confirm("Relieve this employee from the company?")) return;
 
@@ -50,6 +51,24 @@ const EmployeeList = () => {
       setEmployees((prev) => prev.filter((e) => e.id !== id));
     } catch (error) {
       alert("Failed to relieve employee");
+    }
+  };
+
+  /* ================= DELETE (HARD DELETE) ================= */
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to permanently delete this employee? This action cannot be undone."
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await api.delete(`/employees/${id}/delete/`);
+      alert("Employee deleted permanently");
+      setEmployees((prev) => prev.filter((e) => e.id !== id));
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete employee");
     }
   };
 
@@ -152,6 +171,14 @@ const EmployeeList = () => {
                                  text-white px-3 py-1 rounded text-xs"
                     >
                       Relieving
+                    </button>
+
+                    <button
+                      onClick={() => handleDelete(emp.id)}
+                      className="bg-gray-800 hover:bg-black
+                                 text-white px-3 py-1 rounded text-xs"
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>

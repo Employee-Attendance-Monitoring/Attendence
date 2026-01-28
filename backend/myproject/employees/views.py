@@ -187,3 +187,15 @@ class ChangePasswordView(APIView):
         RefreshToken.for_user(user)
 
         return Response({"message": "Password changed successfully"})
+    # =========================
+# BLOOD GROUP LIST
+# =========================
+class BloodGroupListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        blood_groups = [
+            {"value": bg[0], "label": bg[1]}
+            for bg in EmployeeProfile.BLOOD_GROUP_CHOICES
+        ]
+        return Response(blood_groups)

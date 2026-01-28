@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { getDepartments, getRoles } from "../../api/organizationApi";
+import { getBloodGroups } from "../../api/employeeApi";
+
 
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
@@ -9,6 +11,7 @@ import "react-phone-input-2/lib/style.css";
 const COMPANY_NAME = "Quandatum Analytics";
 const GRADES = ["Senior", "Junior", "Intern"];
 const GENDERS = ["MALE", "FEMALE", "OTHER"];
+
 
 const Label = ({ text, required }) => (
   <label className="text-sm font-medium text-gray-700 mb-1 block">
@@ -27,7 +30,7 @@ const AddEmployee = () => {
 
   const [departments, setDepartments] = useState([]);
   const [roles, setRoles] = useState([]);
-
+const [bloodGroups, setBloodGroups] = useState([]);
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",
@@ -35,6 +38,7 @@ const AddEmployee = () => {
     role: "",
     grade: "",
     gender: "",
+    blood_group: "",
     date_of_birth: "",
     address: "",
     date_of_joining: "",
@@ -59,6 +63,10 @@ const AddEmployee = () => {
     getRoles()
       .then((res) => setRoles(res.data || []))
       .catch(() => setRoles([]));
+
+    getBloodGroups()
+    .then((res) => setBloodGroups(res.data || []))
+    .catch(() => setBloodGroups([]));
   }, []);
 
   /* ================= HANDLERS ================= */
@@ -252,7 +260,22 @@ const AddEmployee = () => {
                 inputStyle={{ width: "100%" }}
               />
             </div>
-
+            <div>
+ <Label text="Blood Group" />
+  <select
+    name="blood_group"
+    value={formData.blood_group}
+    onChange={handleChange}
+    className={inputClass}
+  >
+    <option value="">Select Blood Group</option>
+    {bloodGroups.map((bg) => (
+      <option key={bg.value} value={bg.value}>
+        {bg.label}
+      </option>
+    ))}
+  </select>
+  </div>
             <div>
               <Label text="Company Name" />
               <input

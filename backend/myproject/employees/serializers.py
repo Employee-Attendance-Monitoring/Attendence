@@ -66,6 +66,11 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
     )
     employee_code = serializers.CharField(read_only=True)
 
+    blood_group_display = serializers.CharField(
+        source="get_blood_group_display",
+        read_only=True
+    )
+
     # Optional fields
     gender = serializers.CharField(required=False, allow_blank=True)
     role = serializers.CharField(required=False, allow_blank=True)
@@ -111,6 +116,10 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             # nested
             "family_members",
             "bank_detail",
+
+           # ✅ BLOOD GROUP
+            "blood_group",
+            "blood_group_display",
         ]
 
     # ================= VALIDATION =================

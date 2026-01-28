@@ -14,3 +14,7 @@ export const getEmployeeById = (id) =>
 
 export const changePassword = (data) =>
   api.post("/employees/change-password/", data);
+
+// blood groups
+export const getBloodGroups = () =>
+  api.get("/employees/blood-groups/");

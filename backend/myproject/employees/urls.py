@@ -6,6 +6,7 @@ from .views import (
     EmployeeDeleteView,
     EmployeeDropdownView,
     ChangePasswordView,
+    BloodGroupListView,
 )
 
 urlpatterns = [
@@ -16,6 +17,7 @@ urlpatterns = [
     path("<int:pk>/delete/", EmployeeDeleteView.as_view()),
     path("dropdown/", EmployeeDropdownView.as_view()),
     path("change-password/", ChangePasswordView.as_view()),
+    path("blood-groups/", BloodGroupListView.as_view()),
 
     
 

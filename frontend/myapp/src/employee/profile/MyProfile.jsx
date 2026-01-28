@@ -49,7 +49,6 @@ const MyProfile = () => {
 
       alert("Password changed successfully. Please login again.");
 
-      // logout after password change
       localStorage.clear();
       window.location.href = "/login";
     } catch (err) {
@@ -101,6 +100,10 @@ const MyProfile = () => {
           <ProfileItem label="Phone" value={profile.phone_number} />
           <ProfileItem label="Date of Joining" value={profile.date_of_joining} />
           <ProfileItem label="Gender" value={profile.gender} />
+
+          {/* ✅ NEW: BLOOD GROUP */}
+          <ProfileItem label="Blood Group" value={profile.blood_group_display}/>
+
         </div>
       </div>
 
@@ -163,7 +166,6 @@ const MyProfile = () => {
         <h3 className="font-semibold mb-4">Change Password</h3>
 
         <form onSubmit={handleChangePassword} className="space-y-4">
-          {/* OLD PASSWORD */}
           <div className="relative">
             <input
               type={showOld ? "text" : "password"}
@@ -180,7 +182,6 @@ const MyProfile = () => {
             </span>
           </div>
 
-          {/* NEW PASSWORD */}
           <div className="relative">
             <input
               type={showNew ? "text" : "password"}
