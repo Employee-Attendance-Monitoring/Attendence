@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
-import {
-  getDepartments,
-  getRoles,
-} from "../../api/organizationApi";
+import { getDepartments, getRoles } from "../../api/organizationApi";
+
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 
 const COMPANY_NAME = "Quandatum Analytics";
 const GRADES = ["Senior", "Junior", "Intern"];
@@ -24,30 +24,23 @@ const AddEmployee = () => {
 
   const [submitting, setSubmitting] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
 
   const [departments, setDepartments] = useState([]);
   const [roles, setRoles] = useState([]);
 
   const [formData, setFormData] = useState({
     email: "",
-    password: "",
-    // employee_code: "",
     full_name: "",
     department: "",
     role: "",
     grade: "",
-
     gender: "",
     date_of_birth: "",
-
     address: "",
     date_of_joining: "",
     phone_number: "",
-
     pancard_number: "",
     aadhaar_number: "",
-
     photo: null,
     bank_detail: {
       bank_name: "",
@@ -56,9 +49,6 @@ const AddEmployee = () => {
     },
     family_members: [],
   });
-
-  /* ================= AUTO EMPLOYEE CODE ================= */
-  
 
   /* ================= LOAD DEPARTMENT & ROLE ================= */
   useEffect(() => {
@@ -70,10 +60,6 @@ const AddEmployee = () => {
       .then((res) => setRoles(res.data || []))
       .catch(() => setRoles([]));
   }, []);
-
-  /* ================= HELPERS ================= */
-  const isValidIndianPhone = (phone) =>
-    /^(\+91)?[6-9]\d{9}$/.test(phone);
 
   /* ================= HANDLERS ================= */
   const handleChange = (e) =>
@@ -103,57 +89,39 @@ const AddEmployee = () => {
   };
 
   /* ================= SUBMIT ================= */
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (submitting) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
 
-  if (formData.phone_number && !isValidIndianPhone(formData.phone_number)) {
-    alert("Enter valid Indian phone number (+91XXXXXXXXXX)");
-    return;
-  }
+    try {
+      setSubmitting(true);
 
-  try {
-    setSubmitting(true);
+      const payload = new FormData();
+      payload.append("company_name", COMPANY_NAME);
 
-    const payload = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key === "bank_detail" || key === "family_members") {
+          payload.append(key, JSON.stringify(value));
+        } else if (key === "photo") {
+          if (value) payload.append("photo", value);
+        } else {
+          payload.append(key, value ?? "");
+        }
+      });
 
-    // REQUIRED field from backend
-    payload.append("company_name", COMPANY_NAME);
+      await api.post("/employees/create/", payload);
 
-    Object.entries(formData).forEach(([key, value]) => {
-      if (key === "bank_detail" || key === "family_members") {
-        payload.append(key, JSON.stringify(value));
-      } else if (key === "photo") {
-        if (value) payload.append("photo", value);
-      } else {
-        payload.append(key, value ?? "");
-      }
-    });
-
-    // ✅ DO NOT set headers manually
-    await api.post("/employees/create/", payload);
-
-    alert("Employee created successfully ✅");
-    navigate("/admin/employees");
-
-  } catch (err) {
-    console.error("AXIOS ERROR:", err);
-
-    if (err.response) {
-      console.error("DJANGO ERROR:", err.response.data);
       alert(
-        typeof err.response.data === "string"
-          ? err.response.data
-          : JSON.stringify(err.response.data, null, 2)
+        "Employee created successfully ✅\nLogin credentials sent to email."
       );
-    } else {
-      alert("Server not reachable");
+      navigate("/admin/employees");
+    } catch (err) {
+      console.error("CREATE EMPLOYEE ERROR:", err);
+      alert("Failed to create employee");
+    } finally {
+      setSubmitting(false);
     }
-
-    setSubmitting(false);
-  }
-};
-
+  };
 
   /* ================= UI ================= */
   return (
@@ -161,7 +129,6 @@ const AddEmployee = () => {
       <h1 className="text-2xl font-bold mb-6">Add Employee</h1>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-
         {/* BASIC DETAILS */}
         <section>
           <h2 className="text-lg font-semibold text-blue-600 mb-4">
@@ -169,53 +136,46 @@ const AddEmployee = () => {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
             <div>
               <Label text="Email" required />
-              <input name="email" type="email" onChange={handleChange} className={inputClass} required />
+              <input
+                name="email"
+                type="email"
+                onChange={handleChange}
+                className={inputClass}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Password will be auto-generated and sent to this email
+              </p>
             </div>
-
-            <div>
-              <Label text="Password" required />
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  onChange={handleChange}
-                  className={inputClass}
-                  required
-                />
-                <span
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-2.5 cursor-pointer"
-                >
-                  👁
-                </span>
-              </div>
-            </div>
-
-            {/* <div>
-              <Label text="Employee ID" />
-              <input value={formData.employee_code} disabled className={inputClass + " bg-gray-100"} />
-            </div> */}
 
             <div>
               <Label text="Full Name" required />
-              <input name="full_name" onChange={handleChange} className={inputClass} required />
+              <input
+                name="full_name"
+                onChange={handleChange}
+                className={inputClass}
+                required
+              />
             </div>
 
-            {/* GENDER */}
             <div>
               <Label text="Gender" />
-              <select name="gender" onChange={handleChange} className={inputClass}>
+              <select
+                name="gender"
+                onChange={handleChange}
+                className={inputClass}
+              >
                 <option value="">Select Gender</option>
                 {GENDERS.map((g) => (
-                  <option key={g} value={g}>{g}</option>
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
                 ))}
               </select>
             </div>
 
-            {/* DOB */}
             <div>
               <Label text="Date of Birth" />
               <input
@@ -226,59 +186,89 @@ const AddEmployee = () => {
               />
             </div>
 
-            {/* DEPARTMENT */}
             <div>
               <Label text="Department" required />
-              <select name="department" onChange={handleChange} className={inputClass} required>
-                <option value="">Select Department</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.name}>{d.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* ROLE */}
-            <div>
-              <Label text="Role" required />
-              <select name="role" onChange={handleChange} className={inputClass} required>
-                <option value="">Select Role</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.name}>{r.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* GRADE */}
-            <div>
-              <Label text="Grade" required />
-              <select name="grade" onChange={handleChange} className={inputClass} required>
-                <option value="">Select Grade</option>
-                {GRADES.map((g) => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <Label text="Phone Number" />
-              <input
-                name="phone_number"
-                placeholder="+91XXXXXXXXXX"
+              <select
+                name="department"
                 onChange={handleChange}
                 className={inputClass}
+                required
+              >
+                <option value="">Select Department</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.name}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label text="Role" required />
+              <select
+                name="role"
+                onChange={handleChange}
+                className={inputClass}
+                required
+              >
+                <option value="">Select Role</option>
+                {roles.map((r) => (
+                  <option key={r.id} value={r.name}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label text="Grade" required />
+              <select
+                name="grade"
+                onChange={handleChange}
+                className={inputClass}
+                required
+              >
+                <option value="">Select Grade</option>
+                {GRADES.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* PHONE INPUT */}
+            <div>
+              <Label text="Phone Number" />
+              <PhoneInput
+                country="in"
+                value={formData.phone_number}
+                onChange={(value) =>
+                  setFormData({ ...formData, phone_number: value })
+                }
+                inputStyle={{ width: "100%" }}
               />
             </div>
 
             <div>
               <Label text="Company Name" />
-              <input value={COMPANY_NAME} disabled className={inputClass + " bg-gray-100"} />
+              <input
+                value={COMPANY_NAME}
+                disabled
+                className={inputClass + " bg-gray-100"}
+              />
             </div>
 
             <div>
               <Label text="Date of Joining" required />
-              <input type="date" name="date_of_joining" onChange={handleChange} className={inputClass} required />
+              <input
+                type="date"
+                name="date_of_joining"
+                onChange={handleChange}
+                className={inputClass}
+                required
+              />
             </div>
-
           </div>
         </section>
 
@@ -290,7 +280,6 @@ const AddEmployee = () => {
             rows="3"
             onChange={handleChange}
             className={inputClass}
-            placeholder="Employee address"
           />
         </section>
 
@@ -312,17 +301,42 @@ const AddEmployee = () => {
           <h2 className="text-lg font-semibold mb-4">Family Members</h2>
 
           {formData.family_members.map((m, i) => (
-            <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-              <input className={inputClass} placeholder="Name" value={m.name}
-                onChange={(e) => updateFamilyMember(i, "name", e.target.value)} />
-              <input className={inputClass} placeholder="Relationship" value={m.relationship}
-                onChange={(e) => updateFamilyMember(i, "relationship", e.target.value)} />
-              <input className={inputClass} placeholder="+91XXXXXXXXXX" value={m.phone_number}
-                onChange={(e) => updateFamilyMember(i, "phone_number", e.target.value)} />
+            <div
+              key={i}
+              className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3"
+            >
+              <input
+                className={inputClass}
+                placeholder="Name"
+                value={m.name}
+                onChange={(e) =>
+                  updateFamilyMember(i, "name", e.target.value)
+                }
+              />
+              <input
+                className={inputClass}
+                placeholder="Relationship"
+                value={m.relationship}
+                onChange={(e) =>
+                  updateFamilyMember(i, "relationship", e.target.value)
+                }
+              />
+              <PhoneInput
+                country="in"
+                value={m.phone_number}
+                onChange={(value) =>
+                  updateFamilyMember(i, "phone_number", value)
+                }
+                inputStyle={{ width: "100%" }}
+              />
             </div>
           ))}
 
-          <button type="button" onClick={addFamilyMember} className="text-blue-600 font-medium">
+          <button
+            type="button"
+            onClick={addFamilyMember}
+            className="text-blue-600 font-medium"
+          >
             + Add Family Member
           </button>
         </section>
