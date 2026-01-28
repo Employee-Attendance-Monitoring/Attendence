@@ -12,3 +12,5 @@ export const getEmployeeDropdown = () =>
 export const getEmployeeById = (id) =>
   api.get(`/employees/${id}/`);
 
+export const changePassword = (data) =>
+  api.post("/employees/change-password/", data);
