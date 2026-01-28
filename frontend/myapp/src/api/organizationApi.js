@@ -10,6 +10,13 @@ export const createOrganization = (data) =>
 
 export const updateOrganization = (data) =>
   api.put("/organization/", data);
+
+
+// * ================= ORGANIZATION REPORT ================= */
+
+export const getOrganizationReport = () =>
+  api.get("/organization/report/");
+
 /* ================= DEPARTMENT ================= */
 
 export const getDepartments = () =>

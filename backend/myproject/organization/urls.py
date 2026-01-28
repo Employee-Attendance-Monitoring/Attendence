@@ -5,12 +5,13 @@ from .views import (
     RoleListCreateView,
     DepartmentUpdateDeleteView,
     RoleUpdateDeleteView,
+    OrganizationReportView,
 )
 
 urlpatterns = [
     # Organization
     path("", OrganizationDetailView.as_view()),
-
+     path("report/", OrganizationReportView.as_view()), 
     # Departments
     path("departments/", DepartmentListCreateView.as_view()),
     path("departments/<int:pk>/", DepartmentUpdateDeleteView.as_view()),

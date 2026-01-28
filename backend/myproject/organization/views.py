@@ -11,6 +11,9 @@ from .serializers import (
     RoleSerializer,
 )
 from accounts.permissions import IsAdmin
+from django.db.models import Count
+from datetime import date
+from employees.models import EmployeeProfile
 
 
 class OrganizationDetailView(APIView):
@@ -125,3 +128,105 @@ class RoleUpdateDeleteView(APIView):
             {"detail": "Role deleted"},
             status=status.HTTP_204_NO_CONTENT
         )
+# ------------------------------ Organization Report --------------------------------------------
+
+class OrganizationReportView(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        organization = Organization.objects.filter(is_active=True).first()
+
+        if not organization:
+            return Response(
+                {"detail": "Organization not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        employees = EmployeeProfile.objects.filter(
+            organization=organization
+        )
+
+        # ---------------- BASIC COUNTS ----------------
+        total_employees = employees.count()
+
+        male_count = employees.filter(gender="MALE").count()
+        female_count = employees.filter(gender="FEMALE").count()
+        other_count = employees.filter(gender="OTHER").count()
+
+        # ---------------- AVERAGE AGE ----------------
+        def calculate_age(dob):
+            today = date.today()
+            return today.year - dob.year - (
+                (today.month, today.day) < (dob.month, dob.day)
+            )
+
+        ages = [
+            calculate_age(emp.date_of_birth)
+            for emp in employees
+            if emp.date_of_birth
+        ]
+
+        average_age = round(sum(ages) / len(ages), 1) if ages else 0
+
+        # ---------------- AGE DISTRIBUTION ----------------
+        age_distribution = {
+            "18-25": 0,
+            "26-35": 0,
+            "36-45": 0,
+            "46-60": 0,
+            "60+": 0,
+        }
+
+        for age in ages:
+            if 18 <= age <= 25:
+                age_distribution["18-25"] += 1
+            elif 26 <= age <= 35:
+                age_distribution["26-35"] += 1
+            elif 36 <= age <= 45:
+                age_distribution["36-45"] += 1
+            elif 46 <= age <= 60:
+                age_distribution["46-60"] += 1
+            elif age > 60:
+                age_distribution["60+"] += 1
+
+        # ---------------- DEPARTMENT WISE ----------------
+        department_chart = (
+            employees.values("department")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+
+        # ---------------- ROLE WISE ----------------
+        role_chart = (
+            employees.values("role")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+
+        return Response({
+            "organization": {
+                "id": organization.id,
+                "name": organization.name,
+            },
+
+            "summary": {
+                "total_employees": total_employees,
+                "male_employees": male_count,
+                "female_employees": female_count,
+                "other_employees": other_count,
+                "average_age": average_age,
+            },
+
+            "gender_chart": {
+                "labels": ["Male", "Female", "Other"],
+                "data": [male_count, female_count, other_count],
+            },
+
+            "age_chart": {
+                "labels": list(age_distribution.keys()),
+                "data": list(age_distribution.values()),
+            },
+
+            "department_chart": list(department_chart),
+            "role_chart": list(role_chart),
+        })

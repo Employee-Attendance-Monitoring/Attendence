@@ -7,12 +7,15 @@ import {
 
 import DepartmentPage from "../department/DepartmentPage";
 import RolePage from "../role/RolePage";
+import OrganizationReport from "./OrganizationReport";// ✅ NEW
+
+
 
 const OrganizationPage = () => {
-  const [activeTab, setActiveTab] = useState("ORG"); // ORG | DEPT | ROLE
+  const [activeTab, setActiveTab] = useState("ORG"); // ORG | DEPT | ROLE | REPORT
 
   const [org, setOrg] = useState(null);
-  const [editing, setEditing] = useState(false); // ✅ NEW
+  const [editing, setEditing] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -67,7 +70,7 @@ const OrganizationPage = () => {
 
       {/* ================= TABS ================= */}
       <div className="flex gap-6 border-b">
-        {["ORG", "DEPT", "ROLE"].map((t) => (
+        {["ORG", "DEPT", "ROLE", "REPORT"].map((t) => (
           <button
             key={t}
             onClick={() => setActiveTab(t)}
@@ -81,7 +84,9 @@ const OrganizationPage = () => {
               ? "Organization Info"
               : t === "DEPT"
               ? "Departments"
-              : "Roles"}
+              : t === "ROLE"
+              ? "Roles"
+              : "Organization Report"}
           </button>
         ))}
       </div>
@@ -92,9 +97,7 @@ const OrganizationPage = () => {
       {activeTab === "ORG" && (
         <div className="bg-white p-6 rounded shadow max-w-xl">
           <div className="flex justify-between mb-4">
-            <h2 className="text-xl font-bold">
-              Organization Details
-            </h2>
+            <h2 className="text-xl font-bold">Organization Details</h2>
 
             {org && !editing && (
               <button
@@ -198,6 +201,19 @@ const OrganizationPage = () => {
 
       {/* ========== ROLES ========== */}
       {activeTab === "ROLE" && <RolePage />}
+
+      {/* ========== ORGANIZATION REPORT ========== */}
+      {activeTab === "REPORT" && (
+        org ? (
+          <OrganizationReport organizationId={org.id} />
+         
+        
+        ) : (
+          <p className="text-gray-500">
+            Please create an organization to view report.
+          </p>
+        )
+      )}
     </div>
   );
 };
