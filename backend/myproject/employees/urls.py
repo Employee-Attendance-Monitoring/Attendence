@@ -7,18 +7,20 @@ from .views import (
     EmployeeDropdownView,
     ChangePasswordView,
     BloodGroupListView,
+    relieve_employee,
 )
 
 urlpatterns = [
-    path("create/", EmployeeCreateView.as_view()),   # POST
-    path("list/", EmployeeListView.as_view()),       # GET
-    path("me/", EmployeeDetailView.as_view()),    
-    path("<int:pk>/", EmployeeDetailView.as_view()), # GET / PUT
+    path("create/", EmployeeCreateView.as_view()),
+    path("list/", EmployeeListView.as_view()),
+    path("me/", EmployeeDetailView.as_view()),
+    path("<int:pk>/", EmployeeDetailView.as_view()),
     path("<int:pk>/delete/", EmployeeDeleteView.as_view()),
     path("dropdown/", EmployeeDropdownView.as_view()),
     path("change-password/", ChangePasswordView.as_view()),
     path("blood-groups/", BloodGroupListView.as_view()),
 
-    
-
+    # ✅ FIXED RELIEVE URL
+    path("<int:id>/relieve/", relieve_employee),
 ]
+

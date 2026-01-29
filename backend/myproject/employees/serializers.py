@@ -32,6 +32,7 @@ class FamilyMemberSerializer(serializers.ModelSerializer):
             "relationship",
             "date_of_birth",
             "phone_number",
+            
         ]
 
 
@@ -45,6 +46,7 @@ class BankDetailSerializer(serializers.ModelSerializer):
             "bank_name",
             "account_number",
             "ifsc_code",
+             
         ]
 
 
@@ -61,11 +63,15 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
 
     # Display
     email_display = serializers.EmailField(
-        source="user.email",
+        source="user.email",    
         read_only=True
     )
     employee_code = serializers.CharField(read_only=True)
-
+     # 🔴 IMPORTANT: ACTIVE / RELIEVED STATUS
+    is_active = serializers.BooleanField(
+        source="user.is_active",
+        read_only=True
+    )
     blood_group_display = serializers.CharField(
         source="get_blood_group_display",
         read_only=True
@@ -92,6 +98,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             # auth
             "email",
             "email_display",
+            "is_active",
 
             # core
             "employee_code",

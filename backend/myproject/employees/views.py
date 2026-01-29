@@ -1,19 +1,22 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes  # ✅ ADD THIS
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
+
 from .models import EmployeeProfile
 from .serializers import (
     EmployeeProfileSerializer,
     EmployeeDropdownSerializer
 )
-from accounts.permissions import IsAdmin
 
+from accounts.permissions import IsAdmin
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+
 User = get_user_model()
 
 # =========================
@@ -199,3 +202,25 @@ class BloodGroupListView(APIView):
             for bg in EmployeeProfile.BLOOD_GROUP_CHOICES
         ]
         return Response(blood_groups)
+
+# =========================
+# EMPLOYEE RELIEVE (SOFT DELETE)
+# =========================
+@api_view(["PATCH"])
+@permission_classes([IsAdmin])
+def relieve_employee(request, id):
+    employee = get_object_or_404(EmployeeProfile, id=id)
+
+    # Mark employee as relieved (soft delete)
+    employee.is_active = False
+    employee.save()
+
+    # Block login
+    user = employee.user
+    user.is_active = False
+    user.save()
+
+    return Response(
+        {"message": "Employee relieved successfully"},
+        status=status.HTTP_200_OK,
+    )

@@ -41,33 +41,15 @@ const EmployeeList = () => {
     );
   }, [search, employees]);
 
-  /* ================= RELIEVE (SOFT DELETE) ================= */
-  const handleRelieve = async (id) => {
-    if (!window.confirm("Relieve this employee from the company?")) return;
-
-    try {
-      await api.patch(`/employees/${id}/relieve/`);
-      alert("Employee relieved successfully");
-      setEmployees((prev) => prev.filter((e) => e.id !== id));
-    } catch (error) {
-      alert("Failed to relieve employee");
-    }
-  };
-
-  /* ================= DELETE (HARD DELETE) ================= */
+  /* ================= DELETE ================= */
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to permanently delete this employee? This action cannot be undone."
-    );
-
-    if (!confirmDelete) return;
+    if (!window.confirm("Are you sure you want to permanently delete this employee?")) return;
 
     try {
       await api.delete(`/employees/${id}/delete/`);
-      alert("Employee deleted permanently");
       setEmployees((prev) => prev.filter((e) => e.id !== id));
+      alert("Employee deleted successfully");
     } catch (error) {
-      console.error(error);
       alert("Failed to delete employee");
     }
   };
@@ -80,6 +62,7 @@ const EmployeeList = () => {
         Employees
       </h1>
 
+      {/* SEARCH + ADD */}
       <div className="flex items-center justify-between gap-4 mb-6">
         <div className="relative w-full">
           <input
@@ -90,20 +73,19 @@ const EmployeeList = () => {
             className="w-full border rounded-lg pl-10 pr-4 py-3 text-sm
                        focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <span className="absolute left-3 top-3.5 text-gray-400">
-            🔍
-          </span>
+          <span className="absolute left-3 top-3.5 text-gray-400">🔍</span>
         </div>
 
         <Link
           to="/admin/employees/add"
           className="bg-blue-600 hover:bg-blue-700 text-white
-                     px-6 py-3 rounded-lg whitespace-nowrap font-medium"
+                     px-6 py-3 rounded-lg font-medium whitespace-nowrap"
         >
           + Add Employee
         </Link>
       </div>
 
+      {/* TABLE */}
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-600">
@@ -124,65 +106,92 @@ const EmployeeList = () => {
                 </td>
               </tr>
             ) : (
-              filteredEmployees.map((emp) => (
-                <tr key={emp.id} className="border-t hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium">
-                    {emp.employee_code}
-                  </td>
+              filteredEmployees.map((emp) => {
+                // ✅ Detect relieved employee
+                const isRelieved =
+                  emp.is_active === false || emp.user?.is_active === false;
 
-                  <td className="px-6 py-4 font-medium text-gray-800">
-                    {emp.full_name}
-                  </td>
+                return (
+                  <tr key={emp.id} className="border-t hover:bg-gray-50">
+                    <td className="px-6 py-4 font-medium">
+                      {emp.employee_code}
+                    </td>
 
-                  <td className="px-6 py-4 text-gray-600">
-                    {emp.email_display}
-                  </td>
+                    <td className="px-6 py-4 font-medium text-gray-800">
+                      {emp.full_name}
+                    </td>
 
-                  <td className="px-6 py-4">
-                    <span className="bg-blue-100 text-blue-700
-                                     px-3 py-1 rounded-full text-xs">
-                      {emp.department}
-                    </span>
-                  </td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {emp.email_display}
+                    </td>
 
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <button
-                      onClick={() =>
-                        navigate(`/admin/employees/view/${emp.id}`)
-                      }
-                      className="text-blue-600 hover:underline"
-                    >
-                      View
-                    </button>
+                    <td className="px-6 py-4">
+                      <span className="bg-blue-100 text-blue-700
+                                       px-3 py-1 rounded-full text-xs">
+                        {emp.department}
+                      </span>
+                    </td>
 
-                    <button
-                      onClick={() =>
-                        navigate(`/admin/employees/edit/${emp.id}`)
-                      }
-                      className="bg-yellow-500 hover:bg-yellow-600
-                                 text-white px-3 py-1 rounded text-xs"
-                    >
-                      Edit
-                    </button>
+                    {/* ACTIONS */}
+                    <td className="px-6 py-4 text-right space-x-2">
+                      {/* VIEW – always */}
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/employees/view/${emp.id}`)
+                        }
+                        className="text-blue-600 hover:underline"
+                      >
+                        View
+                      </button>
 
-                    <button
-                      onClick={() => handleRelieve(emp.id)}
-                      className="bg-red-600 hover:bg-red-700
-                                 text-white px-3 py-1 rounded text-xs"
-                    >
-                      Relieving
-                    </button>
+                      {/* EDIT – only if NOT relieved */}
+                      {!isRelieved && (
+                        <button
+                          onClick={() =>
+                            navigate(`/admin/employees/edit/${emp.id}`)
+                          }
+                          className="bg-yellow-500 hover:bg-yellow-600
+                                     text-white px-3 py-1 rounded text-xs"
+                        >
+                          Edit
+                        </button>
+                      )}
 
-                    <button
-                      onClick={() => handleDelete(emp.id)}
-                      className="bg-gray-800 hover:bg-black
-                                 text-white px-3 py-1 rounded text-xs"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))
+                      {/* RELIEVE – only if NOT relieved */}
+                      {!isRelieved && (
+                        <button
+                          onClick={() =>
+                            navigate(`/admin/employees/relieve/${emp.id}`)
+                          }
+                          className="bg-red-600 hover:bg-red-700
+                                     text-white px-3 py-1 rounded text-xs"
+                        >
+                          Relieving
+                        </button>
+                      )}
+
+                      {/* RELIEVED BADGE */}
+                      {isRelieved && (
+                        <span
+                          className="bg-gray-200 text-gray-600
+                                     px-3 py-1 rounded-full text-xs font-medium"
+                        >
+                          Relieved
+                        </span>
+                      )}
+
+                      {/* DELETE – always */}
+                      <button
+                        onClick={() => handleDelete(emp.id)}
+                        className="bg-gray-800 hover:bg-black
+                                   text-white px-3 py-1 rounded text-xs"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
