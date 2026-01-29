@@ -33,3 +33,22 @@ export const getLeaveTypes = () => {
   return api.get("/leaves/leave-types/");
 };
 
+/* ================= LEAVE TYPES (ADMIN) ================= */
+
+// Admin: get all leave types (active + inactive)
+export const getAdminLeaveTypes = () =>
+  api.get("/leaves/admin/leave-types/");
+
+// Admin: add leave type
+export const addLeaveType = (data) =>
+  api.post("/leaves/admin/leave-types/", data);
+
+// Admin: update leave type (edit name / enable-disable)
+export const updateLeaveType = (id, data) =>
+  api.put(`/leaves/admin/leave-types/${id}/`, data);
+
+// Admin: delete leave type
+export const deleteLeaveType = (id) =>
+  api.delete(`/leaves/admin/leave-types/${id}/`);
+
+
