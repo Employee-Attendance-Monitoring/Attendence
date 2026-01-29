@@ -63,7 +63,7 @@ const EmployeeDashboard = () => {
     }
   };
 
-  /* ================= LOAD LEAVE DATA ================= */
+  /* ================= LOAD LEAVE SUMMARY ================= */
   const loadLeaveSummary = async () => {
     const [leaveRes, balanceRes] = await Promise.all([
       getMyLeaves(),
@@ -125,11 +125,9 @@ const EmployeeDashboard = () => {
     return `${h}h ${m}m ${s}s`;
   };
 
-  const summary = {
-    hours: records
-      .reduce((t, r) => t + Number(r.working_hours || 0), 0)
-      .toFixed(2),
-  };
+  const totalHours = records
+    .reduce((t, r) => t + Number(r.working_hours || 0), 0)
+    .toFixed(2);
 
   /* ================= ACTIONS ================= */
   const handleSignIn = async () => {
@@ -152,27 +150,26 @@ const EmployeeDashboard = () => {
   return (
     <div className="space-y-8">
 
-      {/* ================= LEAVE CARDS ================= */}
+      {/* ================= LEAVE SUMMARY ================= */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <LeaveCard title="Total Leaves (Year)" value={leaveSummary.total} />
-        <LeaveCard title="Leaves Taken" value={leaveSummary.taken} />
-        <LeaveCard title="Balance Leaves" value={leaveSummary.balance} />
-        <LeaveCard title="Total Hours" value={`${summary.hours} hrs`} />
+        <SummaryCard title="Total Leaves (Year)" value={leaveSummary.total} />
+        <SummaryCard title="Leaves Taken" value={leaveSummary.taken} />
+        <SummaryCard title="Balance Leaves" value={leaveSummary.balance} />
+        <SummaryCard title="Total Hours" value={`${totalHours} hrs`} />
       </div>
 
-      {/* ================= TODAY ================= */}
+      {/* ================= TODAY ATTENDANCE ================= */}
       <div className="bg-white p-6 rounded-xl shadow border">
-        <h3 className="text-lg font-semibold mb-4">Today Attendance</h3>
+        <h3 className="text-lg font-semibold mb-4">
+          Today Attendance
+        </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-sm">
           <Info label="Status">
             <StatusBadge status={today?.status || "NOT_MARKED"} />
           </Info>
 
-          <Info
-            label="Sign In"
-            value={formatDateTime(today?.sign_in)}
-          />
+          <Info label="Sign In" value={formatDateTime(today?.sign_in)} />
 
           <Info
             label="Sign Out"
@@ -240,6 +237,7 @@ const EmployeeDashboard = () => {
                 )}
               </p>
             </div>
+
             <div className="flex items-center gap-4">
               <span>{r.working_hours} hrs</span>
               <StatusBadge status={r.status} />
@@ -251,9 +249,9 @@ const EmployeeDashboard = () => {
   );
 };
 
-/* ================= UI ================= */
+/* ================= UI COMPONENTS ================= */
 
-const LeaveCard = ({ title, value }) => (
+const SummaryCard = ({ title, value }) => (
   <div className="bg-white p-5 rounded-xl shadow border">
     <p className="text-sm text-gray-500">{title}</p>
     <h2 className="text-3xl font-bold mt-2">{value}</h2>

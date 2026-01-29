@@ -35,31 +35,44 @@ const AdminDashboard = () => {
 
   const totalEmployees = employees.length;
 
-  const presentToday = stats.present_today ?? 3;
+  const presentToday = stats.present_today ?? 0;
   const absentToday = stats.absent_today ?? totalEmployees - presentToday;
-  const onLeaveToday = stats.on_leave_today ?? 1;
-  const pendingLeaveRequests = stats.pending_leave_requests ?? 2;
+  const onLeaveToday = stats.on_leave_today ?? 0;
+  const pendingLeaveRequests = stats.pending_leave_requests ?? 0;
 
-  const currentMonth = new Date().getMonth();
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
 
+  /* 🎂 Birthdays */
   const birthdaysThisMonth = employees.filter(
     (e) =>
       e.date_of_birth &&
       new Date(e.date_of_birth).getMonth() === currentMonth
   );
 
+  /* 🏆 Work Anniversaries */
+  const anniversariesThisMonth = employees.filter((e) => {
+    if (!e.date_of_joining) return false;
+    const doj = new Date(e.date_of_joining);
+    return (
+      doj.getMonth() === currentMonth &&
+      doj.getFullYear() < currentYear
+    );
+  });
+
+  /* 🎉 New Joiners */
   const newJoiners = employees.filter((e) => {
     const doj = new Date(e.date_of_joining);
-    const now = new Date();
     return (
-      doj.getMonth() === now.getMonth() &&
-      doj.getFullYear() === now.getFullYear()
+      doj.getMonth() === currentMonth &&
+      doj.getFullYear() === currentYear
     );
   });
 
   return (
     <div className="p-6 space-y-8">
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
       <div>
         <h1 className="text-3xl font-bold text-gray-800">
           Admin Dashboard
@@ -94,102 +107,65 @@ const AdminDashboard = () => {
       </div>
 
       {/* ================= BOTTOM CARDS ================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* 🎂 Birthdays */}
-        <div className="bg-white rounded-xl shadow border">
-          <div className="px-6 py-4 border-b flex items-center gap-2">
-            <span className="text-xl">🎂</span>
-            <h3 className="text-lg font-semibold text-gray-800">
-              Birthdays This Month
-            </h3>
-          </div>
+        <Card
+          icon="🎂"
+          title="Birthdays This Month"
+          emptyText="No birthdays this month"
+          items={birthdaysThisMonth.map((emp) => ({
+            key: emp.id,
+            avatarBg: "bg-pink-100 text-pink-600",
+            name: emp.full_name,
+            subtitle: emp.date_of_birth,
+            badge: emp.date_of_birth,
+            badgeStyle: "bg-pink-50 text-pink-600",
+          }))}
+        />
 
-          <div className="p-6 space-y-4">
-            {birthdaysThisMonth.length === 0 ? (
-              <p className="text-gray-500 text-sm">
-                No birthdays this month
-              </p>
-            ) : (
-              birthdaysThisMonth.map((emp) => (
-                <div
-                  key={emp.id}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-pink-100 text-pink-600 
-                                    flex items-center justify-center font-semibold">
-                      {emp.full_name.charAt(0)}
-                    </div>
+        {/* 🏆 Anniversaries */}
+        <Card
+          icon="🏆"
+          title="Work Anniversaries This Month"
+          emptyText="No work anniversaries this month"
+          items={anniversariesThisMonth.map((emp) => {
+            const years =
+              currentYear -
+              new Date(emp.date_of_joining).getFullYear();
 
-                    <span className="font-medium text-gray-700">
-                      {emp.full_name}
-                    </span>
-                  </div>
-
-                  <span className="text-xs bg-pink-50 text-pink-600 
-                                   px-3 py-1 rounded-full">
-                    {emp.date_of_birth}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+            return {
+              key: emp.id,
+              avatarBg: "bg-yellow-100 text-yellow-600",
+              name: emp.full_name,
+              subtitle: `${years} year${years > 1 ? "s" : ""}`,
+              badge: emp.date_of_joining,
+              badgeStyle: "bg-yellow-50 text-yellow-600",
+            };
+          })}
+        />
 
         {/* 🎉 New Joiners */}
-        <div className="bg-white rounded-xl shadow border">
-          <div className="px-6 py-4 border-b flex items-center gap-2">
-            <span className="text-xl">🎉</span>
-            <h3 className="text-lg font-semibold text-gray-800">
-              Welcome to the Team
-            </h3>
-          </div>
-
-          <div className="p-6 space-y-4">
-            {newJoiners.length === 0 ? (
-              <p className="text-gray-500 text-sm">
-                No new joiners this month
-              </p>
-            ) : (
-              newJoiners.map((emp) => (
-                <div
-                  key={emp.id}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full 
-                                    bg-gradient-to-br from-blue-400 to-indigo-500 
-                                    text-white flex items-center justify-center font-semibold">
-                      {emp.full_name.charAt(0)}
-                    </div>
-
-                    <div>
-                      <p className="font-medium text-gray-700">
-                        {emp.full_name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Joined on {emp.date_of_joining}
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="text-xs bg-indigo-50 text-indigo-600 
-                                   px-3 py-1 rounded-full">
-                    New
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
+        <Card
+          icon="🎉"
+          title="Welcome to the Team"
+          emptyText="No new joiners this month"
+          items={newJoiners.map((emp) => ({
+            key: emp.id,
+            avatarBg:
+              "bg-gradient-to-br from-blue-400 to-indigo-500 text-white",
+            name: emp.full_name,
+            subtitle: `Joined on ${emp.date_of_joining}`,
+            badge: "New",
+            badgeStyle: "bg-indigo-50 text-indigo-600",
+          }))}
+        />
       </div>
     </div>
   );
 };
 
-/* ================= COMPONENT ================= */
+/* ================= COMPONENTS ================= */
 
 const StatCard = ({ title, value, gradient }) => (
   <div
@@ -197,6 +173,53 @@ const StatCard = ({ title, value, gradient }) => (
   >
     <p className="text-sm opacity-90">{title}</p>
     <h2 className="text-3xl font-bold mt-2">{value}</h2>
+  </div>
+);
+
+const Card = ({ icon, title, items, emptyText }) => (
+  <div className="bg-white rounded-xl shadow border">
+    <div className="px-6 py-4 border-b flex items-center gap-2">
+      <span className="text-xl">{icon}</span>
+      <h3 className="text-lg font-semibold text-gray-800">
+        {title}
+      </h3>
+    </div>
+
+    <div className="p-6 space-y-4">
+      {items.length === 0 ? (
+        <p className="text-gray-500 text-sm">{emptyText}</p>
+      ) : (
+        items.map((item) => (
+          <div
+            key={item.key}
+            className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition"
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${item.avatarBg}`}
+              >
+                {item.name.charAt(0)}
+              </div>
+
+              <div>
+                <p className="font-medium text-gray-700">
+                  {item.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {item.subtitle}
+                </p>
+              </div>
+            </div>
+
+            <span
+              className={`text-xs px-3 py-1 rounded-full ${item.badgeStyle}`}
+            >
+              {item.badge}
+            </span>
+          </div>
+        ))
+      )}
+    </div>
   </div>
 );
 
