@@ -25,6 +25,8 @@ class Attendance(models.Model):
         max_length=20, choices=STATUS_CHOICES, default="ABSENT"
     )
 
+    is_auto_signout = models.BooleanField(default=False)
+    
     class Meta:
         unique_together = ("user", "date")
         ordering = ["-date"]

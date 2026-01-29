@@ -20,6 +20,7 @@ const EmployeeDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [working, setWorking] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const [leaveSummary, setLeaveSummary] = useState({
     total: 0,
@@ -71,7 +72,6 @@ const EmployeeDashboard = () => {
 
     const leaves = leaveRes.data || [];
     const balance = balanceRes.data;
-
     const currentYear = new Date().getFullYear();
 
     let taken = 0;
@@ -108,6 +108,16 @@ const EmployeeDashboard = () => {
   }, [working]);
 
   /* ================= HELPERS ================= */
+  const formatDateTime = (dt) => {
+    if (!dt) return "-";
+    return new Date(dt).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  };
+
   const formatTime = () => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -123,14 +133,18 @@ const EmployeeDashboard = () => {
 
   /* ================= ACTIONS ================= */
   const handleSignIn = async () => {
+    setActionLoading(true);
     await employeeSignIn();
-    loadAttendance();
+    await loadAttendance();
+    setActionLoading(false);
   };
 
   const handleSignOut = async () => {
+    setActionLoading(true);
     await employeeSignOut();
     setWorking(false);
-    loadAttendance();
+    await loadAttendance();
+    setActionLoading(false);
   };
 
   if (loading) return <Loader />;
@@ -154,24 +168,45 @@ const EmployeeDashboard = () => {
           <Info label="Status">
             <StatusBadge status={today?.status || "NOT_MARKED"} />
           </Info>
-          <Info label="Sign In" value={today?.sign_in || "-"} />
-          <Info label="Sign Out" value={today?.sign_out || "-"} />
+
+          <Info
+            label="Sign In"
+            value={formatDateTime(today?.sign_in)}
+          />
+
+          <Info
+            label="Sign Out"
+            value={
+              <>
+                {formatDateTime(today?.sign_out)}
+                {today?.is_auto_signout && (
+                  <span className="ml-2 text-xs text-orange-600">
+                    (Auto)
+                  </span>
+                )}
+              </>
+            }
+          />
+
           <Info label="Working Time" value={formatTime()} />
         </div>
 
         <div className="mt-6">
           {!today?.sign_in && (
             <button
+              disabled={actionLoading}
               onClick={handleSignIn}
-              className="bg-green-600 text-white px-6 py-2 rounded"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded"
             >
               Sign In
             </button>
           )}
+
           {today?.sign_in && !today?.sign_out && (
             <button
+              disabled={actionLoading}
               onClick={handleSignOut}
-              className="bg-red-600 text-white px-6 py-2 rounded"
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded"
             >
               Sign Out
             </button>
@@ -199,7 +234,10 @@ const EmployeeDashboard = () => {
             <div>
               <p className="font-medium">{r.date}</p>
               <p className="text-xs text-gray-500">
-                {r.sign_in || "-"} → {r.sign_out || "-"}
+                {formatDateTime(r.sign_in)} → {formatDateTime(r.sign_out)}
+                {r.is_auto_signout && (
+                  <span className="ml-2 text-orange-600">(Auto)</span>
+                )}
               </p>
             </div>
             <div className="flex items-center gap-4">
