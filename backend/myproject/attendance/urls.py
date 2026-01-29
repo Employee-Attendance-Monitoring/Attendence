@@ -5,6 +5,7 @@ from .views import (
     MyAttendanceHistoryView,
     AttendanceSummaryView,
     AttendanceReportAdminView,
+    MyAttendanceDashboardSummaryView,
 )
 
 urlpatterns = [
@@ -12,7 +13,6 @@ urlpatterns = [
     path("signout/", SignOutView.as_view()),
     path("my-history/", MyAttendanceHistoryView.as_view()),
     path("my-summary/", AttendanceSummaryView.as_view()),
-
-    # ✅ THIS IS WHAT WAS MISSING
     path("admin-report/", AttendanceReportAdminView.as_view()),
+    path("my-dashboard-summary/", MyAttendanceDashboardSummaryView.as_view()),
 ]

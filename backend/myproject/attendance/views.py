@@ -12,7 +12,8 @@ from django.conf import settings
 from .models import Attendance
 from .serializers import AttendanceSerializer
 from accounts.permissions import IsAdmin
-
+from calendar import monthrange
+from leaves.models import Leave
 User = get_user_model()
 
 # ================= EMPLOYEE =================
@@ -165,3 +166,69 @@ class AttendanceReportAdminView(APIView):
 
         serializer = AttendanceSerializer(qs, many=True)
         return Response(serializer.data)
+
+
+class MyAttendanceDashboardSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """
+        month format: YYYY-MM
+        example: 2025-10
+        """
+        month = request.query_params.get("month")
+
+        qs = Attendance.objects.filter(user=request.user)
+        leave_qs = Leave.objects.filter(
+            user=request.user,
+            status="APPROVED"
+        )
+
+        if month:
+            year, m = map(int, month.split("-"))
+
+            qs = qs.filter(date__year=year, date__month=m)
+            leave_qs = leave_qs.filter(
+                start_date__year=year
+            )
+
+            total_days = monthrange(year, m)[1]
+        else:
+            total_days = qs.count()
+
+        present = qs.filter(status="PRESENT").count()
+        absent = qs.filter(status="ABSENT").count()
+        half_day = qs.filter(status="HALF_DAY").count()
+
+        paid_leave = leave_qs.count()
+
+        # Week off = Saturdays + Sundays (simple HRMS logic)
+        week_off = 0
+        if month:
+            for day in range(1, total_days + 1):
+                d = timezone.datetime(year, m, day).date()
+                if d.weekday() in (5, 6):  # Sat, Sun
+                    week_off += 1
+
+        # Late mark (basic logic: sign_in after 10:15 AM)
+        late_mark = qs.filter(
+            sign_in__time__gt=timezone.datetime.strptime(
+                "10:15", "%H:%M"
+            ).time()
+        ).count()
+
+        # OD Day (future-proof, currently 0)
+        od_day = 0
+
+        paid_day = present + paid_leave
+
+        return Response({
+            "present": present,
+            "absent": absent,
+            "half_day": half_day,
+            "paid_leave": paid_leave,
+            "week_off": week_off,
+            "late_mark": late_mark,
+            "od_day": od_day,
+            "paid_day": paid_day,
+        })

@@ -4,109 +4,82 @@ import Loader from "../../components/Loader";
 
 const MyAttendance = () => {
   const [records, setRecords] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // filters
-  const [status, setStatus] = useState("ALL");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  // 📅 Monthly filter
+  const [month, setMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
 
+  /* ================= LOAD DATA ================= */
   useEffect(() => {
-    api
-      .get("/attendance/my-history/")
-      .then((res) => setRecords(res.data || []))
+    setLoading(true);
+
+    Promise.all([
+      api.get(`/attendance/my-dashboard-summary/?month=${month}`),
+      api.get("/attendance/my-history/"),
+    ])
+      .then(([summaryRes, historyRes]) => {
+        setSummary(summaryRes.data);
+        setRecords(historyRes.data || []);
+      })
       .catch(() => alert("Failed to load attendance"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [month]);
 
-  const formatTime12Hr = (dateTime) => {
-    if (!dateTime) return "-";
-    const date = new Date(dateTime.replace(" ", "T"));
-    return date.toLocaleTimeString("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: true,
-    });
-  };
+  /* ================= MONTH FILTER ================= */
+  const monthlyRecords = useMemo(() => {
+    return records.filter((r) => r.date.startsWith(month));
+  }, [records, month]);
 
-  /* ================= FILTER LOGIC ================= */
-  const filteredRecords = useMemo(() => {
-    return records.filter((r) => {
-      const recordDate = new Date(r.date);
-
-      if (status !== "ALL" && r.status !== status) return false;
-      if (fromDate && recordDate < new Date(fromDate)) return false;
-      if (toDate && recordDate > new Date(toDate)) return false;
-
-      return true;
-    });
-  }, [records, status, fromDate, toDate]);
-
-  if (loading) return <Loader />;
+  if (loading || !summary) return <Loader />;
 
   return (
     <div className="space-y-6">
       {/* ================= HEADER ================= */}
-      <div>
-        <h2 className="text-2xl font-bold">Attendance History</h2>
-        <p className="text-sm text-gray-500">
-          View and filter your attendance 
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">Attendance Dashboard</h2>
+          <p className="text-sm text-gray-500">
+            Monthly attendance overview & history
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Select Month
+          </label>
+          <input
+            type="month"
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            className="border rounded px-3 py-2"
+          />
+        </div>
       </div>
 
-      {/* ================= FILTERS ================= */}
-      <div className="bg-white p-4 rounded-xl shadow border grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label className="text-xs text-gray-500">From Date</label>
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            className="w-full border rounded px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs text-gray-500">To Date</label>
-          <input
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            className="w-full border rounded px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs text-gray-500">Status</label>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="w-full border rounded px-3 py-2"
-          >
-            <option value="ALL">All</option>
-            <option value="PRESENT">Present</option>
-            <option value="ABSENT">Absent</option>
-            <option value="HALF_DAY">Half Day</option>
-          </select>
-        </div>
-
-        <div className="flex items-end">
-          <button
-            onClick={() => {
-              setStatus("ALL");
-              setFromDate("");
-              setToDate("");
-            }}
-            className="w-full bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded"
-          >
-            Clear Filters
-          </button>
+      {/* ================= SUMMARY ================= */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <div className="grid grid-cols-2 md:grid-cols-8 gap-4 text-center">
+          <SummaryCircle label="Present" value={summary.present} color="green" />
+          <SummaryCircle label="Week Off" value={summary.week_off} color="pink" />
+          <SummaryCircle label="Absent" value={summary.absent} color="red" />
+          <SummaryCircle label="Paid Leave" value={summary.paid_leave} color="orange" />
+          <SummaryCircle label="Late Mark" value={summary.late_mark} color="yellow" />
+          <SummaryCircle label="Half Day" value={summary.half_day} color="blue" />
+          <SummaryCircle label="OD Day" value={summary.od_day} color="gray" />
+          <SummaryCircle label="Paid Day" value={summary.paid_day} color="purple" />
         </div>
       </div>
 
       {/* ================= TABLE ================= */}
       <div className="bg-white shadow rounded-xl overflow-x-auto border">
+        <h3 className="font-semibold p-4 border-b">
+          Attendance History
+        </h3>
+
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
@@ -119,29 +92,20 @@ const MyAttendance = () => {
           </thead>
 
           <tbody>
-            {filteredRecords.length === 0 && (
+            {monthlyRecords.length === 0 && (
               <tr>
                 <td colSpan="5" className="text-center py-8 text-gray-500">
-                  No attendance records found
+                  No attendance records for this month
                 </td>
               </tr>
             )}
 
-            {filteredRecords.map((r) => (
-              <tr
-                key={r.id}
-                className="border-t hover:bg-gray-50 transition"
-              >
+            {monthlyRecords.map((r) => (
+              <tr key={r.id} className="border-t hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium">{r.date}</td>
-                <td className="px-4 py-3">
-                  {formatTime12Hr(r.sign_in)}
-                </td>
-                <td className="px-4 py-3">
-                  {formatTime12Hr(r.sign_out)}
-                </td>
-                <td className="px-4 py-3 text-center">
-                  {r.working_hours}
-                </td>
+                <td className="px-4 py-3">{formatTime(r.sign_in)}</td>
+                <td className="px-4 py-3">{formatTime(r.sign_out)}</td>
+                <td className="px-4 py-3 text-center">{r.working_hours}</td>
                 <td className="px-4 py-3 text-center">
                   <StatusBadge status={r.status} />
                 </td>
@@ -154,7 +118,42 @@ const MyAttendance = () => {
   );
 };
 
-/* ================= STATUS BADGE ================= */
+/* ================= HELPERS ================= */
+
+const formatTime = (value) => {
+  if (!value) return "-";
+  const d = new Date(value.replace(" ", "T"));
+  return d.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+const SummaryCircle = ({ label, value, color }) => {
+  const colors = {
+    green: "text-green-600",
+    red: "text-red-600",
+    blue: "text-blue-600",
+    orange: "text-orange-500",
+    yellow: "text-yellow-500",
+    gray: "text-gray-500",
+    pink: "text-pink-500",
+    purple: "text-purple-600",
+  };
+
+  return (
+    <div>
+      <div
+        className={`mx-auto w-16 h-16 rounded-full border-4 flex items-center justify-center text-xl font-bold ${colors[color]}`}
+      >
+        {value}
+      </div>
+      <p className="mt-2 text-xs text-gray-600">{label}</p>
+    </div>
+  );
+};
+
 const StatusBadge = ({ status }) => {
   const styles = {
     PRESENT: "bg-green-100 text-green-700",
