@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import { getDepartments, getRoles } from "../../api/organizationApi";
+import { getBloodGroups } from "../../api/employeeApi";
+
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 
 const COMPANY_NAME = "Quandatum Analytics";
 const BASE_URL = "http://127.0.0.1:8000";
+
+const GRADES = ["Senior", "Junior", "Intern"];
+const GENDERS = ["MALE", "FEMALE", "OTHER"];
 
 const Label = ({ text, required }) => (
   <label className="text-sm font-medium text-gray-700 mb-1 block">
@@ -28,13 +36,22 @@ const EditEmployee = () => {
   const [submitting, setSubmitting] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
 
+  const [departments, setDepartments] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [bloodGroups, setBloodGroups] = useState([]);
+
   const [formData, setFormData] = useState({
     employee_code: "",
     email: "",
     full_name: "",
+    gender: "",
     department: "",
+    role: "",
+    grade: "",
+    blood_group: "",
     phone_number: "",
     date_of_joining: "",
+    address: "",
     pancard_number: "",
     aadhaar_number: "",
     photo: null,
@@ -42,40 +59,47 @@ const EditEmployee = () => {
     family_members: [],
   });
 
+  /* ================= LOAD DROPDOWNS ================= */
+  useEffect(() => {
+    getDepartments().then((res) => setDepartments(res.data || []));
+    getRoles().then((res) => setRoles(res.data || []));
+    getBloodGroups().then((res) => setBloodGroups(res.data || []));
+  }, []);
+
   /* ================= FETCH EMPLOYEE ================= */
   useEffect(() => {
     const fetchEmployee = async () => {
       try {
         const res = await api.get(`/employees/${id}/`);
-        const data = res.data;
+        const d = res.data;
 
         setFormData({
-          employee_code: data.employee_code || "",
-          email: data.email_display || "",
-          full_name: data.full_name || "",
-          department: data.department || "",
-          phone_number: data.phone_number || "",
-          date_of_joining: data.date_of_joining || "",
-          pancard_number: data.pancard_number || "",
-          aadhaar_number: data.aadhaar_number || "",
+          employee_code: d.employee_code || "",
+          email: d.email_display || "",
+          full_name: d.full_name || "",
+          gender: d.gender || "",
+          department: d.department || "",
+          role: d.role || "",
+          grade: d.grade || "",
+          blood_group: d.blood_group || "",
+          phone_number: d.phone_number || "",
+          date_of_joining: d.date_of_joining || "",
+          address: d.address || "",
+          pancard_number: d.pancard_number || "",
+          aadhaar_number: d.aadhaar_number || "",
           photo: null,
-          bank_detail: data.bank_detail
-            ? { ...EMPTY_BANK, ...data.bank_detail }
+          bank_detail: d.bank_detail
+            ? { ...EMPTY_BANK, ...d.bank_detail }
             : { ...EMPTY_BANK },
-          family_members: Array.isArray(data.family_members)
-            ? data.family_members
-            : [],
+          family_members: d.family_members || [],
         });
 
-        if (data.photo) {
+        if (d.photo) {
           setPhotoPreview(
-            data.photo.startsWith("http")
-              ? data.photo
-              : `${BASE_URL}${data.photo}`
+            d.photo.startsWith("http") ? d.photo : `${BASE_URL}${d.photo}`
           );
         }
-      } catch (err) {
-        console.error(err);
+      } catch {
         alert("Failed to load employee");
       } finally {
         setLoading(false);
@@ -96,6 +120,7 @@ const EditEmployee = () => {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
+  /* ================= SUBMIT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
@@ -106,22 +131,24 @@ const EditEmployee = () => {
       const payload = new FormData();
 
       Object.entries(formData).forEach(([key, value]) => {
+        // 🚫 DO NOT SEND THESE (CAUSES 400 ERROR)
+        if (key === "email" || key === "employee_code") return;
+
         if (key === "bank_detail" || key === "family_members") {
           payload.append(key, JSON.stringify(value));
         } else if (key === "photo") {
           if (value) payload.append("photo", value);
         } else {
-          payload.append(key, value);
+          payload.append(key, value ?? "");
         }
       });
 
       await api.put(`/employees/${id}/`, payload);
-
       alert("Employee updated successfully ✅");
       navigate("/admin/employees");
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Failed to update employee ❌");
+    } finally {
       setSubmitting(false);
     }
   };
@@ -134,211 +161,136 @@ const EditEmployee = () => {
 
       <form onSubmit={handleSubmit} className="space-y-8">
 
-        {/* ================= BASIC DETAILS ================= */}
+        {/* BASIC DETAILS */}
         <section>
           <h2 className="text-lg font-semibold text-blue-600 mb-4">
             Basic Details
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
             <div>
               <Label text="Employee Code" />
-              <input
-                value={formData.employee_code}
-                disabled
-                className={`${inputClass} bg-gray-100 font-semibold`}
-              />
+              <input value={formData.employee_code} disabled className={`${inputClass} bg-gray-100`} />
             </div>
 
             <div>
               <Label text="Email" />
-              <input
-                value={formData.email}
-                disabled
-                className={`${inputClass} bg-gray-100`}
-              />
+              <input value={formData.email} disabled className={`${inputClass} bg-gray-100`} />
             </div>
 
             <div>
               <Label text="Full Name" required />
-              <input
-                name="full_name"
-                value={formData.full_name}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
+              <input name="full_name" value={formData.full_name} onChange={handleChange} className={inputClass} required />
+            </div>
+
+            <div>
+              <Label text="Gender" />
+              <select name="gender" value={formData.gender} onChange={handleChange} className={inputClass}>
+                <option value="">Select Gender</option>
+                {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
+              </select>
             </div>
 
             <div>
               <Label text="Department" required />
-              <input
-                name="department"
-                value={formData.department}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
+              <select name="department" value={formData.department} onChange={handleChange} className={inputClass} required>
+                <option value="">Select Department</option>
+                {departments.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <Label text="Role" required />
+              <select name="role" value={formData.role} onChange={handleChange} className={inputClass} required>
+                <option value="">Select Role</option>
+                {roles.map((r) => <option key={r.id} value={r.name}>{r.name}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <Label text="Grade" required />
+              <select name="grade" value={formData.grade} onChange={handleChange} className={inputClass} required>
+                <option value="">Select Grade</option>
+                {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <Label text="Blood Group" />
+              <select name="blood_group" value={formData.blood_group} onChange={handleChange} className={inputClass}>
+                <option value="">Select Blood Group</option>
+                {bloodGroups.map((bg) => <option key={bg.value} value={bg.value}>{bg.label}</option>)}
+              </select>
             </div>
 
             <div>
               <Label text="Phone Number" />
-              <input
-                name="phone_number"
-                value={formData.phone_number}
-                onChange={handleChange}
-                className={inputClass}
+              <PhoneInput
+                country="in"
+                value={formData.phone_number.replace("+", "")}
+                onChange={(v) => setFormData({ ...formData, phone_number: `+${v}` })}
+                inputStyle={{ width: "100%" }}
               />
             </div>
 
             <div>
               <Label text="Company Name" />
-              <input
-                value={COMPANY_NAME}
-                disabled
-                className={`${inputClass} bg-gray-100`}
-              />
+              <input value={COMPANY_NAME} disabled className={`${inputClass} bg-gray-100`} />
             </div>
 
             <div>
               <Label text="Date of Joining" required />
-              <input
-                type="date"
-                name="date_of_joining"
-                value={formData.date_of_joining}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
+              <input type="date" name="date_of_joining" value={formData.date_of_joining} onChange={handleChange} className={inputClass} required />
             </div>
-
           </div>
         </section>
 
-        {/* ================= PHOTO ================= */}
+        {/* ADDRESS */}
         <section>
-          <h2 className="font-semibold mb-3">Profile Photo</h2>
-          <div className="flex items-center gap-6">
-            <img
-              src={photoPreview || "/default-avatar.png"}
-              className="w-24 h-24 rounded-full border object-cover"
-              alt="Preview"
-            />
-            <input type="file" accept="image/*" onChange={handlePhotoChange} />
-          </div>
+          <h2 className="text-lg font-semibold mb-4">Address</h2>
+          <textarea name="address" rows="3" value={formData.address} onChange={handleChange} className={inputClass} />
         </section>
 
-        {/* ================= ID PROOF ================= */}
-        <section>
-          <h2 className="font-semibold mb-3">ID Proof</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input
-              name="pancard_number"
-              value={formData.pancard_number}
-              onChange={handleChange}
-              className={`${inputClass} uppercase`}
-              placeholder="PAN Card Number"
-            />
-            <input
-              name="aadhaar_number"
-              value={formData.aadhaar_number}
-              onChange={handleChange}
-              className={inputClass}
-              placeholder="Aadhaar Number"
-              maxLength={12}
-            />
-          </div>
-        </section>
-
-        {/* ================= BANK DETAILS ================= */}
+        {/* BANK DETAILS */}
         <section>
           <h2 className="font-semibold mb-3">Bank Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <input
-              placeholder="Bank Name"
-              className={inputClass}
-              value={formData.bank_detail.bank_name}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  bank_detail: {
-                    ...formData.bank_detail,
-                    bank_name: e.target.value,
-                  },
-                })
-              }
-            />
-            <input
-              placeholder="Account Number"
-              className={inputClass}
-              value={formData.bank_detail.account_number}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  bank_detail: {
-                    ...formData.bank_detail,
-                    account_number: e.target.value,
-                  },
-                })
-              }
-            />
-            <input
-              placeholder="IFSC Code"
-              className={inputClass}
-              value={formData.bank_detail.ifsc_code}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  bank_detail: {
-                    ...formData.bank_detail,
-                    ifsc_code: e.target.value,
-                  },
-                })
-              }
-            />
+            {["bank_name", "account_number", "ifsc_code"].map((f) => (
+              <input
+                key={f}
+                className={inputClass}
+                placeholder={f.replace("_", " ").toUpperCase()}
+                value={formData.bank_detail[f]}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    bank_detail: { ...formData.bank_detail, [f]: e.target.value },
+                  })
+                }
+              />
+            ))}
           </div>
         </section>
 
-        {/* ================= FAMILY MEMBERS ================= */}
+        {/* FAMILY MEMBERS */}
         <section>
           <h2 className="font-semibold mb-3">Family Members</h2>
 
           {formData.family_members.map((m, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3"
-            >
-              <input
-                placeholder="Name"
-                className={inputClass}
-                value={m.name}
-                onChange={(e) => {
-                  const f = [...formData.family_members];
-                  f[i].name = e.target.value;
-                  setFormData({ ...formData, family_members: f });
-                }}
-              />
-              <input
-                placeholder="Relationship"
-                className={inputClass}
-                value={m.relationship}
-                onChange={(e) => {
-                  const f = [...formData.family_members];
-                  f[i].relationship = e.target.value;
-                  setFormData({ ...formData, family_members: f });
-                }}
-              />
-              <input
-                placeholder="Phone Number"
-                className={inputClass}
-                value={m.phone_number || ""}
-                onChange={(e) => {
-                  const f = [...formData.family_members];
-                  f[i].phone_number = e.target.value;
-                  setFormData({ ...formData, family_members: f });
-                }}
-              />
+            <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+              {["name", "relationship", "phone_number"].map((f) => (
+                <input
+                  key={f}
+                  className={inputClass}
+                  placeholder={f.replace("_", " ").toUpperCase()}
+                  value={m[f] || ""}
+                  onChange={(e) => {
+                    const arr = [...formData.family_members];
+                    arr[i][f] = e.target.value;
+                    setFormData({ ...formData, family_members: arr });
+                  }}
+                />
+              ))}
             </div>
           ))}
 
@@ -348,10 +300,7 @@ const EditEmployee = () => {
             onClick={() =>
               setFormData({
                 ...formData,
-                family_members: [
-                  ...formData.family_members,
-                  { name: "", relationship: "", phone_number: "" },
-                ],
+                family_members: [...formData.family_members, { name: "", relationship: "", phone_number: "" }],
               })
             }
           >
@@ -359,11 +308,7 @@ const EditEmployee = () => {
           </button>
         </section>
 
-        {/* ================= SUBMIT ================= */}
-        <button
-          type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg"
-        >
+        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg">
           {submitting ? "Updating..." : "Update Employee"}
         </button>
       </form>

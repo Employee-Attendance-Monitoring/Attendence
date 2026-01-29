@@ -1,7 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes  # ✅ ADD THIS
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.parsers import MultiPartParser, FormParser  # ✅ IMPORTANT
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
@@ -19,11 +20,13 @@ from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
+
 # =========================
 # EMPLOYEE CREATE
 # =========================
 class EmployeeCreateView(APIView):
     permission_classes = [IsAdmin]
+    parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
         serializer = EmployeeProfileSerializer(
@@ -55,14 +58,15 @@ class EmployeeListView(APIView):
 
 
 # =========================
-# EMPLOYEE DETAIL
+# EMPLOYEE DETAIL (VIEW / UPDATE)
 # =========================
 class EmployeeDetailView(APIView):
     """
-    ADMIN  -> View / Update any employee
+    ADMIN    -> View / Update any employee
     EMPLOYEE -> View own profile
     """
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]  # ✅ REQUIRED FOR EDIT
 
     def get(self, request, pk=None):
         if request.user.role == "EMPLOYEE":
@@ -101,18 +105,21 @@ class EmployeeDetailView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response({"message": "Employee updated"})
+        return Response(
+            {"message": "Employee updated successfully"},
+            status=status.HTTP_200_OK,
+        )
 
 
 # =========================
-# EMPLOYEE DELETE
+# EMPLOYEE DELETE (HARD DELETE)
 # =========================
 class EmployeeDeleteView(APIView):
     permission_classes = [IsAdmin]
 
     def delete(self, request, pk):
         employee = get_object_or_404(EmployeeProfile, pk=pk)
-        employee.user.delete()  # cascades employee profile
+        employee.user.delete()  # cascades profile
         return Response(
             {"message": "Employee deleted successfully"},
             status=status.HTTP_204_NO_CONTENT,
@@ -150,10 +157,11 @@ class EmployeeDropdownView(APIView):
         employees = EmployeeProfile.objects.select_related("user")
         serializer = EmployeeDropdownSerializer(employees, many=True)
         return Response(serializer.data)
-    
 
 
-# --------------------------Password------------------------------------------
+# =========================
+# CHANGE PASSWORD
+# =========================
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -189,8 +197,13 @@ class ChangePasswordView(APIView):
         # 🔐 Invalidate old tokens
         RefreshToken.for_user(user)
 
-        return Response({"message": "Password changed successfully"})
-    # =========================
+        return Response(
+            {"message": "Password changed successfully"},
+            status=status.HTTP_200_OK,
+        )
+
+
+# =========================
 # BLOOD GROUP LIST
 # =========================
 class BloodGroupListView(APIView):
@@ -203,6 +216,7 @@ class BloodGroupListView(APIView):
         ]
         return Response(blood_groups)
 
+
 # =========================
 # EMPLOYEE RELIEVE (SOFT DELETE)
 # =========================
@@ -211,7 +225,7 @@ class BloodGroupListView(APIView):
 def relieve_employee(request, id):
     employee = get_object_or_404(EmployeeProfile, id=id)
 
-    # Mark employee as relieved (soft delete)
+    # Mark employee as relieved
     employee.is_active = False
     employee.save()
 
