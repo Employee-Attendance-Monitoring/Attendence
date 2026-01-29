@@ -13,6 +13,8 @@ class LeaveType(models.Model):
 
     class Meta:
         ordering = ["name"]
+        verbose_name = "Leave Type"
+        verbose_name_plural = "Leave Types"
 
     def __str__(self):
         return self.name
@@ -40,7 +42,7 @@ class Leave(models.Model):
         related_name="leaves"
     )
 
-    # ✅ FINAL FK VERSION (NON-NULL)
+    # 🔒 FINAL FK (NON-NULL, SAFE)
     leave_type = models.ForeignKey(
         LeaveType,
         on_delete=models.PROTECT,
@@ -49,12 +51,14 @@ class Leave(models.Model):
 
     start_date = models.DateField()
 
-    # auto-calculated
+    # auto-calculated in save()
     end_date = models.DateField(null=True, blank=True)
 
+    # default avoids migration issues
     leave_days = models.DecimalField(
         max_digits=4,
-        decimal_places=1
+        decimal_places=1,
+        default=1.0
     )
 
     is_half_day = models.CharField(
@@ -78,8 +82,13 @@ class Leave(models.Model):
 
     class Meta:
         ordering = ["-applied_at"]
+        verbose_name = "Leave"
+        verbose_name_plural = "Leaves"
 
     def save(self, *args, **kwargs):
+        """
+        Auto-calculate end_date based on start_date and leave_days
+        """
         if self.start_date and self.leave_days:
             days = int(float(self.leave_days)) - 1
             self.end_date = self.start_date + timedelta(days=max(days, 0))
@@ -108,6 +117,10 @@ class LeaveBalance(models.Model):
     )
 
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Leave Balance"
+        verbose_name_plural = "Leave Balances"
 
     def __str__(self):
         return f"{self.user.email} | Total: {self.total_leaves}"
