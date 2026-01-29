@@ -5,26 +5,25 @@ from .views import (
     MyLeaveListView,
     LeaveApprovalListView,
     LeaveApprovalActionView,
-    LeaveSummaryView,   # ✅ ADD THIS
+    LeaveSummaryView,
     SetLeaveBalanceView,
     MyLeaveBalanceView,
+    LeaveTypeListView,
+    LeaveTypeAdminView,
 )
 
 urlpatterns = [
-    # EMPLOYEE
+    # ================= EMPLOYEE =================
     path("apply/", ApplyLeaveView.as_view()),
     path("my/", MyLeaveListView.as_view()),
-    path("my-balance/", MyLeaveBalanceView.as_view()), 
-    # ADMIN - LEAVE MANAGEMENT
+    path("my-balance/", MyLeaveBalanceView.as_view()),
+    path("leave-types/", LeaveTypeListView.as_view()),   # ✅ NEW
+
+    # ================= ADMIN =================
     path("admin/", LeaveApprovalListView.as_view()),
     path("admin/<int:pk>/", LeaveApprovalActionView.as_view()),
-
-    # ADMIN - LEAVE SUMMARY (NEW)
     path("admin/leave-summary/", LeaveSummaryView.as_view()),
-
     path("admin/set-balance/", SetLeaveBalanceView.as_view()),
-    
-
-
-
+    path("admin/leave-types/", LeaveTypeAdminView.as_view()),          # ✅ NEW
+    path("admin/leave-types/<int:pk>/", LeaveTypeAdminView.as_view()), # ✅ NEW
 ]

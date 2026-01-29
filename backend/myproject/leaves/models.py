@@ -1,18 +1,37 @@
 from django.db import models
+from datetime import timedelta
 from accounts.models import User
 
 
+# =========================
+# LEAVE TYPE (ADMIN MANAGED)
+# =========================
+class LeaveType(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+# =========================
+# LEAVE MODEL
+# =========================
 class Leave(models.Model):
-    LEAVE_TYPE_CHOICES = (
-        ("PAID", "Paid Leave"),
-        ("SICK", "Sick Leave"),
-        ("CASUAL", "Casual Leave"),
-    )
 
     STATUS_CHOICES = (
         ("PENDING", "Pending"),
         ("APPROVED", "Approved"),
         ("REJECTED", "Rejected"),
+    )
+
+    HALF_DAY_CHOICES = (
+        ("FULL", "Full Day"),
+        ("HALF", "Half Day"),
     )
 
     user = models.ForeignKey(
@@ -21,15 +40,33 @@ class Leave(models.Model):
         related_name="leaves"
     )
 
-    leave_type = models.CharField(
-        max_length=20,
-        choices=LEAVE_TYPE_CHOICES
+    # ✅ FINAL FK VERSION (NON-NULL)
+    leave_type = models.ForeignKey(
+        LeaveType,
+        on_delete=models.PROTECT,
+        related_name="leaves"
     )
 
     start_date = models.DateField()
-    end_date = models.DateField()
+
+    # auto-calculated
+    end_date = models.DateField(null=True, blank=True)
+
+    leave_days = models.DecimalField(
+        max_digits=4,
+        decimal_places=1
+    )
+
+    is_half_day = models.CharField(
+        max_length=10,
+        choices=HALF_DAY_CHOICES,
+        default="FULL"
+    )
+
+    is_comp_off = models.BooleanField(default=False)
 
     reason = models.TextField(blank=True)
+
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -42,20 +79,34 @@ class Leave(models.Model):
     class Meta:
         ordering = ["-applied_at"]
 
+    def save(self, *args, **kwargs):
+        if self.start_date and self.leave_days:
+            days = int(float(self.leave_days)) - 1
+            self.end_date = self.start_date + timedelta(days=max(days, 0))
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.user.email} | {self.leave_type} | {self.status}"
+        return f"{self.user.email} | {self.leave_type.name} | {self.status}"
 
 
-# ✅ NEW MODEL (CORRECT)
-# leaves/models.py
+# =========================
+# LEAVE BALANCE
+# =========================
 class LeaveBalance(models.Model):
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
         related_name="leave_balance"
     )
+
     total_leaves = models.PositiveIntegerField(default=12)
-    leaves_taken = models.PositiveIntegerField(default=0)  # ✅ ADD THIS
+
+    leaves_taken = models.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        default=0
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

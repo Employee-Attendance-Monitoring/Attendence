@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 
-from .models import Leave, LeaveBalance
+from .models import Leave, LeaveBalance, LeaveType
 from .serializers import (
     LeaveSerializer,
     LeaveApprovalSerializer,
@@ -12,10 +12,14 @@ from .serializers import (
 )
 from accounts.permissions import IsAdmin
 from accounts.models import User
+from django.core.mail import send_mail
+from django.conf import settings
+
 
 
 # ================= EMPLOYEE APPLY LEAVE =================
 class ApplyLeaveView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = LeaveSerializer(
@@ -24,7 +28,6 @@ class ApplyLeaveView(APIView):
         )
         serializer.is_valid(raise_exception=True)
 
-        # Get leave balance
         balance, _ = LeaveBalance.objects.get_or_create(
             user=request.user,
             defaults={"total_leaves": 12}
@@ -35,14 +38,8 @@ class ApplyLeaveView(APIView):
             status="APPROVED"
         )
 
-        taken = 0
-        for leave in approved_leaves:
-            taken += (leave.end_date - leave.start_date).days + 1
-
-        requested_days = (
-            serializer.validated_data["end_date"]
-            - serializer.validated_data["start_date"]
-        ).days + 1
+        taken = sum(float(leave.leave_days) for leave in approved_leaves)
+        requested_days = float(serializer.validated_data["leave_days"])
 
         if taken + requested_days > balance.total_leaves:
             return Response(
@@ -50,15 +47,45 @@ class ApplyLeaveView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        Leave.objects.create(
+        # ✅ Create leave
+        leave = Leave.objects.create(
             user=request.user,
             **serializer.validated_data
         )
+
+        # ================= SEND EMAIL TO ADMINS =================
+        admin_emails = User.objects.filter(
+            role="ADMIN"
+        ).values_list("email", flat=True)
+
+        if admin_emails:
+            subject = "New Leave Application Submitted"
+            message = f"""
+Employee: {request.user.employee_profile.full_name}
+Email: {request.user.email}
+
+Leave Type: {leave.leave_type.name}
+Start Date: {leave.start_date}
+End Date: {leave.end_date}
+Leave Days: {leave.leave_days}
+
+Reason:
+{leave.reason}
+            """
+
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                list(admin_emails),
+                fail_silently=True
+            )
 
         return Response(
             {"message": "Leave applied successfully"},
             status=status.HTTP_201_CREATED
         )
+
 
 
 # ================= EMPLOYEE LEAVE LIST =================
@@ -180,3 +207,43 @@ class MyLeaveBalanceView(APIView):
 
         serializer = LeaveBalanceSerializer(balance)
         return Response(serializer.data)
+# ================= EMPLOYEE LEAVE TYPES =================
+
+class LeaveTypeListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        leave_types = LeaveType.objects.filter(is_active=True)
+        return Response(
+            [
+                {"id": lt.id, "name": lt.name}
+                for lt in leave_types
+            ],
+            status=status.HTTP_200_OK
+        )
+# ================= ADMIN LEAVE TYPE MANAGEMENT =================
+class LeaveTypeAdminView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        name = request.data.get("name")
+
+        if not name:
+            return Response(
+                {"detail": "Leave type name is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        LeaveType.objects.create(name=name)
+        return Response(
+            {"message": "Leave type added successfully"},
+            status=status.HTTP_201_CREATED
+        )
+
+    def delete(self, request, pk):
+        leave_type = get_object_or_404(LeaveType, pk=pk)
+        leave_type.delete()
+        return Response(
+            {"message": "Leave type deleted successfully"},
+            status=status.HTTP_200_OK
+        )

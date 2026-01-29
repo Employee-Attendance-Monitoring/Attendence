@@ -1,10 +1,7 @@
 from rest_framework import serializers
-from .models import Leave,LeaveBalance
 from django.utils.timezone import now
-
-
-from rest_framework import serializers
-from .models import Leave
+from .models import Leave, LeaveBalance
+from datetime import timedelta
 
 
 class LeaveSerializer(serializers.ModelSerializer):
@@ -17,8 +14,11 @@ class LeaveSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
-    start_date = serializers.DateField(format="%Y-%m-%d")
-    end_date = serializers.DateField(format="%Y-%m-%d")
+    # end_date is auto-calculated → read only
+    end_date = serializers.DateField(
+        format="%Y-%m-%d",
+        read_only=True
+    )
 
     class Meta:
         model = Leave
@@ -28,23 +28,40 @@ class LeaveSerializer(serializers.ModelSerializer):
             "employee_email",
             "leave_type",
             "start_date",
+            "leave_days",
+            "is_half_day",
+            "is_comp_off",
             "end_date",
             "reason",
             "status",
             "applied_at",
             "actioned_at",
         ]
+        read_only_fields = [
+            "status",
+            "applied_at",
+            "actioned_at",
+            "end_date",
+        ]
 
     def validate(self, data):
-        if data["end_date"] < data["start_date"]:
-            raise serializers.ValidationError("End date cannot be before start date")
-
         user = self.context["request"].user
 
+        start_date = data["start_date"]
+        leave_days = float(data["leave_days"])
+
+        if leave_days <= 0:
+            raise serializers.ValidationError("Leave days must be greater than 0")
+
+        # 🔥 calculate end_date same as model
+        days = int(leave_days) - 1
+        calculated_end = start_date + timedelta(days=max(days, 0))
+
+        # 🔥 overlap check
         overlap = Leave.objects.filter(
             user=user,
-            start_date__lte=data["end_date"],
-            end_date__gte=data["start_date"],
+            start_date__lte=calculated_end,
+            end_date__gte=start_date,
             status__in=["PENDING", "APPROVED"],
         ).exists()
 
@@ -69,6 +86,7 @@ class LeaveApprovalSerializer(serializers.ModelSerializer):
         instance.actioned_at = now()
         instance.save()
         return instance
+
 
 class LeaveBalanceSerializer(serializers.ModelSerializer):
     employee_email = serializers.EmailField(

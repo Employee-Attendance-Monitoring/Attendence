@@ -28,3 +28,8 @@ export const getLeaveSummary = (email) =>
 
 export const setLeaveBalance = (data) =>
   api.post("/leaves/admin/set-balance/", data);
+// ================= LEAVE TYPES =================
+export const getLeaveTypes = () => {
+  return api.get("/leaves/leave-types/");
+};
+
