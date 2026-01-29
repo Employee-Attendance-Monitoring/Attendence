@@ -14,6 +14,12 @@ class LeaveSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+     # ✅ ADD THIS
+    leave_type_name = serializers.CharField(
+        source="leave_type.name",
+        read_only=True
+    )
+
     # end_date is auto-calculated → read only
     end_date = serializers.DateField(
         format="%Y-%m-%d",
@@ -26,9 +32,10 @@ class LeaveSerializer(serializers.ModelSerializer):
             "id",
             "employee_name",
             "employee_email",
-            "leave_type",
             "start_date",
             "leave_days",
+            "leave_type",        # ID (used for submit)
+            "leave_type_name",   # LABEL (used for UI)
             "is_half_day",
             "is_comp_off",
             "end_date",

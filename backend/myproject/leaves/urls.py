@@ -24,6 +24,7 @@ urlpatterns = [
     path("admin/<int:pk>/", LeaveApprovalActionView.as_view()),
     path("admin/leave-summary/", LeaveSummaryView.as_view()),
     path("admin/set-balance/", SetLeaveBalanceView.as_view()),
-    path("admin/leave-types/", LeaveTypeAdminView.as_view()),          # ✅ NEW
-    path("admin/leave-types/<int:pk>/", LeaveTypeAdminView.as_view()), # ✅ NEW
+    path("admin/leave-types/", LeaveTypeAdminView.as_view()),
+    path("admin/leave-types/<int:pk>/", LeaveTypeAdminView.as_view()),
+
 ]

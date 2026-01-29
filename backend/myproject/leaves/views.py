@@ -101,7 +101,8 @@ class LeaveApprovalListView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        leaves = Leave.objects.select_related("user").all()
+        leaves = Leave.objects.select_related("user", "leave_type").all()
+
         serializer = LeaveSerializer(leaves, many=True)
         return Response(serializer.data)
 
@@ -224,6 +225,13 @@ class LeaveTypeListView(APIView):
 class LeaveTypeAdminView(APIView):
     permission_classes = [IsAdmin]
 
+    def get(self, request):
+        leave_types = LeaveType.objects.all()
+        return Response(
+            [{"id": lt.id, "name": lt.name, "is_active": lt.is_active} for lt in leave_types],
+            status=status.HTTP_200_OK
+        )
+
     def post(self, request):
         name = request.data.get("name")
 
@@ -237,6 +245,18 @@ class LeaveTypeAdminView(APIView):
         return Response(
             {"message": "Leave type added successfully"},
             status=status.HTTP_201_CREATED
+        )
+
+    def put(self, request, pk):
+        leave_type = get_object_or_404(LeaveType, pk=pk)
+
+        leave_type.name = request.data.get("name", leave_type.name)
+        leave_type.is_active = request.data.get("is_active", leave_type.is_active)
+        leave_type.save()
+
+        return Response(
+            {"message": "Leave type updated successfully"},
+            status=status.HTTP_200_OK
         )
 
     def delete(self, request, pk):
