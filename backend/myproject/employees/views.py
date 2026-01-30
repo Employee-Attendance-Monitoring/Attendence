@@ -62,36 +62,36 @@ class EmployeeListView(APIView):
 # =========================
 class EmployeeDetailView(APIView):
     """
-    ADMIN    -> View / Update any employee
+    ADMIN -> View / Update any employee
     EMPLOYEE -> View own profile
     """
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]  # ✅ REQUIRED FOR EDIT
+    parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request, pk=None):
         if request.user.role == "EMPLOYEE":
             employee = get_object_or_404(
                 EmployeeProfile.objects
-                .select_related("bank_detail", "user")
+                .select_related("user", "bank_detail")
                 .prefetch_related("family_members"),
-                user=request.user,
+                user=request.user
             )
         else:
             employee = get_object_or_404(
                 EmployeeProfile.objects
-                .select_related("bank_detail", "user")
+                .select_related("user", "bank_detail")
                 .prefetch_related("family_members"),
-                pk=pk,
+                pk=pk
             )
 
         serializer = EmployeeProfileSerializer(employee)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, pk=None):
         if request.user.role != "ADMIN":
             return Response(
                 {"detail": "Only admin can update employee"},
-                status=status.HTTP_403_FORBIDDEN,
+                status=status.HTTP_403_FORBIDDEN
             )
 
         employee = get_object_or_404(EmployeeProfile, pk=pk)
@@ -100,17 +100,15 @@ class EmployeeDetailView(APIView):
             employee,
             data=request.data,
             partial=True,
-            context={"request": request},
+            context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response(
             {"message": "Employee updated successfully"},
-            status=status.HTTP_200_OK,
+            status=status.HTTP_200_OK
         )
-
-
 # =========================
 # EMPLOYEE DELETE (HARD DELETE)
 # =========================

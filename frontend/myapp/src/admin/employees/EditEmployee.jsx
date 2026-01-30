@@ -29,11 +29,8 @@ const EMPTY_BANK = {
 };
 
 const EMPTY_FAMILY = {
-  father_name: "",
-  mother_name: "",
-  spouse_name: "",
-  son_name: "",
-  daughter_name: "",
+  name: "",
+  relationship: "",
   phone_number: "",
 };
 
@@ -61,11 +58,15 @@ const EditEmployee = () => {
     phone_number: "",
     date_of_birth: "",
     date_of_joining: "",
-    address: "",
     pancard_number: "",
     aadhaar_number: "",
     photo: null,
+
+    current_address: "",
+    permanent_address: "",
+
     bank_detail: { ...EMPTY_BANK },
+
     family_members: [{ ...EMPTY_FAMILY }],
   });
 
@@ -95,15 +96,19 @@ const EditEmployee = () => {
           phone_number: d.phone_number || "",
           date_of_birth: d.date_of_birth || "",
           date_of_joining: d.date_of_joining || "",
-          address: d.address || "",
           pancard_number: d.pancard_number || "",
           aadhaar_number: d.aadhaar_number || "",
           photo: null,
+
+          current_address: d.current_address || "",
+          permanent_address: d.permanent_address || "",
+
           bank_detail: d.bank_detail
             ? { ...EMPTY_BANK, ...d.bank_detail }
             : { ...EMPTY_BANK },
+
           family_members:
-            d.family_members && d.family_members.length > 0
+            d.family_members?.length > 0
               ? d.family_members
               : [{ ...EMPTY_FAMILY }],
         });
@@ -183,11 +188,13 @@ const EditEmployee = () => {
 
   if (loading) return <p className="p-6">Loading...</p>;
 
+  /* ================= UI ================= */
   return (
     <div className="max-w-5xl mx-auto bg-white p-8 shadow rounded">
       <h1 className="text-2xl font-bold mb-6">Edit Employee</h1>
 
       <form onSubmit={handleSubmit} className="space-y-8">
+
         {/* BASIC DETAILS */}
         <section>
           <h2 className="text-lg font-semibold text-blue-600 mb-4">
@@ -197,177 +204,141 @@ const EditEmployee = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label text="Employee Code" />
-              <input
-                value={formData.employee_code}
-                disabled
-                className={`${inputClass} bg-gray-100`}
-              />
+              <input value={formData.employee_code} disabled className={inputClass + " bg-gray-100"} />
             </div>
 
             <div>
               <Label text="Email" />
-              <input
-                value={formData.email}
-                disabled
-                className={`${inputClass} bg-gray-100`}
-              />
+              <input value={formData.email} disabled className={inputClass + " bg-gray-100"} />
             </div>
 
             <div>
               <Label text="Full Name" required />
-              <input
-                name="full_name"
-                value={formData.full_name}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
+              <input name="full_name" value={formData.full_name} onChange={handleChange} className={inputClass} required />
             </div>
 
             <div>
               <Label text="Gender" />
-              <select
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                className={inputClass}
-              >
+              <select name="gender" value={formData.gender} onChange={handleChange} className={inputClass}>
                 <option value="">Select Gender</option>
-                {GENDERS.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
+                {GENDERS.map((g) => <option key={g}>{g}</option>)}
               </select>
             </div>
 
             <div>
               <Label text="Department" required />
-              <select
-                name="department"
-                value={formData.department}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              >
+              <select name="department" value={formData.department} onChange={handleChange} className={inputClass} required>
                 <option value="">Select Department</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.name}>
-                    {d.name}
-                  </option>
-                ))}
+                {departments.map((d) => <option key={d.id}>{d.name}</option>)}
               </select>
             </div>
 
             <div>
               <Label text="Role" required />
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              >
+              <select name="role" value={formData.role} onChange={handleChange} className={inputClass} required>
                 <option value="">Select Role</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.name}>
-                    {r.name}
-                  </option>
-                ))}
+                {roles.map((r) => <option key={r.id}>{r.name}</option>)}
               </select>
             </div>
 
             <div>
               <Label text="Grade" required />
-              <select
-                name="grade"
-                value={formData.grade}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              >
+              <select name="grade" value={formData.grade} onChange={handleChange} className={inputClass} required>
                 <option value="">Select Grade</option>
-                {GRADES.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <Label text="Blood Group" />
-              <select
-                name="blood_group"
-                value={formData.blood_group}
-                onChange={handleChange}
-                className={inputClass}
-              >
-                <option value="">Select Blood Group</option>
-                {bloodGroups.map((bg) => (
-                  <option key={bg.value} value={bg.value}>
-                    {bg.label}
-                  </option>
-                ))}
+                {GRADES.map((g) => <option key={g}>{g}</option>)}
               </select>
             </div>
 
             <div>
               <Label text="Phone Number" />
-              <PhoneInput
-                country="in"
-                value={formData.phone_number.replace("+", "")}
-                onChange={(v) =>
-                  setFormData({ ...formData, phone_number: `+${v}` })
-                }
-                inputStyle={{ width: "100%" }}
-              />
+              <PhoneInput country="in" value={(formData.phone_number || "").replace("+", "")} onChange={(v) =>
+    setFormData({ ...formData, phone_number: `+${v}` }) } inputStyle={{ width: "100%" }} />
+            </div>
+
+            <div>
+              <Label text="Blood Group" />
+              <select name="blood_group" value={formData.blood_group} onChange={handleChange} className={inputClass}>
+                <option value="">Select Blood Group</option>
+                {bloodGroups.map((bg) => (
+                  <option key={bg.value} value={bg.value}>{bg.label}</option>
+                ))}
+              </select>
             </div>
 
             <div>
               <Label text="Company Name" />
-              <input
-                value={COMPANY_NAME}
-                disabled
-                className={`${inputClass} bg-gray-100`}
-              />
+              <input value={COMPANY_NAME} disabled className={inputClass + " bg-gray-100"} />
             </div>
 
             <div>
               <Label text="Date of Birth" />
-              <input
-                type="date"
-                name="date_of_birth"
-                value={formData.date_of_birth}
-                onChange={handleChange}
-                className={inputClass}
-              />
+              <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className={inputClass} />
             </div>
 
             <div>
               <Label text="Date of Joining" required />
-              <input
-                type="date"
-                name="date_of_joining"
-                value={formData.date_of_joining}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
+              <input type="date" name="date_of_joining" value={formData.date_of_joining} onChange={handleChange} className={inputClass} required />
             </div>
           </div>
         </section>
 
         {/* ADDRESS */}
         <section>
-          <h2 className="font-semibold mb-3">Address</h2>
-          <textarea
-            name="address"
-            rows="3"
-            value={formData.address}
-            onChange={handleChange}
-            className={inputClass}
-          />
+          <h2 className="text-lg font-semibold mb-4">Address</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <textarea name="current_address" value={formData.current_address} onChange={handleChange} className={inputClass} placeholder="Current Address" />
+            <textarea name="permanent_address" value={formData.permanent_address} onChange={handleChange} className={inputClass} placeholder="Permanent Address" />
+          </div>
+        </section>
+
+        {/* PHOTO */}
+        <section>
+          <h2 className="text-lg font-semibold mb-4">Profile Photo</h2>
+          <div className="flex items-center gap-6">
+            <img src={photoPreview || "/default-avatar.png"} className="w-24 h-24 rounded-full border object-cover" alt="Preview" />
+            <input type="file" accept="image/*" onChange={handlePhotoChange} />
+          </div>
+        </section>
+
+        {/* BANK DETAILS */}
+        <section>
+          <h2 className="text-lg font-semibold mb-4">
+            Bank Details <span className="text-sm text-gray-500">(Optional)</span>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input className={inputClass} placeholder="Bank Name"
+              value={formData.bank_detail.bank_name}
+              onChange={(e) => setFormData({
+                ...formData,
+                bank_detail: { ...formData.bank_detail, bank_name: e.target.value },
+              })}
+            />
+            <input className={inputClass} placeholder="Account Number"
+              value={formData.bank_detail.account_number}
+              onChange={(e) => setFormData({
+                ...formData,
+                bank_detail: { ...formData.bank_detail, account_number: e.target.value },
+              })}
+            />
+            <input className={inputClass} placeholder="IFSC Code"
+              value={formData.bank_detail.ifsc_code}
+              onChange={(e) => setFormData({
+                ...formData,
+                bank_detail: { ...formData.bank_detail, ifsc_code: e.target.value },
+              })}
+            />
+          </div>
+        </section>
+
+        {/* ID PROOF */}
+        <section>
+          <h2 className="text-lg font-semibold mb-4">
+            ID Proof <span className="text-sm text-gray-500">(Optional)</span>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input name="pancard_number" value={formData.pancard_number} onChange={handleChange} className={inputClass} placeholder="PAN Number" />
+            <input name="aadhaar_number" value={formData.aadhaar_number} onChange={handleChange} className={inputClass} placeholder="Aadhaar Number" />
+          </div>
         </section>
 
         {/* FAMILY MEMBERS */}
@@ -375,97 +346,31 @@ const EditEmployee = () => {
           <h2 className="text-lg font-semibold mb-4">Family Members</h2>
 
           {formData.family_members.map((m, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 border p-4 rounded"
-            >
-              <div>
-                <Label text="Father Name" />
-                <input
-                  className={inputClass}
-                  value={m.father_name}
-                  onChange={(e) =>
-                    updateFamilyMember(i, "father_name", e.target.value)
-                  }
-                />
-              </div>
-
-              <div>
-                <Label text="Mother Name" />
-                <input
-                  className={inputClass}
-                  value={m.mother_name}
-                  onChange={(e) =>
-                    updateFamilyMember(i, "mother_name", e.target.value)
-                  }
-                />
-              </div>
-
-              <div>
-                <Label text="Spouse Name" />
-                <input
-                  className={inputClass}
-                  value={m.spouse_name}
-                  onChange={(e) =>
-                    updateFamilyMember(i, "spouse_name", e.target.value)
-                  }
-                />
-              </div>
-
-              <div>
-                <Label text="Son Name" />
-                <input
-                  className={inputClass}
-                  value={m.son_name}
-                  onChange={(e) =>
-                    updateFamilyMember(i, "son_name", e.target.value)
-                  }
-                />
-              </div>
-
-              <div>
-                <Label text="Daughter Name" />
-                <input
-                  className={inputClass}
-                  value={m.daughter_name}
-                  onChange={(e) =>
-                    updateFamilyMember(i, "daughter_name", e.target.value)
-                  }
-                />
-              </div>
-
-              <div>
-                <Label text="Phone Number" />
-                <PhoneInput
-                  country="in"
-                  value={(m.phone_number || "").replace("+", "")}
-                  onChange={(v) =>
-                    updateFamilyMember(i, "phone_number", `+${v}`)
-                  }
-                  inputStyle={{ width: "100%" }}
-                />
-              </div>
+            <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+              <input className={inputClass} placeholder="Name" value={m.name}
+                onChange={(e) => updateFamilyMember(i, "name", e.target.value)} />
+              <input className={inputClass} placeholder="Relationship" value={m.relationship}
+                onChange={(e) => updateFamilyMember(i, "relationship", e.target.value)} />
+              <PhoneInput country="in" value={m.phone_number.replace("+", "")}
+                onChange={(v) => updateFamilyMember(i, "phone_number", `+${v}`)}
+                inputStyle={{ width: "100%" }} />
             </div>
           ))}
 
-          <button
-            type="button"
-            onClick={addFamilyMember}
-            className="text-blue-600 font-medium"
-          >
+          <button type="button" onClick={addFamilyMember} className="text-blue-600 font-medium">
             + Add Family Member
           </button>
         </section>
 
-        <button
-          type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg"
-        >
+        <button type="submit" disabled={submitting}
+          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg">
           {submitting ? "Updating..." : "Update Employee"}
         </button>
+
       </form>
     </div>
   );
 };
 
 export default EditEmployee;
+  

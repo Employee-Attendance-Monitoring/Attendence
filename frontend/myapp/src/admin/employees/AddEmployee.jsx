@@ -4,14 +4,12 @@ import api from "../../api/axios";
 import { getDepartments, getRoles } from "../../api/organizationApi";
 import { getBloodGroups } from "../../api/employeeApi";
 
-
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 
 const COMPANY_NAME = "Quandatum Analytics";
 const GRADES = ["Senior", "Junior", "Intern"];
 const GENDERS = ["MALE", "FEMALE", "OTHER"];
-
 
 const Label = ({ text, required }) => (
   <label className="text-sm font-medium text-gray-700 mb-1 block">
@@ -30,7 +28,8 @@ const AddEmployee = () => {
 
   const [departments, setDepartments] = useState([]);
   const [roles, setRoles] = useState([]);
-const [bloodGroups, setBloodGroups] = useState([]);
+  const [bloodGroups, setBloodGroups] = useState([]);
+
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",
@@ -40,42 +39,35 @@ const [bloodGroups, setBloodGroups] = useState([]);
     gender: "",
     blood_group: "",
     date_of_birth: "",
-    address: "",
     date_of_joining: "",
     phone_number: "",
     pancard_number: "",
     aadhaar_number: "",
     photo: null,
+
+    current_address: "",
+    permanent_address: "",
+
     bank_detail: {
       bank_name: "",
       account_number: "",
       ifsc_code: "",
     },
+
     family_members: [
       {
-      father_name: "",
-      mother_name: "",
-      spouse_name: "",
-      son_name: "",
-      daughter_name: "",
-      phone_number: "",
-    },
+        name: "",
+        relationship: "",
+        phone_number: "",
+      },
     ],
   });
 
-  /* ================= LOAD DEPARTMENT & ROLE ================= */
+  /* ================= LOAD DROPDOWNS ================= */
   useEffect(() => {
-    getDepartments()
-      .then((res) => setDepartments(res.data || []))
-      .catch(() => setDepartments([]));
-
-    getRoles()
-      .then((res) => setRoles(res.data || []))
-      .catch(() => setRoles([]));
-
-    getBloodGroups()
-    .then((res) => setBloodGroups(res.data || []))
-    .catch(() => setBloodGroups([]));
+    getDepartments().then((res) => setDepartments(res.data || []));
+    getRoles().then((res) => setRoles(res.data || []));
+    getBloodGroups().then((res) => setBloodGroups(res.data || []));
   }, []);
 
   /* ================= HANDLERS ================= */
@@ -128,13 +120,11 @@ const [bloodGroups, setBloodGroups] = useState([]);
 
       await api.post("/employees/create/", payload);
 
-      alert(
-        "Employee created successfully ✅\nLogin credentials sent to email."
-      );
+      alert("Employee created successfully ✅");
       navigate("/admin/employees");
     } catch (err) {
       console.error("CREATE EMPLOYEE ERROR:", err);
-      alert("Failed to create employee");
+      alert("Failed to create employee ❌");
     } finally {
       setSubmitting(false);
     }
@@ -146,6 +136,7 @@ const [bloodGroups, setBloodGroups] = useState([]);
       <h1 className="text-2xl font-bold mb-6">Add Employee</h1>
 
       <form onSubmit={handleSubmit} className="space-y-8">
+
         {/* BASIC DETAILS */}
         <section>
           <h2 className="text-lg font-semibold text-blue-600 mb-4">
@@ -155,154 +146,79 @@ const [bloodGroups, setBloodGroups] = useState([]);
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label text="Email" required />
-              <input
-                name="email"
-                type="email"
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Password will be auto-generated and sent to this email
-              </p>
+              <input name="email" type="email" onChange={handleChange} className={inputClass} required />
             </div>
 
             <div>
               <Label text="Full Name" required />
-              <input
-                name="full_name"
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
+              <input name="full_name" onChange={handleChange} className={inputClass} required />
             </div>
 
             <div>
               <Label text="Gender" />
-              <select
-                name="gender"
-                onChange={handleChange}
-                className={inputClass}
-              >
+              <select name="gender" onChange={handleChange} className={inputClass}>
                 <option value="">Select Gender</option>
-                {GENDERS.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
+                {GENDERS.map((g) => <option key={g}>{g}</option>)}
               </select>
             </div>
 
             <div>
               <Label text="Date of Birth" />
-              <input
-                type="date"
-                name="date_of_birth"
-                onChange={handleChange}
-                className={inputClass}
-              />
+              <input type="date" name="date_of_birth" onChange={handleChange} className={inputClass} />
             </div>
 
             <div>
               <Label text="Department" required />
-              <select
-                name="department"
-                onChange={handleChange}
-                className={inputClass}
-                required
-              >
+              <select name="department" onChange={handleChange} className={inputClass} required>
                 <option value="">Select Department</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.name}>
-                    {d.name}
-                  </option>
-                ))}
+                {departments.map((d) => <option key={d.id}>{d.name}</option>)}
               </select>
             </div>
 
             <div>
               <Label text="Role" required />
-              <select
-                name="role"
-                onChange={handleChange}
-                className={inputClass}
-                required
-              >
+              <select name="role" onChange={handleChange} className={inputClass} required>
                 <option value="">Select Role</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.name}>
-                    {r.name}
-                  </option>
-                ))}
+                {roles.map((r) => <option key={r.id}>{r.name}</option>)}
               </select>
             </div>
 
             <div>
               <Label text="Grade" required />
-              <select
-                name="grade"
-                onChange={handleChange}
-                className={inputClass}
-                required
-              >
+              <select name="grade" onChange={handleChange} className={inputClass} required>
                 <option value="">Select Grade</option>
-                {GRADES.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
+                {GRADES.map((g) => <option key={g}>{g}</option>)}
               </select>
             </div>
 
-            {/* PHONE INPUT */}
             <div>
               <Label text="Phone Number" />
               <PhoneInput
                 country="in"
                 value={formData.phone_number.replace("+", "")}
-                onChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    phone_number: `+${value}`,
-                  })
-                }
+                onChange={(v) => setFormData({ ...formData, phone_number: `+${v}` })}
                 inputStyle={{ width: "100%" }}
-              />
-            </div>
-            <div>
- <Label text="Blood Group" />
-  <select
-    name="blood_group"
-    value={formData.blood_group}
-    onChange={handleChange}
-    className={inputClass}
-  >
-    <option value="">Select Blood Group</option>
-    {bloodGroups.map((bg) => (
-      <option key={bg.value} value={bg.value}>
-        {bg.label}
-      </option>
-    ))}
-  </select>
-  </div>
-            <div>
-              <Label text="Company Name" />
-              <input
-                value={COMPANY_NAME}
-                disabled
-                className={inputClass + " bg-gray-100"}
               />
             </div>
 
             <div>
+              <Label text="Blood Group" />
+              <select name="blood_group" value={formData.blood_group} onChange={handleChange} className={inputClass}>
+                <option value="">Select Blood Group</option>
+                {bloodGroups.map((bg) => (
+                  <option key={bg.value} value={bg.value}>{bg.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label text="Company Name" />
+              <input value={COMPANY_NAME} disabled className={inputClass + " bg-gray-100"} />
+            </div>
+
+            <div>
               <Label text="Date of Joining" required />
-              <input
-                type="date"
-                name="date_of_joining"
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
+              <input type="date" name="date_of_joining" onChange={handleChange} className={inputClass} required />
             </div>
           </div>
         </section>
@@ -310,24 +226,68 @@ const [bloodGroups, setBloodGroups] = useState([]);
         {/* ADDRESS */}
         <section>
           <h2 className="text-lg font-semibold mb-4">Address</h2>
-          <textarea
-            name="address"
-            rows="3"
-            onChange={handleChange}
-            className={inputClass}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <textarea name="current_address" placeholder="Current Address" onChange={handleChange} className={inputClass} />
+            <textarea name="permanent_address" placeholder="Permanent Address" onChange={handleChange} className={inputClass} />
+          </div>
         </section>
 
-        {/* PHOTO */}
+        {/* PHOTO WITH PREVIEW */}
         <section>
           <h2 className="text-lg font-semibold mb-4">Profile Photo</h2>
           <div className="flex items-center gap-6">
             <img
               src={photoPreview || "/default-avatar.png"}
-              className="w-24 h-24 rounded-full border object-cover"
               alt="Preview"
+              className="w-24 h-24 rounded-full border object-cover"
             />
             <input type="file" accept="image/*" onChange={handlePhotoChange} />
+          </div>
+        </section>
+
+        {/* BANK DETAILS (OPTIONAL) */}
+        <section>
+          <h2 className="text-lg font-semibold mb-4">
+            Bank Details <span className="text-sm text-gray-500">(Optional)</span>
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input placeholder="Bank Name" className={inputClass}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  bank_detail: { ...formData.bank_detail, bank_name: e.target.value },
+                })
+              }
+            />
+            <input placeholder="Account Number" className={inputClass}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  bank_detail: { ...formData.bank_detail, account_number: e.target.value },
+                })
+              }
+            />
+            <input placeholder="IFSC Code" className={inputClass}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  bank_detail: { ...formData.bank_detail, ifsc_code: e.target.value },
+                })
+              }
+            />
+          </div>
+        </section>
+
+        {/* ID PROOF (OPTIONAL) */}
+        <section>
+          <h2 className="text-lg font-semibold mb-4">
+            ID Proof <span className="text-sm text-gray-500">(Optional)</span>
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input name="pancard_number" placeholder="PAN Number" onChange={handleChange} className={inputClass} />
+            <input name="aadhaar_number" placeholder="Aadhaar Number" onChange={handleChange} className={inputClass} />
           </div>
         </section>
 
@@ -336,90 +296,24 @@ const [bloodGroups, setBloodGroups] = useState([]);
           <h2 className="text-lg font-semibold mb-4">Family Members</h2>
 
           {formData.family_members.map((m, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3"
-            >
- <div>
-      <label className="text-sm text-gray-600">Father Name</label>
-      <input
-        className={inputClass}
-        value={formData.father_name}
-        onChange={(e) =>
-          setFormData({ ...formData, father_name: e.target.value })
-        }
-      />
-    </div>
-    <div>
-      <label className="text-sm text-gray-600">Mother Name</label>
-      <input
-        className={inputClass}
-        value={formData.mother_name}
-        onChange={(e) =>
-          setFormData({ ...formData, mother_name: e.target.value })
-        }
-      />
-    </div>
-<div>
-      <label className="text-sm text-gray-600">Spouse Name</label>
-      <input
-        className={inputClass}
-        value={formData.spouse_name}
-        onChange={(e) =>
-          setFormData({ ...formData, spouse_name: e.target.value })
-        }
-      />
-    </div>
-    <div>
-      <label className="text-sm text-gray-600">Son Name</label>
-      <input
-        className={inputClass}
-        value={formData.son_name}
-        onChange={(e) =>
-          setFormData({ ...formData, son_name: e.target.value })
-        }
-      />
-    </div>
-     <div>
-      <label className="text-sm text-gray-600">Daughter Name</label>
-      <input
-        className={inputClass}
-        value={formData.daughter_name}
-        onChange={(e) =>
-          setFormData({ ...formData, daughter_name: e.target.value })
-        }
-      />
-    </div>
-     <div>
-        <label className="text-sm text-gray-600 mb-1 block">
-          Phone Number
-        </label>
-        <PhoneInput
-          country="in"
-          value={m.phone_number.replace("+", "")}
-          onChange={(value) =>
-            updateFamilyMember(i, "phone_number", `+${value}`)
-          }
-          inputStyle={{ width: "100%" }}
-        />
-      </div>
+            <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+              <input placeholder="Name" className={inputClass} value={m.name}
+                onChange={(e) => updateFamilyMember(i, "name", e.target.value)} />
+              <input placeholder="Relationship" className={inputClass} value={m.relationship}
+                onChange={(e) => updateFamilyMember(i, "relationship", e.target.value)} />
+              <PhoneInput country="in" value={m.phone_number.replace("+", "")}
+                onChange={(v) => updateFamilyMember(i, "phone_number", `+${v}`)}
+                inputStyle={{ width: "100%" }} />
             </div>
           ))}
 
-          <button
-            type="button"
-            onClick={addFamilyMember}
-            className="text-blue-600 font-medium"
-          >
+          <button type="button" onClick={addFamilyMember} className="text-blue-600 font-medium">
             + Add Family Member
           </button>
         </section>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg"
-        >
+        <button type="submit" disabled={submitting}
+          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg">
           {submitting ? "Creating..." : "Create Employee"}
         </button>
       </form>
