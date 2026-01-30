@@ -249,4 +249,5 @@ class EmployeeDropdownSerializer(serializers.ModelSerializer):
             "department",
             "employee_code",   
             "full_name",
+            
         ]
