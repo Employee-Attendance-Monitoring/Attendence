@@ -51,7 +51,16 @@ const [bloodGroups, setBloodGroups] = useState([]);
       account_number: "",
       ifsc_code: "",
     },
-    family_members: [],
+    family_members: [
+      {
+      father_name: "",
+      mother_name: "",
+      spouse_name: "",
+      son_name: "",
+      daughter_name: "",
+      phone_number: "",
+    },
+    ],
   });
 
   /* ================= LOAD DEPARTMENT & ROLE ================= */
@@ -331,30 +340,69 @@ const [bloodGroups, setBloodGroups] = useState([]);
               key={i}
               className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3"
             >
-              <input
-                className={inputClass}
-                placeholder="Name"
-                value={m.name}
-                onChange={(e) =>
-                  updateFamilyMember(i, "name", e.target.value)
-                }
-              />
-              <input
-                className={inputClass}
-                placeholder="Relationship"
-                value={m.relationship}
-                onChange={(e) =>
-                  updateFamilyMember(i, "relationship", e.target.value)
-                }
-              />
-              <PhoneInput
-                country="in"
-                value={m.phone_number.replace("+", "")}
-                onChange={(value) =>
-                  updateFamilyMember(i, "phone_number", `+${value}`)
-                }
-                inputStyle={{ width: "100%" }}
-              />
+ <div>
+      <label className="text-sm text-gray-600">Father Name</label>
+      <input
+        className={inputClass}
+        value={formData.father_name}
+        onChange={(e) =>
+          setFormData({ ...formData, father_name: e.target.value })
+        }
+      />
+    </div>
+    <div>
+      <label className="text-sm text-gray-600">Mother Name</label>
+      <input
+        className={inputClass}
+        value={formData.mother_name}
+        onChange={(e) =>
+          setFormData({ ...formData, mother_name: e.target.value })
+        }
+      />
+    </div>
+<div>
+      <label className="text-sm text-gray-600">Spouse Name</label>
+      <input
+        className={inputClass}
+        value={formData.spouse_name}
+        onChange={(e) =>
+          setFormData({ ...formData, spouse_name: e.target.value })
+        }
+      />
+    </div>
+    <div>
+      <label className="text-sm text-gray-600">Son Name</label>
+      <input
+        className={inputClass}
+        value={formData.son_name}
+        onChange={(e) =>
+          setFormData({ ...formData, son_name: e.target.value })
+        }
+      />
+    </div>
+     <div>
+      <label className="text-sm text-gray-600">Daughter Name</label>
+      <input
+        className={inputClass}
+        value={formData.daughter_name}
+        onChange={(e) =>
+          setFormData({ ...formData, daughter_name: e.target.value })
+        }
+      />
+    </div>
+     <div>
+        <label className="text-sm text-gray-600 mb-1 block">
+          Phone Number
+        </label>
+        <PhoneInput
+          country="in"
+          value={m.phone_number.replace("+", "")}
+          onChange={(value) =>
+            updateFamilyMember(i, "phone_number", `+${value}`)
+          }
+          inputStyle={{ width: "100%" }}
+        />
+      </div>
             </div>
           ))}
 

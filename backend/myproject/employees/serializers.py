@@ -28,11 +28,12 @@ class FamilyMemberSerializer(serializers.ModelSerializer):
         model = FamilyMember
         fields = [
             "id",
-            "name",
-            "relationship",
-            "date_of_birth",
+            "father_name",
+            "mother_name",
+            "spouse_name",
+            "son_name",
+            "daughter_name",
             "phone_number",
-            
         ]
 
 
@@ -46,7 +47,6 @@ class BankDetailSerializer(serializers.ModelSerializer):
             "bank_name",
             "account_number",
             "ifsc_code",
-             
         ]
 
 
@@ -63,15 +63,17 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
 
     # Display
     email_display = serializers.EmailField(
-        source="user.email",    
+        source="user.email",
         read_only=True
     )
     employee_code = serializers.CharField(read_only=True)
-     # 🔴 IMPORTANT: ACTIVE / RELIEVED STATUS
+
+    # Active / Relieved status
     is_active = serializers.BooleanField(
         source="user.is_active",
         read_only=True
     )
+
     blood_group_display = serializers.CharField(
         source="get_blood_group_display",
         read_only=True
@@ -124,7 +126,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             "family_members",
             "bank_detail",
 
-           # ✅ BLOOD GROUP
+            # blood group
             "blood_group",
             "blood_group_display",
         ]
@@ -183,7 +185,6 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                 email=email,
                 password=raw_password,
                 role="EMPLOYEE",
-            
             )
 
             # Create employee profile
@@ -201,15 +202,20 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                     **bank_data
                 )
 
-            # Family members
+            # ✅ Family members (SAFE FIELD MAPPING – ONLY ADDITION)
             if family_data:
                 for member in family_data:
                     FamilyMember.objects.create(
                         employee=employee,
-                        **member
+                        father_name=member.get("father_name"),
+                        mother_name=member.get("mother_name"),
+                        spouse_name=member.get("spouse_name"),
+                        son_name=member.get("son_name"),
+                        daughter_name=member.get("daughter_name"),
+                        phone_number=member.get("phone_number"),
                     )
 
-        # 📧 Send email (safe)
+        # 📧 Send email
         try:
             send_mail(
                 subject="Your Employee Account Credentials",
@@ -225,7 +231,6 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                 fail_silently=False,
             )
         except Exception as e:
-            # Do NOT break employee creation
             print("Email sending failed:", e)
 
         return employee

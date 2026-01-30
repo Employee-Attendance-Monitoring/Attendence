@@ -28,6 +28,15 @@ const EMPTY_BANK = {
   ifsc_code: "",
 };
 
+const EMPTY_FAMILY = {
+  father_name: "",
+  mother_name: "",
+  spouse_name: "",
+  son_name: "",
+  daughter_name: "",
+  phone_number: "",
+};
+
 const EditEmployee = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -57,7 +66,7 @@ const EditEmployee = () => {
     aadhaar_number: "",
     photo: null,
     bank_detail: { ...EMPTY_BANK },
-    family_members: [],
+    family_members: [{ ...EMPTY_FAMILY }],
   });
 
   /* ================= LOAD DROPDOWNS ================= */
@@ -67,7 +76,7 @@ const EditEmployee = () => {
     getBloodGroups().then((res) => setBloodGroups(res.data || []));
   }, []);
 
-  /* ================= FETCH EMPLOYEE (AUTO-FILL FIX) ================= */
+  /* ================= FETCH EMPLOYEE ================= */
   useEffect(() => {
     const fetchEmployee = async () => {
       try {
@@ -76,7 +85,7 @@ const EditEmployee = () => {
 
         setFormData({
           employee_code: d.employee_code || "",
-          email: d.email || "", 
+          email: d.email_display || "",
           full_name: d.full_name || "",
           gender: d.gender || "",
           department: d.department || "",
@@ -93,7 +102,10 @@ const EditEmployee = () => {
           bank_detail: d.bank_detail
             ? { ...EMPTY_BANK, ...d.bank_detail }
             : { ...EMPTY_BANK },
-          family_members: d.family_members || [],
+          family_members:
+            d.family_members && d.family_members.length > 0
+              ? d.family_members
+              : [{ ...EMPTY_FAMILY }],
         });
 
         if (d.photo) {
@@ -121,6 +133,19 @@ const EditEmployee = () => {
     if (!file) return;
     setFormData({ ...formData, photo: file });
     setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const updateFamilyMember = (index, field, value) => {
+    const updated = [...formData.family_members];
+    updated[index][field] = value;
+    setFormData({ ...formData, family_members: updated });
+  };
+
+  const addFamilyMember = () => {
+    setFormData({
+      ...formData,
+      family_members: [...formData.family_members, { ...EMPTY_FAMILY }],
+    });
   };
 
   /* ================= SUBMIT ================= */
@@ -163,7 +188,6 @@ const EditEmployee = () => {
       <h1 className="text-2xl font-bold mb-6">Edit Employee</h1>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-
         {/* BASIC DETAILS */}
         <section>
           <h2 className="text-lg font-semibold text-blue-600 mb-4">
@@ -173,57 +197,117 @@ const EditEmployee = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label text="Employee Code" />
-              <input value={formData.employee_code} disabled className={`${inputClass} bg-gray-100`} />
+              <input
+                value={formData.employee_code}
+                disabled
+                className={`${inputClass} bg-gray-100`}
+              />
             </div>
 
             <div>
               <Label text="Email" />
-              <input value={formData.email} disabled className={`${inputClass} bg-gray-100`} />
+              <input
+                value={formData.email}
+                disabled
+                className={`${inputClass} bg-gray-100`}
+              />
             </div>
 
             <div>
               <Label text="Full Name" required />
-              <input name="full_name" value={formData.full_name} onChange={handleChange} className={inputClass} required />
+              <input
+                name="full_name"
+                value={formData.full_name}
+                onChange={handleChange}
+                className={inputClass}
+                required
+              />
             </div>
 
             <div>
               <Label text="Gender" />
-              <select name="gender" value={formData.gender} onChange={handleChange} className={inputClass}>
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                className={inputClass}
+              >
                 <option value="">Select Gender</option>
-                {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
+                {GENDERS.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
               <Label text="Department" required />
-              <select name="department" value={formData.department} onChange={handleChange} className={inputClass} required>
+              <select
+                name="department"
+                value={formData.department}
+                onChange={handleChange}
+                className={inputClass}
+                required
+              >
                 <option value="">Select Department</option>
-                {departments.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
+                {departments.map((d) => (
+                  <option key={d.id} value={d.name}>
+                    {d.name}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
               <Label text="Role" required />
-              <select name="role" value={formData.role} onChange={handleChange} className={inputClass} required>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className={inputClass}
+                required
+              >
                 <option value="">Select Role</option>
-                {roles.map((r) => <option key={r.id} value={r.name}>{r.name}</option>)}
+                {roles.map((r) => (
+                  <option key={r.id} value={r.name}>
+                    {r.name}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
               <Label text="Grade" required />
-              <select name="grade" value={formData.grade} onChange={handleChange} className={inputClass} required>
+              <select
+                name="grade"
+                value={formData.grade}
+                onChange={handleChange}
+                className={inputClass}
+                required
+              >
                 <option value="">Select Grade</option>
-                {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+                {GRADES.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
               <Label text="Blood Group" />
-              <select name="blood_group" value={formData.blood_group} onChange={handleChange} className={inputClass}>
+              <select
+                name="blood_group"
+                value={formData.blood_group}
+                onChange={handleChange}
+                className={inputClass}
+              >
                 <option value="">Select Blood Group</option>
                 {bloodGroups.map((bg) => (
-                  <option key={bg.value} value={bg.value}>{bg.label}</option>
+                  <option key={bg.value} value={bg.value}>
+                    {bg.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -233,24 +317,43 @@ const EditEmployee = () => {
               <PhoneInput
                 country="in"
                 value={formData.phone_number.replace("+", "")}
-                onChange={(v) => setFormData({ ...formData, phone_number: `+${v}` })}
+                onChange={(v) =>
+                  setFormData({ ...formData, phone_number: `+${v}` })
+                }
                 inputStyle={{ width: "100%" }}
               />
             </div>
 
             <div>
               <Label text="Company Name" />
-              <input value={COMPANY_NAME} disabled className={`${inputClass} bg-gray-100`} />
+              <input
+                value={COMPANY_NAME}
+                disabled
+                className={`${inputClass} bg-gray-100`}
+              />
             </div>
 
             <div>
               <Label text="Date of Birth" />
-              <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className={inputClass} />
+              <input
+                type="date"
+                name="date_of_birth"
+                value={formData.date_of_birth}
+                onChange={handleChange}
+                className={inputClass}
+              />
             </div>
 
             <div>
               <Label text="Date of Joining" required />
-              <input type="date" name="date_of_joining" value={formData.date_of_joining} onChange={handleChange} className={inputClass} required />
+              <input
+                type="date"
+                name="date_of_joining"
+                value={formData.date_of_joining}
+                onChange={handleChange}
+                className={inputClass}
+                required
+              />
             </div>
           </div>
         </section>
@@ -258,10 +361,106 @@ const EditEmployee = () => {
         {/* ADDRESS */}
         <section>
           <h2 className="font-semibold mb-3">Address</h2>
-          <textarea name="address" rows="3" value={formData.address} onChange={handleChange} className={inputClass} />
+          <textarea
+            name="address"
+            rows="3"
+            value={formData.address}
+            onChange={handleChange}
+            className={inputClass}
+          />
         </section>
 
-        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg">
+        {/* FAMILY MEMBERS */}
+        <section>
+          <h2 className="text-lg font-semibold mb-4">Family Members</h2>
+
+          {formData.family_members.map((m, i) => (
+            <div
+              key={i}
+              className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 border p-4 rounded"
+            >
+              <div>
+                <Label text="Father Name" />
+                <input
+                  className={inputClass}
+                  value={m.father_name}
+                  onChange={(e) =>
+                    updateFamilyMember(i, "father_name", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <Label text="Mother Name" />
+                <input
+                  className={inputClass}
+                  value={m.mother_name}
+                  onChange={(e) =>
+                    updateFamilyMember(i, "mother_name", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <Label text="Spouse Name" />
+                <input
+                  className={inputClass}
+                  value={m.spouse_name}
+                  onChange={(e) =>
+                    updateFamilyMember(i, "spouse_name", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <Label text="Son Name" />
+                <input
+                  className={inputClass}
+                  value={m.son_name}
+                  onChange={(e) =>
+                    updateFamilyMember(i, "son_name", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <Label text="Daughter Name" />
+                <input
+                  className={inputClass}
+                  value={m.daughter_name}
+                  onChange={(e) =>
+                    updateFamilyMember(i, "daughter_name", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <Label text="Phone Number" />
+                <PhoneInput
+                  country="in"
+                  value={(m.phone_number || "").replace("+", "")}
+                  onChange={(v) =>
+                    updateFamilyMember(i, "phone_number", `+${v}`)
+                  }
+                  inputStyle={{ width: "100%" }}
+                />
+              </div>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={addFamilyMember}
+            className="text-blue-600 font-medium"
+          >
+            + Add Family Member
+          </button>
+        </section>
+
+        <button
+          type="submit"
+          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg"
+        >
           {submitting ? "Updating..." : "Update Employee"}
         </button>
       </form>

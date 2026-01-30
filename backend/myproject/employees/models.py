@@ -97,9 +97,31 @@ class FamilyMember(models.Model):
         related_name="family_members"
     )
 
-    name = models.CharField(max_length=100)
-    relationship = models.CharField(max_length=50)
-    date_of_birth = models.DateField(null=True, blank=True)
+    father_name = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True
+    )
+    mother_name = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True
+    )
+    spouse_name = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True
+    )
+    son_name = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True
+    )
+    daughter_name = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True
+    )
 
     phone_number = models.CharField(
         max_length=20,
@@ -108,7 +130,7 @@ class FamilyMember(models.Model):
     )
 
     def __str__(self):
-        return f"{self.name} ({self.relationship})"
+        return f"Family details of {self.employee}"
 
 
 # =========================
