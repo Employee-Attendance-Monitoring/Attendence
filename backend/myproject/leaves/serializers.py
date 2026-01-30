@@ -81,7 +81,7 @@ class LeaveSerializer(serializers.ModelSerializer):
 class LeaveApprovalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Leave
-        fields = ["status"]
+        fields = ["status","rejection_reason"]
 
     def validate_status(self, value):
         if value not in ["APPROVED", "REJECTED"]:

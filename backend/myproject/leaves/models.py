@@ -79,6 +79,7 @@ class Leave(models.Model):
 
     applied_at = models.DateTimeField(auto_now_add=True)
     actioned_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True, null=True)
 
     class Meta:
         ordering = ["-applied_at"]

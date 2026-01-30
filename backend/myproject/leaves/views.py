@@ -114,6 +114,7 @@ class LeaveApprovalListView(APIView):
         serializer = LeaveSerializer(leaves, many=True)
         return Response(serializer.data)
 # ================= ADMIN APPROVE / REJECT =================
+
 class LeaveApprovalActionView(APIView):
     permission_classes = [IsAdmin]
 
@@ -126,22 +127,33 @@ class LeaveApprovalActionView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer = LeaveApprovalSerializer(leave, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        status_value = request.data.get("status")
+        rejection_reason = request.data.get("rejection_reason", "")
 
-        # ✅ SAFE NOTIFICATION
+        if status_value == "REJECTED" and not rejection_reason:
+            return Response(
+                {"detail": "Rejection reason is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        leave.status = status_value
+        leave.rejection_reason = rejection_reason
+        leave.actioned_at = timezone.now()
+        leave.save()
+
+        # Notify employee
         Notification.objects.create(
             user=leave.user,
             title="Leave Status Updated",
             message=(
-                f"Your leave ({leave.start_date} → {leave.end_date}) "
-                f"has been {leave.status.lower()}."
+                f"Your leave from {leave.start_date} to {leave.end_date} "
+                f"was {leave.status.lower()}."
+                + (f" Reason: {rejection_reason}" if rejection_reason else "")
             )
         )
 
         return Response(
-            {"message": f"Leave {leave.status.lower()}"},
+            {"message": "Leave updated successfully"},
             status=status.HTTP_200_OK
         )
 
