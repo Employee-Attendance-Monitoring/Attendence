@@ -15,8 +15,8 @@ const LeaveApproval = () => {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [newLeaveType, setNewLeaveType] = useState("");
   const [loading, setLoading] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
 
-  // Filters
   const [employeeFilter, setEmployeeFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
@@ -40,16 +40,18 @@ const LeaveApproval = () => {
   /* ================= ACTIONS ================= */
   const handleAction = async (id, status) => {
     try {
+      setActionLoadingId(id);
       await updateLeaveStatus(id, status);
       loadLeaves();
-    } catch (err) {
+    } catch {
       alert("Action failed");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
   const handleAddLeaveType = async () => {
     if (!newLeaveType.trim()) return;
-
     await addLeaveType({ name: newLeaveType });
     setNewLeaveType("");
     loadLeaveTypes();
@@ -73,51 +75,65 @@ const LeaveApproval = () => {
 
   const filteredLeaves = useMemo(() => {
     return leaves.filter((leave) => {
-      const employeeMatch =
+      const empOk =
         employeeFilter === "ALL" ||
         leave.employee_email === employeeFilter;
-
-      const statusMatch =
-        statusFilter === "ALL" ||
-        leave.status === statusFilter;
-
-      return employeeMatch && statusMatch;
+      const statusOk =
+        statusFilter === "ALL" || leave.status === statusFilter;
+      return empOk && statusOk;
     });
   }, [leaves, employeeFilter, statusFilter]);
 
+  /* ================= STATUS BADGE ================= */
+  const StatusBadge = ({ status }) => {
+    const map = {
+      APPROVED: "bg-green-100 text-green-700",
+      REJECTED: "bg-red-100 text-red-700",
+      PENDING: "bg-yellow-100 text-yellow-700",
+    };
+    return (
+      <span className={`px-3 py-1 text-xs rounded-full ${map[status]}`}>
+        {status}
+      </span>
+    );
+  };
+
   /* ================= UI ================= */
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">Leave Approvals</h2>
+    <div className="space-y-10">
 
-      {/* ================= FILTERS ================= */}
-      <div className="bg-white p-4 rounded shadow mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* ===== HEADER ===== */}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800">
+          Leave Approvals
+        </h2>
+        <p className="text-sm text-gray-500">
+          Review and manage employee leave requests
+        </p>
+      </div>
+
+      {/* ===== FILTERS ===== */}
+      <div className="bg-white p-5 rounded-xl shadow grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-1">
-            Employee
-          </label>
+          <label className="text-sm font-medium">Employee</label>
           <select
             value={employeeFilter}
             onChange={(e) => setEmployeeFilter(e.target.value)}
-            className="border px-3 py-2 rounded w-full"
+            className="w-full border rounded-md px-3 py-2 mt-1"
           >
             <option value="ALL">All Employees</option>
             {employeeOptions.map((email) => (
-              <option key={email} value={email}>
-                {email}
-              </option>
+              <option key={email}>{email}</option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">
-            Status
-          </label>
+          <label className="text-sm font-medium">Status</label>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="border px-3 py-2 rounded w-full"
+            className="w-full border rounded-md px-3 py-2 mt-1"
           >
             <option value="ALL">All</option>
             <option value="PENDING">Pending</option>
@@ -127,44 +143,53 @@ const LeaveApproval = () => {
         </div>
       </div>
 
-      {/* ================= APPROVAL TABLE ================= */}
-      {loading ? (
-        <Loader />
-      ) : (
-        <div className="bg-white shadow rounded overflow-x-auto mb-10">
-          <table className="min-w-full text-sm text-center">
+      {/* ===== LEAVE TABLE ===== */}
+      <div className="bg-white rounded-xl shadow overflow-x-auto">
+        {loading ? (
+          <Loader />
+        ) : (
+          <table className="min-w-full text-sm">
             <thead className="bg-gray-100">
               <tr>
-                <th>Employee</th>
-                <th>Leave Type</th>
-                <th>From</th>
-                <th>To</th>
-                <th>Reason</th>
-                <th>Action</th>
+                <th className="p-3">Employee</th>
+                <th className="p-3">Leave Type</th>
+                <th className="p-3">From</th>
+                <th className="p-3">To</th>
+                <th className="p-3">Reason</th>
+                <th className="p-3">Status / Action</th>
               </tr>
             </thead>
 
             <tbody>
               {filteredLeaves.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-6 text-gray-500">
+                  <td colSpan="6" className="p-6 text-center text-gray-500">
                     No leave requests
                   </td>
                 </tr>
               ) : (
-                filteredLeaves.map((leave) => (
-                  <tr key={leave.id} className="border-t">
-                    <td>{leave.employee_email}</td>
-                    <td className="font-medium">
+                filteredLeaves.map((leave, i) => (
+                  <tr
+                    key={leave.id}
+                    className={`border-t ${
+                      i % 2 ? "bg-gray-50" : "bg-white"
+                    }`}
+                  >
+                    <td className="p-3">{leave.employee_email}</td>
+                    <td className="p-3 text-center">
                       {leave.leave_type_name}
                     </td>
-                    <td>{leave.start_date}</td>
-                    <td>{leave.end_date}</td>
-                    <td>{leave.reason || "-"}</td>
-                    <td>
+                    <td className="p-3 text-center">{leave.start_date}</td>
+                    <td className="p-3 text-center">{leave.end_date}</td>
+                    <td className="p-3 text-center">
+                      {leave.reason || "-"}
+                    </td>
+
+                    <td className="p-3 text-center">
                       {leave.status === "PENDING" ? (
-                        <div className="flex gap-2 justify-center">
+                        <div className="flex justify-center gap-2">
                           <button
+                            disabled={actionLoadingId === leave.id}
                             onClick={() =>
                               handleAction(leave.id, "APPROVED")
                             }
@@ -173,6 +198,7 @@ const LeaveApproval = () => {
                             Approve
                           </button>
                           <button
+                            disabled={actionLoadingId === leave.id}
                             onClick={() =>
                               handleAction(leave.id, "REJECTED")
                             }
@@ -182,7 +208,7 @@ const LeaveApproval = () => {
                           </button>
                         </div>
                       ) : (
-                        <span className="badge">{leave.status}</span>
+                        <StatusBadge status={leave.status} />
                       )}
                     </td>
                   </tr>
@@ -190,26 +216,23 @@ const LeaveApproval = () => {
               )}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* ================= LEAVE TYPE MANAGEMENT ================= */}
-      <div className="bg-white p-6 rounded shadow">
+      {/* ===== MANAGE LEAVE TYPES (SAFE & STYLED) ===== */}
+      <div className="bg-white p-6 rounded-xl shadow">
         <h3 className="text-lg font-semibold mb-4">
           Manage Leave Types
         </h3>
 
         <div className="flex gap-2 mb-4">
           <input
-            className="border px-3 py-2 rounded w-full"
+            className="border rounded-md px-3 py-2 w-full"
             placeholder="New leave type"
             value={newLeaveType}
             onChange={(e) => setNewLeaveType(e.target.value)}
           />
-          <button
-            onClick={handleAddLeaveType}
-            className="btn-primary"
-          >
+          <button onClick={handleAddLeaveType} className="btn-primary">
             Add
           </button>
         </div>
@@ -218,9 +241,9 @@ const LeaveApproval = () => {
           {leaveTypes.map((lt) => (
             <li
               key={lt.id}
-              className="flex justify-between items-center py-2"
+              className="flex justify-between items-center py-3"
             >
-              <span>
+              <span className="font-medium">
                 {lt.name}{" "}
                 {!lt.is_active && (
                   <span className="text-xs text-gray-500">
@@ -228,6 +251,7 @@ const LeaveApproval = () => {
                   </span>
                 )}
               </span>
+
               <div className="flex gap-2">
                 <button
                   onClick={() => handleToggleLeaveType(lt)}
