@@ -1,26 +1,38 @@
 import { useAuth } from "../auth/AuthContext";
 import { useNavigate } from "react-router-dom";
+import NotificationBell from "./NotificationBell";
 
 const Header = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   return (
-    <div className="flex justify-between items-center bg-white shadow px-6 py-3">
+    <header className="bg-white shadow-sm px-6 py-3 flex justify-between items-center">
       
-      {/* LEFT */}
-      <h1 className="text-lg font-semibold">
-        Welcome, {user?.email}
-      </h1>
+      {/* LEFT – USER INFO */}
+      <div>
+        <h1 className="text-lg font-semibold text-gray-800">
+          Welcome,{" "}
+          <span className="text-blue-600">
+            {user?.email}
+          </span>
+        </h1>
+        <p className="text-xs text-gray-500 capitalize">
+          {user?.role?.toLowerCase()}
+        </p>
+      </div>
 
-      {/* RIGHT */}
-      <div className="flex items-center gap-3">
-        
-        {/* APPLY LEAVE – ONLY FOR EMPLOYEE */}
+      {/* RIGHT – ACTIONS */}
+      <div className="flex items-center gap-4">
+
+        {/*NOTIFICATIONS */}
+        <NotificationBell />
+
+        {/* APPLY LEAVE – EMPLOYEE ONLY */}
         {user?.role === "EMPLOYEE" && (
           <button
             onClick={() => navigate("/employee/leave")}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm font-medium"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition"
           >
             Apply Leave
           </button>
@@ -29,12 +41,12 @@ const Header = () => {
         {/* LOGOUT */}
         <button
           onClick={logout}
-          className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded text-sm font-medium"
+          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition"
         >
           Logout
         </button>
       </div>
-    </div>
+    </header>
   );
 };
 

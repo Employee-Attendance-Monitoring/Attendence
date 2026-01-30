@@ -72,6 +72,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="p-6 space-y-8">
+       
       {/* ================= HEADER ================= */}
       <div>
         <h1 className="text-3xl font-bold text-gray-800">
@@ -80,6 +81,7 @@ const AdminDashboard = () => {
         <p className="text-gray-500 mt-1">
           Overview of today’s workforce status
         </p>
+
       </div>
 
       {/* ================= SUMMARY CARDS ================= */}
