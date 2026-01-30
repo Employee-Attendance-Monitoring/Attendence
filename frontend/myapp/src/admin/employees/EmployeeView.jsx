@@ -61,14 +61,25 @@ const EmployeeView = () => {
         </div>
       </div>
 
-      {/* BASIC DETAILS */}
+      {/* DETAILS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* BASIC DETAILS */}
         <div className="bg-white shadow rounded p-6">
           <h2 className="font-semibold text-lg mb-3">Basic Details</h2>
           <InfoRow label="Phone" value={employee.phone_number} />
           <InfoRow label="Department" value={employee.department} />
+          <InfoRow label="Role" value={employee.role} />
+          <InfoRow label="Grade" value={employee.grade} />
           <InfoRow label="Company" value={employee.company_name} />
           <InfoRow label="Date of Joining" value={employee.date_of_joining} />
+        </div>
+
+        {/* PERSONAL DETAILS (ADDED) */}
+        <div className="bg-white shadow rounded p-6">
+          <h2 className="font-semibold text-lg mb-3">Personal Details</h2>
+          <InfoRow label="Gender" value={employee.gender} />
+          <InfoRow label="Date of Birth" value={employee.date_of_birth} />
+          <InfoRow label="Blood Group" value={employee.blood_group} />
         </div>
 
         {/* BANK DETAILS */}
@@ -87,17 +98,22 @@ const EmployeeView = () => {
             value={employee.bank_detail?.ifsc_code}
           />
         </div>
+
+        {/* ID PROOF */}
         <div className="bg-white shadow rounded p-6">
-        <h2 className="font-semibold text-lg mb-3">ID Proof</h2>
+          <h2 className="font-semibold text-lg mb-3">ID Proof</h2>
+          <InfoRow label="PAN Number" value={employee.pancard_number} />
+          <InfoRow label="Aadhaar Number" value={employee.aadhaar_number} />
+        </div>
 
-      <InfoRow label="PAN Number" value={employee.pancard_number || "-"} />
-
-      <InfoRow label="Aadhaar Number" value={employee.aadhaar_number || "-"} />
+        {/* ADDRESS (ADDED) */}
+        <div className="bg-white shadow rounded p-6 md:col-span-2">
+          <h2 className="font-semibold text-lg mb-3">Address</h2>
+          <p className="text-gray-700">
+            {employee.address || "-"}
+          </p>
+        </div>
       </div>
-      </div>
-      
-      
-
 
       {/* FAMILY MEMBERS */}
       {employee.family_members?.length > 0 && (
@@ -122,18 +138,11 @@ const EmployeeView = () => {
       {/* ACTIONS */}
       <div className="flex justify-end">
         <button
-  onClick={() => navigate("/admin/employees")}
-  className="
-    px-6 py-2
-    bg-blue-600 text-white
-    rounded
-    hover:bg-blue-700
-    transition
-  "
->
-  Back
-</button>
-
+          onClick={() => navigate("/admin/employees")}
+          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+        >
+          Back
+        </button>
       </div>
     </div>
   );

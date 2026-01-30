@@ -50,6 +50,7 @@ const EditEmployee = () => {
     grade: "",
     blood_group: "",
     phone_number: "",
+    date_of_birth: "",
     date_of_joining: "",
     address: "",
     pancard_number: "",
@@ -66,7 +67,7 @@ const EditEmployee = () => {
     getBloodGroups().then((res) => setBloodGroups(res.data || []));
   }, []);
 
-  /* ================= FETCH EMPLOYEE ================= */
+  /* ================= FETCH EMPLOYEE (AUTO-FILL FIX) ================= */
   useEffect(() => {
     const fetchEmployee = async () => {
       try {
@@ -75,7 +76,7 @@ const EditEmployee = () => {
 
         setFormData({
           employee_code: d.employee_code || "",
-          email: d.email_display || "",
+          email: d.email || "", 
           full_name: d.full_name || "",
           gender: d.gender || "",
           department: d.department || "",
@@ -83,6 +84,7 @@ const EditEmployee = () => {
           grade: d.grade || "",
           blood_group: d.blood_group || "",
           phone_number: d.phone_number || "",
+          date_of_birth: d.date_of_birth || "",
           date_of_joining: d.date_of_joining || "",
           address: d.address || "",
           pancard_number: d.pancard_number || "",
@@ -99,7 +101,8 @@ const EditEmployee = () => {
             d.photo.startsWith("http") ? d.photo : `${BASE_URL}${d.photo}`
           );
         }
-      } catch {
+      } catch (err) {
+        console.error(err);
         alert("Failed to load employee");
       } finally {
         setLoading(false);
@@ -131,7 +134,6 @@ const EditEmployee = () => {
       const payload = new FormData();
 
       Object.entries(formData).forEach(([key, value]) => {
-        // 🚫 DO NOT SEND THESE (CAUSES 400 ERROR)
         if (key === "email" || key === "employee_code") return;
 
         if (key === "bank_detail" || key === "family_members") {
@@ -146,7 +148,8 @@ const EditEmployee = () => {
       await api.put(`/employees/${id}/`, payload);
       alert("Employee updated successfully ✅");
       navigate("/admin/employees");
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert("Failed to update employee ❌");
     } finally {
       setSubmitting(false);
@@ -219,7 +222,9 @@ const EditEmployee = () => {
               <Label text="Blood Group" />
               <select name="blood_group" value={formData.blood_group} onChange={handleChange} className={inputClass}>
                 <option value="">Select Blood Group</option>
-                {bloodGroups.map((bg) => <option key={bg.value} value={bg.value}>{bg.label}</option>)}
+                {bloodGroups.map((bg) => (
+                  <option key={bg.value} value={bg.value}>{bg.label}</option>
+                ))}
               </select>
             </div>
 
@@ -239,6 +244,11 @@ const EditEmployee = () => {
             </div>
 
             <div>
+              <Label text="Date of Birth" />
+              <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className={inputClass} />
+            </div>
+
+            <div>
               <Label text="Date of Joining" required />
               <input type="date" name="date_of_joining" value={formData.date_of_joining} onChange={handleChange} className={inputClass} required />
             </div>
@@ -247,65 +257,8 @@ const EditEmployee = () => {
 
         {/* ADDRESS */}
         <section>
-          <h2 className="text-lg font-semibold mb-4">Address</h2>
+          <h2 className="font-semibold mb-3">Address</h2>
           <textarea name="address" rows="3" value={formData.address} onChange={handleChange} className={inputClass} />
-        </section>
-
-        {/* BANK DETAILS */}
-        <section>
-          <h2 className="font-semibold mb-3">Bank Details</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {["bank_name", "account_number", "ifsc_code"].map((f) => (
-              <input
-                key={f}
-                className={inputClass}
-                placeholder={f.replace("_", " ").toUpperCase()}
-                value={formData.bank_detail[f]}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    bank_detail: { ...formData.bank_detail, [f]: e.target.value },
-                  })
-                }
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* FAMILY MEMBERS */}
-        <section>
-          <h2 className="font-semibold mb-3">Family Members</h2>
-
-          {formData.family_members.map((m, i) => (
-            <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-              {["name", "relationship", "phone_number"].map((f) => (
-                <input
-                  key={f}
-                  className={inputClass}
-                  placeholder={f.replace("_", " ").toUpperCase()}
-                  value={m[f] || ""}
-                  onChange={(e) => {
-                    const arr = [...formData.family_members];
-                    arr[i][f] = e.target.value;
-                    setFormData({ ...formData, family_members: arr });
-                  }}
-                />
-              ))}
-            </div>
-          ))}
-
-          <button
-            type="button"
-            className="text-blue-600 font-medium"
-            onClick={() =>
-              setFormData({
-                ...formData,
-                family_members: [...formData.family_members, { name: "", relationship: "", phone_number: "" }],
-              })
-            }
-          >
-            + Add Family Member
-          </button>
         </section>
 
         <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg">
