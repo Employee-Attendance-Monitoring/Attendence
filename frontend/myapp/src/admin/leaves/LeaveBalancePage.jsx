@@ -8,10 +8,12 @@ import {
 const LeaveBalancePage = () => {
   const [tab, setTab] = useState("ALL"); // ALL | INDIVIDUAL
   const [employees, setEmployees] = useState([]);
-  const [employee, setEmployee] = useState("");
+  const [employee, setEmployee] = useState(""); // email
+  const [search, setSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
   const [totalLeave, setTotalLeave] = useState(12);
   const [loading, setLoading] = useState(false);
-
   const [summary, setSummary] = useState(null);
 
   /* ================= LOAD EMPLOYEES ================= */
@@ -49,9 +51,7 @@ const LeaveBalancePage = () => {
       setLoading(true);
 
       if (tab === "ALL") {
-        await setLeaveBalance({
-          total_leaves: Number(totalLeave),
-        });
+        await setLeaveBalance({ total_leaves: Number(totalLeave) });
         alert("Leave balance updated for all employees");
       } else {
         await setLeaveBalance({
@@ -67,6 +67,13 @@ const LeaveBalancePage = () => {
       setLoading(false);
     }
   };
+
+  /* ================= FILTER ================= */
+  const filteredEmployees = employees.filter((e) =>
+    `${e.employee_code || ""} ${e.full_name || ""} ${e.email}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -99,46 +106,76 @@ const LeaveBalancePage = () => {
         </button>
       </div>
 
-      {/* ================= SUMMARY CARDS ================= */}
+      {/* ================= SUMMARY ================= */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card title="Total Leaves" value={summary.total} color="blue" />
-          <Card title="Leaves Taken" value={summary.taken} color="red" />
-          <Card title="Balance Leaves" value={summary.balance} color="green" />
+          <Card title="Total Leaves" value={summary.total} />
+          <Card title="Leaves Taken" value={summary.taken} />
+          <Card title="Balance Leaves" value={summary.balance} />
         </div>
       )}
 
       {/* ================= FORM ================= */}
       <div className="bg-white p-6 rounded shadow space-y-4 max-w-md">
+
+        {/* ===== SEARCHABLE EMPLOYEE DROPDOWN ===== */}
         {tab === "INDIVIDUAL" && (
-          <div>
+          <div className="relative">
             <label className="text-sm">Employee</label>
-            <select
-              value={employee}
-              onChange={(e) => setEmployee(e.target.value)}
+
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setShowDropdown(true);
+              }}
+              onFocus={() => setShowDropdown(true)}
+              placeholder="EMP / Name / Email"
               className="w-full border px-3 py-2 rounded"
-            >
-              <option value="">Select Employee</option>
-              {employees.map((e) => (
-                <option key={e.email} value={e.email}>
-                  {e.email}
-                </option>
-              ))}
-            </select>
+            />
+
+            {showDropdown && (
+              <div className="absolute z-10 w-full bg-white border rounded shadow max-h-60 overflow-y-auto mt-1">
+                {filteredEmployees.length === 0 && (
+                  <div className="p-3 text-sm text-gray-500">
+                    No employees found
+                  </div>
+                )}
+
+                {filteredEmployees.map((e) => (
+                  <div
+                    key={e.email}
+                    onClick={() => {
+                      setEmployee(e.email);
+                      setSearch(
+                        `${e.employee_code || ""} ${e.full_name || ""}`
+                      );
+                      setShowDropdown(false);
+                    }}
+                    className="p-3 cursor-pointer hover:bg-gray-100"
+                  >
+                    <div className="font-medium">
+                      {e.employee_code || "EMP"} {e.full_name || ""}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {e.email}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
+        {/* ===== TOTAL LEAVE ===== */}
         <div>
-          <label className="text-sm">
-            Total Leave (Year)
-          </label>
+          <label className="text-sm">Total Leave (Year)</label>
           <input
             type="number"
             min="1"
             value={totalLeave}
-            onChange={(e) =>
-              setTotalLeave(Number(e.target.value))
-            }
+            onChange={(e) => setTotalLeave(Number(e.target.value))}
             className="w-full border px-3 py-2 rounded"
           />
         </div>
@@ -155,14 +192,11 @@ const LeaveBalancePage = () => {
   );
 };
 
-/* ================= UI CARD ================= */
-
-const Card = ({ title, value, color }) => (
+/* ================= CARD ================= */
+const Card = ({ title, value }) => (
   <div className="bg-white rounded-xl shadow border p-5">
     <p className="text-sm text-gray-500">{title}</p>
-    <h2 className={`text-3xl font-bold text-${color}-600 mt-2`}>
-      {value}
-    </h2>
+    <h2 className="text-3xl font-bold mt-2">{value}</h2>
   </div>
 );
 
