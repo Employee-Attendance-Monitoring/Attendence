@@ -34,84 +34,133 @@ const EmployeeView = () => {
     : "/default-avatar.png";
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
-      {/* HEADER */}
-      <div className="bg-white shadow rounded p-6 flex gap-6 items-center">
-        <img
-          src={photoUrl}
-          onError={(e) => (e.target.src = "/default-avatar.png")}
-          className="w-32 h-32 rounded-full object-cover border"
-        />
-        <div>
-          <h1 className="text-2xl font-bold">{employee.full_name}</h1>
-          <p className="text-gray-600">Employee Code: {employee.employee_code}</p>
-          <p className="text-gray-500">{employee.email_display}</p>
-        </div>
-      </div>
+  <div className="max-w-7xl mx-auto p-6 space-y-6">
 
-      {/* BASIC DETAILS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white shadow rounded p-6">
-          <h2 className="font-semibold mb-3">Basic Details</h2>
-          <InfoRow label="Phone" value={employee.phone_number} />
-          <InfoRow label="Gender" value={employee.gender} />
-          <InfoRow label="Department" value={employee.department} />
-          <InfoRow label="Role" value={employee.role} />
-          <InfoRow label="Grade" value={employee.grade} />
-          <InfoRow label="Blood Group" value={employee.blood_group} />
-          <InfoRow label="Date of Birth" value={employee.date_of_birth} />
-          <InfoRow label="Date of Joining" value={employee.date_of_joining} />
-        </div>
+    {/* ===== PROFILE HEADER ===== */}
+    <div className="bg-white rounded-xl shadow p-6 flex flex-col md:flex-row items-center gap-6">
+      <img
+        src={photoUrl}
+        onError={(e) => (e.target.src = "/default-avatar.png")}
+        className="w-36 h-36 rounded-full object-cover border"
+      />
 
-        {/* ADDRESS */}
-        <div className="bg-white shadow rounded p-6">
-          <h2 className="font-semibold mb-3">Address</h2>
-          <p><b>Current:</b> {employee.current_address || "-"}</p>
-          <p className="mt-2"><b>Permanent:</b> {employee.permanent_address || "-"}</p>
-        </div>
+      <div className="flex-1 text-center md:text-left">
+        <h1 className="text-3xl font-bold text-gray-800">
+          {employee.full_name}
+        </h1>
+        <p className="text-gray-500 mt-1">
+          {employee.email_display}
+        </p>
 
-        {/* BANK */}
-        <div className="bg-white shadow rounded p-6">
-          <h2 className="font-semibold mb-3">Bank Details</h2>
-          <InfoRow label="Bank Name" value={employee.bank_detail?.bank_name} />
-          <InfoRow label="Account No" value={employee.bank_detail?.account_number} />
-          <InfoRow label="IFSC" value={employee.bank_detail?.ifsc_code} />
+        <div className="flex flex-wrap gap-4 mt-4 text-sm">
+          <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+            Emp Code: {employee.employee_code}
+          </span>
+          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full">
+            {employee.department}
+          </span>
+          <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
+            {employee.role}
+          </span>
         </div>
-
-        {/* ID */}
-        <div className="bg-white shadow rounded p-6">
-          <h2 className="font-semibold mb-3">ID Proof</h2>
-          <InfoRow label="PAN" value={employee.pancard_number} />
-          <InfoRow label="Aadhaar" value={employee.aadhaar_number} />
-        </div>
-      </div>
-
-      {/* FAMILY MEMBERS */}
-      {employee.family_members?.length > 0 && (
-        <div className="bg-white shadow rounded p-6">
-          <h2 className="font-semibold mb-4">Family Members</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {employee.family_members.map((m, i) => (
-              <div key={i} className="border p-4 rounded bg-gray-50">
-                <p><b>Name:</b> {m.name}</p>
-                <p><b>Relationship:</b> {m.relationship}</p>
-                <p><b>Phone:</b> {m.phone_number || "-"}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="flex justify-end">
-        <button
-          onClick={() => navigate("/admin/employees")}
-          className="bg-blue-600 text-white px-6 py-2 rounded"
-        >
-          Back
-        </button>
       </div>
     </div>
-  );
+
+    {/* ===== GRID ===== */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      {/* BASIC INFO */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-700">
+          👤 Basic Information
+        </h2>
+        <InfoRow label="Phone Number" value={employee.phone_number} />
+        <InfoRow label="Gender" value={employee.gender} />
+        <InfoRow label="Blood Group" value={employee.blood_group} />
+        <InfoRow label="Date of Birth" value={employee.date_of_birth} />
+      </div>
+
+      {/* WORK INFO */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-700">
+          🏢 Work Information
+        </h2>
+        <InfoRow label="Department" value={employee.department} />
+        <InfoRow label="Role" value={employee.role} />
+        <InfoRow label="Grade" value={employee.grade} />
+        <InfoRow label="Date of Joining" value={employee.date_of_joining} />
+      </div>
+
+      {/* ADDRESS */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-700">
+          📍 Address
+        </h2>
+        <p className="text-sm text-gray-600">
+          <b>Current:</b><br /> {employee.current_address || "-"}
+        </p>
+        <p className="text-sm text-gray-600 mt-3">
+          <b>Permanent:</b><br /> {employee.permanent_address || "-"}
+        </p>
+      </div>
+
+      {/* BANK */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-700">
+          🏦 Bank Details
+        </h2>
+        <InfoRow label="Bank Name" value={employee.bank_detail?.bank_name} />
+        <InfoRow label="Account Number" value={employee.bank_detail?.account_number} />
+        <InfoRow label="IFSC Code" value={employee.bank_detail?.ifsc_code} />
+      </div>
+
+      {/* ID PROOF */}
+      <div className="bg-white rounded-xl shadow p-6 md:col-span-2">
+        <h2 className="text-lg font-semibold mb-4 text-gray-700">
+          🪪 ID Proof
+        </h2>
+        <div className="grid md:grid-cols-2 gap-4">
+          <InfoRow label="PAN Number" value={employee.pancard_number} />
+          <InfoRow label="Aadhaar Number" value={employee.aadhaar_number} />
+        </div>
+      </div>
+
+    </div>
+
+    {/* FAMILY MEMBERS */}
+    {employee.family_members?.length > 0 && (
+      <div className="bg-white rounded-xl shadow p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-700">
+          👨‍👩‍👧 Family Members
+        </h2>
+
+        <div className="grid md:grid-cols-3 gap-4">
+          {employee.family_members.map((m, i) => (
+            <div key={i} className="border rounded-lg p-4 bg-gray-50">
+              <p className="font-semibold text-gray-800">NAME : {m.name}</p>
+              <p className=" font-semibold text-sm text-gray-800">Relationship : {m.relationship}</p>
+              <p className="text-sm text-gray-500 mt-1">
+                📞 {m.phone_number || "-"}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* ACTIONS */}
+    <div className="flex justify-end">
+      <button
+        onClick={() => navigate("/admin/employees")}
+        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+      >
+        ← Back to Employees
+      </button>
+    </div>
+
+  </div>
+);
+
 };
 
 export default EmployeeView;

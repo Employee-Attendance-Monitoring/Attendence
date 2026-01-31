@@ -3,191 +3,143 @@ from django.db import transaction
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth import get_user_model
-import secrets
-import string
-import json
+import secrets, string, json
 
 from organization.models import Organization
 from .models import EmployeeProfile, FamilyMember, BankDetail
 
 User = get_user_model()
 
-# =========================
-# PASSWORD GENERATOR
-# =========================
+
+# ================= PASSWORD GENERATOR =================
 def generate_password(length=10):
     chars = string.ascii_letters + string.digits + "@#$%"
     return "".join(secrets.choice(chars) for _ in range(length))
 
 
-# =========================
-# FAMILY MEMBER
-# =========================
+# ================= NESTED SERIALIZERS =================
 class FamilyMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = FamilyMember
-        fields = [
-            "id",
-            "father_name",
-            "mother_name",
-            "spouse_name",
-            "son_name",
-            "daughter_name",
-            "phone_number",
-        ]
+        fields = ["id", "name", "relationship", "phone_number"]
 
 
-# =========================
-# BANK DETAIL
-# =========================
 class BankDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankDetail
-        fields = [
-            "bank_name",
-            "account_number",
-            "ifsc_code",
-        ]
+        fields = ["bank_name", "account_number", "ifsc_code"]
 
 
-# =========================
-# EMPLOYEE PROFILE
-# =========================
+# ================= EMPLOYEE PROFILE =================
 class EmployeeProfileSerializer(serializers.ModelSerializer):
-    # Nested
-    family_members = FamilyMemberSerializer(many=True, required=False)
-    bank_detail = BankDetailSerializer(required=False)
 
-    # Auth
+    READ_ONLY_AFTER_CREATE = [
+        "full_name",
+        "gender",
+        "date_of_birth",
+        "department",
+        "role",
+        "grade",
+        "date_of_joining",
+        "blood_group",  
+    ]
+
+    # AUTH
     email = serializers.EmailField(write_only=True)
-
-    # Display
     email_display = serializers.EmailField(
-        source="user.email",
-        read_only=True
-    )
-    employee_code = serializers.CharField(read_only=True)
-
-    # Active / Relieved status
-    is_active = serializers.BooleanField(
-        source="user.is_active",
-        read_only=True
+        source="user.email", read_only=True
     )
 
-    blood_group_display = serializers.CharField(
-        source="get_blood_group_display",
-        read_only=True
+    # READ
+    bank_detail = BankDetailSerializer(read_only=True)
+    family_members = FamilyMemberSerializer(many=True, read_only=True)
+
+    # WRITE (FormData JSON)
+    bank_detail_input = serializers.CharField(
+        write_only=True, required=False
     )
-
-    # Optional fields
-    gender = serializers.CharField(required=False, allow_blank=True)
-    role = serializers.CharField(required=False, allow_blank=True)
-    grade = serializers.CharField(required=False, allow_blank=True)
-    address = serializers.CharField(required=False, allow_blank=True)
-
-    phone_number = serializers.CharField(required=False, allow_blank=True)
-    pancard_number = serializers.CharField(required=False, allow_blank=True)
-    aadhaar_number = serializers.CharField(required=False, allow_blank=True)
-
-    date_of_birth = serializers.DateField(required=False)
-    photo = serializers.ImageField(required=False, allow_null=True)
+    family_members_input = serializers.CharField(
+        write_only=True, required=False
+    )
 
     class Meta:
         model = EmployeeProfile
         fields = [
             "id",
-
-            # auth
             "email",
             "email_display",
-            "is_active",
-
-            # core
             "employee_code",
             "full_name",
             "gender",
             "date_of_birth",
             "date_of_joining",
-
-            # org
             "department",
             "role",
             "grade",
-            "address",
             "company_name",
-
-            # personal
             "phone_number",
+            "blood_group",
             "pancard_number",
             "aadhaar_number",
+            "current_address",
+            "permanent_address",
             "photo",
 
-            # nested
-            "family_members",
+            # READ
             "bank_detail",
+            "family_members",
 
-            # blood group
-            "blood_group",
-            "blood_group_display",
+            # WRITE
+            "bank_detail_input",
+            "family_members_input",
         ]
 
-    # ================= VALIDATION =================
+        read_only_fields = ["employee_code"]
+        read_only_fields = ["employee_code", "company_name"] 
+       
+    # ---------- VALIDATION ----------
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError(
-                "Employee with this email already exists."
-            )
+    # allow same email during update
+     if self.instance:
         return value
+ 
+     if User.objects.filter(email=value).exists():
+        raise serializers.ValidationError("Email already exists")
+     return value
 
-    # ================= CREATE =================
+
+    # ---------- CREATE ----------
     def create(self, validated_data):
-        request = self.context.get("request")
-
-        # Nested data from FormData
-        bank_data = request.data.get("bank_detail")
-        family_data = request.data.get("family_members")
-
-        if isinstance(bank_data, str):
-            bank_data = json.loads(bank_data)
-
-        if isinstance(family_data, str):
-            family_data = json.loads(family_data)
-
         email = validated_data.pop("email")
 
-        # 🔐 Auto-generate password
+        bank_raw = validated_data.pop("bank_detail_input", None)
+        family_raw = validated_data.pop("family_members_input", None)
+
+        bank_data = json.loads(bank_raw) if bank_raw else None
+        family_data = json.loads(family_raw) if family_raw else []
+
         raw_password = generate_password()
 
-        # 🏢 Active organization
         organization = Organization.objects.filter(is_active=True).first()
         if not organization:
             raise serializers.ValidationError(
-                {"organization": "Active organization not found"}
+                {"organization": "No active organization found"}
             )
 
-        # 🆔 Generate employee code
-        last_employee = (
-            EmployeeProfile.objects
-            .filter(organization=organization)
-            .order_by("-id")
-            .first()
-        )
+        count = EmployeeProfile.objects.filter(
+            organization=organization
+        ).count()
 
-        next_number = last_employee.id + 1 if last_employee else 1
-        employee_code = f"{organization.emp_prefix}{str(next_number).zfill(3)}"
-
-        # Force company name
+        employee_code = f"{organization.emp_prefix}{str(count + 1).zfill(3)}"
         validated_data["company_name"] = organization.name
 
         with transaction.atomic():
-            # Create user
             user = User.objects.create_user(
                 email=email,
                 password=raw_password,
-                role="EMPLOYEE",
+                role="EMPLOYEE"
             )
 
-            # Create employee profile
             employee = EmployeeProfile.objects.create(
                 user=user,
                 organization=organization,
@@ -195,58 +147,76 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                 **validated_data
             )
 
-            # Bank detail
             if bank_data:
-                BankDetail.objects.create(
-                    employee=employee,
-                    **bank_data
-                )
+                BankDetail.objects.create(employee=employee, **bank_data)
 
-            # ✅ Family members (SAFE FIELD MAPPING – ONLY ADDITION)
-            if family_data:
-                for member in family_data:
+            for member in family_data:
+                if member.get("name"):
                     FamilyMember.objects.create(
                         employee=employee,
-                        father_name=member.get("father_name"),
-                        mother_name=member.get("mother_name"),
-                        spouse_name=member.get("spouse_name"),
-                        son_name=member.get("son_name"),
-                        daughter_name=member.get("daughter_name"),
-                        phone_number=member.get("phone_number"),
+                        **member
                     )
 
-        # 📧 Send email
-        try:
-            send_mail(
-                subject="Your Employee Account Credentials",
-                message=(
-                    f"Hello {employee.full_name},\n\n"
-                    f"Your employee account has been created.\n\n"
-                    f"Login Email: {email}\n"
-                    f"Temporary Password: {raw_password}\n\n"
-                    f"Please login and change your password immediately."
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email],
-                fail_silently=False,
-            )
-        except Exception as e:
-            print("Email sending failed:", e)
+        send_mail(
+            subject="Employee Account Created",
+            message=(
+                f"Hello {employee.full_name},\n\n"
+                f"Email: {email}\n"
+                f"Password: {raw_password}\n\n"
+                f"Please change your password after login."
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=True,
+        )
 
         return employee
 
+    # ---------- UPDATE (🔥 THIS FIXES YOUR ISSUE) ----------
+    def update(self, instance, validated_data):
+        # 🔒 freeze basic details (THIS IS ENOUGH)
+        for field in self.READ_ONLY_AFTER_CREATE:
+            validated_data.pop(field, None)
 
-# =========================
-# EMPLOYEE DROPDOWN
-# =========================
+        bank_raw = validated_data.pop("bank_detail_input", None)
+        family_raw = validated_data.pop("family_members_input", None)
+
+        bank_data = json.loads(bank_raw) if bank_raw else None
+        family_data = json.loads(family_raw) if family_raw else None
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+
+        # update bank
+        if bank_data is not None:
+            BankDetail.objects.update_or_create(
+                employee=instance,
+                defaults=bank_data
+            )
+
+        # update family
+        if family_data is not None:
+            instance.family_members.all().delete()
+            for member in family_data:
+                if member.get("name"):
+                    FamilyMember.objects.create(
+                        employee=instance,
+                        **member
+                    )
+
+        return instance
+# ================= EMPLOYEE DROPDOWN =================
 class EmployeeDropdownSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source="user.email")
 
     class Meta:
         model = EmployeeProfile
         fields = [
+            "id",
+            "employee_code",
+            "full_name",
             "email",
             "department",
-            "employee_code",   
-            "full_name",
         ]

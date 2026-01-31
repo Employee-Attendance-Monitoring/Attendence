@@ -2,9 +2,6 @@ from django.db import models
 from accounts.models import User
 
 
-# =========================
-# EMPLOYEE PROFILE
-# =========================
 class EmployeeProfile(models.Model):
     user = models.OneToOneField(
         User,
@@ -31,6 +28,7 @@ class EmployeeProfile(models.Model):
         ("FEMALE", "Female"),
         ("OTHER", "Other"),
     )
+
     gender = models.CharField(
         max_length=10,
         choices=GENDER_CHOICES,
@@ -39,9 +37,8 @@ class EmployeeProfile(models.Model):
     )
 
     department = models.CharField(max_length=100)
-    role = models.CharField(max_length=100, null=True, blank=True)
-    grade = models.CharField(max_length=50, null=True, blank=True)
-    address = models.TextField(null=True, blank=True)
+    role = models.CharField(max_length=100)
+    grade = models.CharField(max_length=50)
 
     company_name = models.CharField(max_length=150)
 
@@ -56,8 +53,6 @@ class EmployeeProfile(models.Model):
         ("AB-", "AB-"),
     )
 
-    
-
     blood_group = models.CharField(
         max_length=3,
         choices=BLOOD_GROUP_CHOICES,
@@ -65,16 +60,12 @@ class EmployeeProfile(models.Model):
         blank=True
     )
 
-    # 🌍 International phone number support
-    phone_number = models.CharField(
-        max_length=20,
-        null=True,
-        blank=True
-    )
-    current_address = models.TextField(null=True, blank=True)
-    permanent_address = models.TextField(null=True, blank=True)
+    phone_number = models.CharField(max_length=20, null=True, blank=True)
     pancard_number = models.CharField(max_length=10, null=True, blank=True)
     aadhaar_number = models.CharField(max_length=12, null=True, blank=True)
+
+    current_address = models.TextField(null=True, blank=True)
+    permanent_address = models.TextField(null=True, blank=True)
 
     photo = models.ImageField(
         upload_to="employees/photos/",
@@ -82,61 +73,28 @@ class EmployeeProfile(models.Model):
         blank=True
     )
 
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.employee_code} - {self.full_name}"
 
 
-# =========================
-# FAMILY MEMBER
-# =========================
 class FamilyMember(models.Model):
     employee = models.ForeignKey(
         EmployeeProfile,
-        on_delete=models.CASCADE,
-        related_name="family_members"
+        related_name="family_members",
+        on_delete=models.CASCADE
     )
 
-    father_name = models.CharField(
-        max_length=100,
-        null=True,
-        blank=True
-    )
-    mother_name = models.CharField(
-        max_length=100,
-        null=True,
-        blank=True
-    )
-    spouse_name = models.CharField(
-        max_length=100,
-        null=True,
-        blank=True
-    )
-    son_name = models.CharField(
-        max_length=100,
-        null=True,
-        blank=True
-    )
-    daughter_name = models.CharField(
-        max_length=100,
-        null=True,
-        blank=True
-    )
-
-    phone_number = models.CharField(
-        max_length=20,
-        null=True,
-        blank=True
-    )
+    name = models.CharField(max_length=100)
+    relationship = models.CharField(max_length=50)
+    phone_number = models.CharField(max_length=20, null=True, blank=True)
 
     def __str__(self):
-        return f"Family details of {self.employee}"
+        return self.name
 
 
-# =========================
-# BANK DETAILS
-# =========================
 class BankDetail(models.Model):
     employee = models.OneToOneField(
         EmployeeProfile,

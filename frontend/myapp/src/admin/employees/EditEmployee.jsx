@@ -7,6 +7,7 @@ import { getBloodGroups } from "../../api/employeeApi";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 
+const IS_EDIT_MODE = true;
 const COMPANY_NAME = "Quandatum Analytics";
 const BASE_URL = "http://127.0.0.1:8000";
 
@@ -179,9 +180,19 @@ const EditEmployee = () => {
       alert("Employee updated successfully ✅");
       navigate("/admin/employees");
     } catch (err) {
-      console.error(err);
-      alert("Failed to update employee ❌");
-    } finally {
+  console.error("UPDATE ERROR:", err.response?.data);
+
+  alert(
+    JSON.stringify(
+      err.response?.data || "Unknown error",
+      null,
+      2
+    )
+  );
+}
+
+
+    finally {
       setSubmitting(false);
     }
   };
@@ -214,39 +225,88 @@ const EditEmployee = () => {
 
             <div>
               <Label text="Full Name" required />
-              <input name="full_name" value={formData.full_name} onChange={handleChange} className={inputClass} required />
-            </div>
+<input
+  name="full_name"
+  value={formData.full_name}
+  disabled
+  className={inputClass + " bg-gray-100 cursor-not-allowed"}
+/>
+              </div>
 
             <div>
               <Label text="Gender" />
-              <select name="gender" value={formData.gender} onChange={handleChange} className={inputClass}>
-                <option value="">Select Gender</option>
-                {GENDERS.map((g) => <option key={g}>{g}</option>)}
-              </select>
+              <select
+  name="gender"
+  value={formData.gender || ""}
+  disabled
+  className={inputClass + " bg-gray-100 cursor-not-allowed"}
+>
+  <option value="">Select Gender</option>
+  {GENDERS.map((g) => (
+    <option key={g} value={g}>
+      {g}
+    </option>
+  ))}
+</select>
+
+
             </div>
 
             <div>
               <Label text="Department" required />
-              <select name="department" value={formData.department} onChange={handleChange} className={inputClass} required>
-                <option value="">Select Department</option>
-                {departments.map((d) => <option key={d.id}>{d.name}</option>)}
-              </select>
+    <select
+  name="department"
+  value={formData.department}
+  disabled
+  className={inputClass + " bg-gray-100 cursor-not-allowed"}
+>
+
+  <option value="">Select Department</option>
+  {departments.map((d) => (
+    <option key={d.id} value={d.name}>
+      {d.name}
+    </option>
+  ))}
+</select>
+
             </div>
 
             <div>
               <Label text="Role" required />
-              <select name="role" value={formData.role} onChange={handleChange} className={inputClass} required>
-                <option value="">Select Role</option>
-                {roles.map((r) => <option key={r.id}>{r.name}</option>)}
-              </select>
+              <select
+  name="role"
+  value={formData.role}
+  disabled
+  className={inputClass + " bg-gray-100 cursor-not-allowed"}
+>
+
+  <option value="">Select Role</option>
+  {roles.map((r) => (
+    <option key={r.id} value={r.name}>
+      {r.name}
+    </option>
+  ))}
+</select>
+
             </div>
 
             <div>
               <Label text="Grade" required />
-              <select name="grade" value={formData.grade} onChange={handleChange} className={inputClass} required>
-                <option value="">Select Grade</option>
-                {GRADES.map((g) => <option key={g}>{g}</option>)}
-              </select>
+              <select
+  name="grade"
+  value={formData.grade}
+  disabled
+  className={inputClass + " bg-gray-100 cursor-not-allowed"}
+>
+
+  <option value="">Select Grade</option>
+  {GRADES.map((g) => (
+    <option key={g} value={g}>
+      {g}
+    </option>
+  ))}
+</select>
+
             </div>
 
             <div>
@@ -257,12 +317,21 @@ const EditEmployee = () => {
 
             <div>
               <Label text="Blood Group" />
-              <select name="blood_group" value={formData.blood_group} onChange={handleChange} className={inputClass}>
-                <option value="">Select Blood Group</option>
-                {bloodGroups.map((bg) => (
-                  <option key={bg.value} value={bg.value}>{bg.label}</option>
-                ))}
-              </select>
+           <select
+  name="blood_group"
+  value={formData.blood_group || ""}
+  disabled
+  className={inputClass + " bg-gray-100 cursor-not-allowed"}
+>
+  <option value="">Select Blood Group</option>
+  {bloodGroups.map((bg) => (
+    <option key={bg.value} value={bg.value}>
+      {bg.label}
+    </option>
+  ))}
+</select>
+
+
             </div>
 
             <div>
@@ -272,12 +341,24 @@ const EditEmployee = () => {
 
             <div>
               <Label text="Date of Birth" />
-              <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className={inputClass} />
+<input
+  type="date"
+  name="date_of_birth"
+  value={formData.date_of_birth}
+  disabled
+  className={inputClass + " bg-gray-100 cursor-not-allowed"}
+/>
             </div>
 
             <div>
               <Label text="Date of Joining" required />
-              <input type="date" name="date_of_joining" value={formData.date_of_joining} onChange={handleChange} className={inputClass} required />
+<input
+  type="date"
+  name="date_of_joining"
+  value={formData.date_of_joining}
+  disabled
+  className={inputClass + " bg-gray-100 cursor-not-allowed"}
+/>
             </div>
           </div>
         </section>

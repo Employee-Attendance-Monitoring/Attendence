@@ -2,35 +2,46 @@ import { useEffect, useState } from "react";
 import { getMyProfile, changePassword } from "../../api/employeeApi";
 import Loader from "../../components/Loader";
 
-const BASE_URL = "http://127.0.0.1:8000";
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+
+/* ================= SMALL UI COMPONENT ================= */
+const InfoRow = ({ label, value }) => (
+  <div className="flex justify-between border-b py-2 text-sm">
+    <span className="text-gray-500">{label}</span>
+    <span className="font-medium text-gray-800">{value || "-"}</span>
+  </div>
+);
 
 const MyProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔐 Change password state
+  // 🔐 password change
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  /* ================= LOAD PROFILE ================= */
   useEffect(() => {
     getMyProfile()
       .then((res) => {
         const data = res.data;
 
-        // normalize photo URL
+        // normalize photo
         if (data.photo && !data.photo.startsWith("http")) {
           data.photo = `${BASE_URL}${data.photo}`;
         }
 
         setProfile(data);
       })
-      .catch(console.error)
+      .catch(() => alert("Failed to load profile"))
       .finally(() => setLoading(false));
   }, []);
 
+  /* ================= CHANGE PASSWORD ================= */
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
@@ -48,11 +59,9 @@ const MyProfile = () => {
       });
 
       alert("Password changed successfully. Please login again.");
-
       localStorage.clear();
       window.location.href = "/login";
     } catch (err) {
-      console.error(err);
       alert(err.response?.data?.detail || "Failed to change password");
     } finally {
       setSubmitting(false);
@@ -63,140 +72,120 @@ const MyProfile = () => {
   if (!profile) return <p>No profile data</p>;
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">My Profile</h2>
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
 
-      {/* ================= BASIC PROFILE ================= */}
-      <div className="bg-white shadow rounded p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* PHOTO */}
-        <div className="flex flex-col items-center">
-          {profile.photo ? (
-            <img
-              src={profile.photo}
-              alt="Profile"
-              className="w-36 h-36 rounded-full object-cover border"
-            />
-          ) : (
-            <div className="w-36 h-36 rounded-full bg-gray-200 flex items-center justify-center">
-              No Photo
-            </div>
-          )}
+      {/* ================= HEADER ================= */}
+      <div className="bg-white rounded-xl shadow p-6 flex flex-col md:flex-row items-center gap-6">
+        <img
+          src={profile.photo || "/default-avatar.png"}
+          className="w-36 h-36 rounded-full object-cover border"
+          onError={(e) => (e.target.src = "/default-avatar.png")}
+        />
 
-          <h3 className="mt-4 font-semibold text-lg">
-            {profile.full_name}
-          </h3>
-          <p className="text-sm text-gray-600">
-            {profile.employee_code}
-          </p>
-        </div>
+        <div className="flex-1 text-center md:text-left">
+          <h1 className="text-3xl font-bold">{profile.full_name}</h1>
+          <p className="text-gray-500">{profile.email_display}</p>
 
-        {/* INFO */}
-        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ProfileItem label="Email" value={profile.email_display} />
-          <ProfileItem label="Department" value={profile.department} />
-          <ProfileItem label="Role" value={profile.role} />
-          <ProfileItem label="Grade" value={profile.grade} />
-          <ProfileItem label="Company" value={profile.company_name} />
-          <ProfileItem label="Phone" value={profile.phone_number} />
-          <ProfileItem label="Date of Joining" value={profile.date_of_joining} />
-          <ProfileItem label="Gender" value={profile.gender} />
-
-          {/* ✅ NEW: BLOOD GROUP */}
-          <ProfileItem label="Blood Group" value={profile.blood_group_display}/>
-
-        </div>
-      </div>
-
-      {/* ================= ID PROOF ================= */}
-      <div className="bg-white shadow rounded p-6">
-        <h3 className="font-semibold mb-4">ID Proof</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ProfileItem label="PAN Card" value={profile.pancard_number} />
-          <ProfileItem label="Aadhaar Number" value={profile.aadhaar_number} />
-        </div>
-      </div>
-
-      {/* ================= BANK DETAILS ================= */}
-      <div className="bg-white shadow rounded p-6">
-        <h3 className="font-semibold mb-4">Bank Details</h3>
-        {profile.bank_detail ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ProfileItem
-              label="Bank Name"
-              value={profile.bank_detail.bank_name}
-            />
-            <ProfileItem
-              label="Account Number"
-              value={profile.bank_detail.account_number}
-            />
-            <ProfileItem
-              label="IFSC Code"
-              value={profile.bank_detail.ifsc_code}
-            />
+          <div className="flex flex-wrap gap-4 mt-4 text-sm">
+            <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+              Emp Code: {profile.employee_code}
+            </span>
+            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full">
+              {profile.department}
+            </span>
+            <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
+              {profile.role}
+            </span>
           </div>
-        ) : (
-          <p className="text-gray-500">No bank details added</p>
-        )}
+        </div>
       </div>
 
-      {/* ================= FAMILY MEMBERS ================= */}
-      <div className="bg-white shadow rounded p-6">
-        <h3 className="font-semibold mb-4">Family Members</h3>
+      {/* ================= GRID ================= */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        {profile.family_members?.length > 0 ? (
-          <div className="space-y-3">
+        {/* BASIC */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="font-semibold mb-4">👤 Basic Information</h2>
+          <InfoRow label="Phone" value={profile.phone_number} />
+          <InfoRow label="Gender" value={profile.gender} />
+          <InfoRow label="Blood Group" value={profile.blood_group} />
+          <InfoRow label="Date of Birth" value={profile.date_of_birth} />
+        </div>
+
+        {/* WORK */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="font-semibold mb-4">🏢 Work Information</h2>
+          <InfoRow label="Company" value={profile.company_name} />
+          <InfoRow label="Department" value={profile.department} />
+          <InfoRow label="Role" value={profile.role} />
+          <InfoRow label="Grade" value={profile.grade} />
+          <InfoRow label="Date of Joining" value={profile.date_of_joining} />
+        </div>
+
+        {/* ADDRESS */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="font-semibold mb-4">📍 Address</h2>
+          <InfoRow label="Current Address" value={profile.current_address} />
+          <InfoRow label="Permanent Address" value={profile.permanent_address} />
+        </div>
+
+        {/* BANK */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="font-semibold mb-4">🏦 Bank Details</h2>
+          <InfoRow label="Bank Name" value={profile.bank_detail?.bank_name} />
+          <InfoRow label="Account Number" value={profile.bank_detail?.account_number} />
+          <InfoRow label="IFSC Code" value={profile.bank_detail?.ifsc_code} />
+        </div>
+
+        {/* ID */}
+        <div className="bg-white rounded-xl shadow p-6 md:col-span-2">
+          <h2 className="font-semibold mb-4">🪪 ID Proof</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            <InfoRow label="PAN Number" value={profile.pancard_number} />
+            <InfoRow label="Aadhaar Number" value={profile.aadhaar_number} />
+          </div>
+        </div>
+
+      </div>
+
+      {/* ================= FAMILY ================= */}
+      {profile.family_members?.length > 0 && (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="font-semibold mb-4">👨‍👩‍👧 Family Members</h2>
+          <div className="grid md:grid-cols-3 gap-4">
             {profile.family_members.map((m, i) => (
-              <div
-                key={i}
-                className="border p-3 rounded grid grid-cols-1 md:grid-cols-3 gap-4"
-              >
-                <ProfileItem label="Name" value={m.name} />
-                <ProfileItem label="Relationship" value={m.relationship} />
-                <ProfileItem label="Phone" value={m.phone_number} />
+              <div key={i} className="border rounded p-4 bg-gray-50">
+                <p className="font-semibold">{m.name}</p>
+                <p>{m.relationship}</p>
+                <p className="text-sm text-gray-500">
+                  📞 {m.phone_number || "-"}
+                </p>
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-gray-500">No family members added</p>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ================= CHANGE PASSWORD ================= */}
-      <div className="bg-white shadow rounded p-6 max-w-md">
-        <h3 className="font-semibold mb-4">Change Password</h3>
+      <div className="bg-white rounded-xl shadow p-6 max-w-md">
+        <h2 className="font-semibold mb-4">🔐 Change Password</h2>
 
         <form onSubmit={handleChangePassword} className="space-y-4">
-          <div className="relative">
-            <input
-              type={showOld ? "text" : "password"}
-              placeholder="Old Password"
-              className="border rounded px-3 py-2 w-full"
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-            />
-            <span
-              onClick={() => setShowOld(!showOld)}
-              className="absolute right-3 top-2.5 cursor-pointer"
-            >
-              👁
-            </span>
-          </div>
+          <input
+            type={showOld ? "text" : "password"}
+            placeholder="Old Password"
+            className="border rounded px-3 py-2 w-full"
+            value={oldPassword}
+            onChange={(e) => setOldPassword(e.target.value)}
+          />
 
-          <div className="relative">
-            <input
-              type={showNew ? "text" : "password"}
-              placeholder="New Password"
-              className="border rounded px-3 py-2 w-full"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
-            <span
-              onClick={() => setShowNew(!showNew)}
-              className="absolute right-3 top-2.5 cursor-pointer"
-            >
-              👁
-            </span>
-          </div>
+          <input
+            type={showNew ? "text" : "password"}
+            placeholder="New Password"
+            className="border rounded px-3 py-2 w-full"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
 
           <button
             type="submit"
@@ -210,12 +199,5 @@ const MyProfile = () => {
     </div>
   );
 };
-
-const ProfileItem = ({ label, value }) => (
-  <div>
-    <p className="text-sm text-gray-500">{label}</p>
-    <p className="font-medium">{value || "-"}</p>
-  </div>
-);
 
 export default MyProfile;

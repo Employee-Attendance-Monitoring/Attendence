@@ -11,19 +11,18 @@ const COMPANY_NAME = "Quandatum Analytics";
 const GRADES = ["Senior", "Junior", "Intern"];
 const GENDERS = ["MALE", "FEMALE", "OTHER"];
 
+const inputClass =
+  "border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500";
+
 const Label = ({ text, required }) => (
   <label className="text-sm font-medium text-gray-700 mb-1 block">
     {text} {required && <span className="text-red-600">*</span>}
   </label>
 );
 
-const inputClass =
-  "border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500";
-
 const AddEmployee = () => {
   const navigate = useNavigate();
-
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
 
   const [departments, setDepartments] = useState([]);
@@ -43,10 +42,9 @@ const AddEmployee = () => {
     phone_number: "",
     pancard_number: "",
     aadhaar_number: "",
-    photo: null,
-
     current_address: "",
     permanent_address: "",
+    photo: null,
 
     bank_detail: {
       bank_name: "",
@@ -55,11 +53,7 @@ const AddEmployee = () => {
     },
 
     family_members: [
-      {
-        name: "",
-        relationship: "",
-        phone_number: "",
-      },
+      { name: "", relationship: "", phone_number: "" },
     ],
   });
 
@@ -71,64 +65,92 @@ const AddEmployee = () => {
   }, []);
 
   /* ================= HANDLERS ================= */
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((p) => ({ ...p, [name]: value }));
+  };
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setFormData({ ...formData, photo: file });
+    setFormData((p) => ({ ...p, photo: file }));
     setPhotoPreview(URL.createObjectURL(file));
   };
 
   const addFamilyMember = () => {
-    setFormData({
-      ...formData,
+    setFormData((p) => ({
+      ...p,
       family_members: [
-        ...formData.family_members,
+        ...p.family_members,
         { name: "", relationship: "", phone_number: "" },
       ],
-    });
+    }));
   };
 
-  const updateFamilyMember = (index, field, value) => {
+  const updateFamilyMember = (i, field, value) => {
     const updated = [...formData.family_members];
-    updated[index][field] = value;
-    setFormData({ ...formData, family_members: updated });
+    updated[i][field] = value;
+    setFormData((p) => ({ ...p, family_members: updated }));
   };
 
   /* ================= SUBMIT ================= */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (submitting) return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (loading) return;
 
-    try {
-      setSubmitting(true);
+  try {
+    setLoading(true);
 
-      const payload = new FormData();
-      payload.append("company_name", COMPANY_NAME);
+    const payload = new FormData();
 
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === "bank_detail" || key === "family_members") {
-          payload.append(key, JSON.stringify(value));
-        } else if (key === "photo") {
-          if (value) payload.append("photo", value);
-        } else {
-          payload.append(key, value ?? "");
-        }
-      });
+    payload.append("email", formData.email);
+    payload.append("full_name", formData.full_name);
+    payload.append("department", formData.department); // ✅ STRING
+    payload.append("role", formData.role);             // ✅ STRING
+    payload.append("grade", formData.grade);
+    payload.append("gender", formData.gender);
+    payload.append("date_of_joining", formData.date_of_joining);
 
-      await api.post("/employees/create/", payload);
+    if (formData.date_of_birth)
+      payload.append("date_of_birth", formData.date_of_birth);
 
-      alert("Employee created successfully ✅");
-      navigate("/admin/employees");
-    } catch (err) {
-      console.error("CREATE EMPLOYEE ERROR:", err);
-      alert("Failed to create employee ❌");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    payload.append("phone_number", formData.phone_number);
+    payload.append("blood_group", formData.blood_group);
+    payload.append("pancard_number", formData.pancard_number);
+    payload.append("aadhaar_number", formData.aadhaar_number);
+    payload.append("current_address", formData.current_address);
+    payload.append("permanent_address", formData.permanent_address);
+
+    if (formData.photo)
+      payload.append("photo", formData.photo);
+
+    // ✅ FIXED KEYS
+    payload.append(
+      "bank_detail_input",
+      JSON.stringify(formData.bank_detail)
+    );
+
+    const validFamily = formData.family_members.filter(
+      (m) => m.name || m.relationship || m.phone_number
+    );
+
+    payload.append(
+      "family_members_input",
+      JSON.stringify(validFamily)
+    );
+
+    await api.post("/employees/create/", payload);
+
+    alert("Employee created successfully ✅");
+    navigate("/admin/employees");
+  } catch (error) {
+    console.error("CREATE EMPLOYEE ERROR:", error.response?.data);
+    alert(JSON.stringify(error.response?.data, null, 2));
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   /* ================= UI ================= */
   return (
@@ -139,26 +161,36 @@ const AddEmployee = () => {
 
         {/* BASIC DETAILS */}
         <section>
-          <h2 className="text-lg font-semibold text-blue-600 mb-4">
+          <h2 className="text-lg font-semibold mb-4 text-blue-600">
             Basic Details
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label text="Email" required />
-              <input name="email" type="email" onChange={handleChange} className={inputClass} required />
+              <input name="email" type="email" required onChange={handleChange} className={inputClass} />
             </div>
 
             <div>
               <Label text="Full Name" required />
-              <input name="full_name" onChange={handleChange} className={inputClass} required />
+              <input name="full_name" required onChange={handleChange} className={inputClass} />
             </div>
+            <div>
+  <Label text="Company Name" />
+  <input
+    value={COMPANY_NAME}
+    disabled
+    className={inputClass + " bg-gray-100 cursor-not-allowed"}
+  />
+</div>
 
             <div>
               <Label text="Gender" />
               <select name="gender" onChange={handleChange} className={inputClass}>
                 <option value="">Select Gender</option>
-                {GENDERS.map((g) => <option key={g}>{g}</option>)}
+                {GENDERS.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
               </select>
             </div>
 
@@ -169,25 +201,47 @@ const AddEmployee = () => {
 
             <div>
               <Label text="Department" required />
-              <select name="department" onChange={handleChange} className={inputClass} required>
-                <option value="">Select Department</option>
-                {departments.map((d) => <option key={d.id}>{d.name}</option>)}
-              </select>
+              <select
+  name="department"
+  required
+  onChange={handleChange}
+  className={inputClass}
+>
+  <option value="">Select Department</option>
+  {departments.map((d) => (
+    <option key={d.id} value={d.name}>
+      {d.name}
+    </option>
+  ))}
+</select>
+
             </div>
 
             <div>
               <Label text="Role" required />
-              <select name="role" onChange={handleChange} className={inputClass} required>
-                <option value="">Select Role</option>
-                {roles.map((r) => <option key={r.id}>{r.name}</option>)}
-              </select>
+              <select
+  name="role"
+  required
+  onChange={handleChange}
+  className={inputClass}
+>
+  <option value="">Select Role</option>
+  {roles.map((r) => (
+    <option key={r.id} value={r.name}>
+      {r.name}
+    </option>
+  ))}
+</select>
+
             </div>
 
             <div>
               <Label text="Grade" required />
-              <select name="grade" onChange={handleChange} className={inputClass} required>
+              <select name="grade" required onChange={handleChange} className={inputClass}>
                 <option value="">Select Grade</option>
-                {GRADES.map((g) => <option key={g}>{g}</option>)}
+                {GRADES.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
               </select>
             </div>
 
@@ -196,14 +250,16 @@ const AddEmployee = () => {
               <PhoneInput
                 country="in"
                 value={formData.phone_number.replace("+", "")}
-                onChange={(v) => setFormData({ ...formData, phone_number: `+${v}` })}
+                onChange={(v) =>
+                  setFormData((p) => ({ ...p, phone_number: `+${v}` }))
+                }
                 inputStyle={{ width: "100%" }}
               />
             </div>
 
             <div>
               <Label text="Blood Group" />
-              <select name="blood_group" value={formData.blood_group} onChange={handleChange} className={inputClass}>
+              <select name="blood_group" onChange={handleChange} className={inputClass}>
                 <option value="">Select Blood Group</option>
                 {bloodGroups.map((bg) => (
                   <option key={bg.value} value={bg.value}>{bg.label}</option>
@@ -212,13 +268,8 @@ const AddEmployee = () => {
             </div>
 
             <div>
-              <Label text="Company Name" />
-              <input value={COMPANY_NAME} disabled className={inputClass + " bg-gray-100"} />
-            </div>
-
-            <div>
               <Label text="Date of Joining" required />
-              <input type="date" name="date_of_joining" onChange={handleChange} className={inputClass} required />
+              <input type="date" name="date_of_joining" required onChange={handleChange} className={inputClass} />
             </div>
           </div>
         </section>
@@ -232,10 +283,10 @@ const AddEmployee = () => {
           </div>
         </section>
 
-        {/* PHOTO WITH PREVIEW */}
+        {/* PHOTO */}
         <section>
           <h2 className="text-lg font-semibold mb-4">Profile Photo</h2>
-          <div className="flex items-center gap-6">
+          <div className="flex gap-6 items-center">
             <img
               src={photoPreview || "/default-avatar.png"}
               alt="Preview"
@@ -245,65 +296,59 @@ const AddEmployee = () => {
           </div>
         </section>
 
-        {/* BANK DETAILS (OPTIONAL) */}
+        {/* BANK */}
         <section>
-          <h2 className="text-lg font-semibold mb-4">
-            Bank Details <span className="text-sm text-gray-500">(Optional)</span>
-          </h2>
-
+          <h2 className="text-lg font-semibold mb-4">Bank Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <input placeholder="Bank Name" className={inputClass}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  bank_detail: { ...formData.bank_detail, bank_name: e.target.value },
-                })
+                setFormData((p) => ({
+                  ...p,
+                  bank_detail: { ...p.bank_detail, bank_name: e.target.value },
+                }))
               }
             />
             <input placeholder="Account Number" className={inputClass}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  bank_detail: { ...formData.bank_detail, account_number: e.target.value },
-                })
+                setFormData((p) => ({
+                  ...p,
+                  bank_detail: { ...p.bank_detail, account_number: e.target.value },
+                }))
               }
             />
             <input placeholder="IFSC Code" className={inputClass}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  bank_detail: { ...formData.bank_detail, ifsc_code: e.target.value },
-                })
+                setFormData((p) => ({
+                  ...p,
+                  bank_detail: { ...p.bank_detail, ifsc_code: e.target.value },
+                }))
               }
             />
           </div>
         </section>
 
-        {/* ID PROOF (OPTIONAL) */}
-        <section>
-          <h2 className="text-lg font-semibold mb-4">
-            ID Proof <span className="text-sm text-gray-500">(Optional)</span>
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input name="pancard_number" placeholder="PAN Number" onChange={handleChange} className={inputClass} />
-            <input name="aadhaar_number" placeholder="Aadhaar Number" onChange={handleChange} className={inputClass} />
-          </div>
-        </section>
-
-        {/* FAMILY MEMBERS */}
+        {/* FAMILY */}
         <section>
           <h2 className="text-lg font-semibold mb-4">Family Members</h2>
 
           {formData.family_members.map((m, i) => (
             <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-              <input placeholder="Name" className={inputClass} value={m.name}
-                onChange={(e) => updateFamilyMember(i, "name", e.target.value)} />
-              <input placeholder="Relationship" className={inputClass} value={m.relationship}
-                onChange={(e) => updateFamilyMember(i, "relationship", e.target.value)} />
-              <PhoneInput country="in" value={m.phone_number.replace("+", "")}
-                onChange={(v) => updateFamilyMember(i, "phone_number", `+${v}`)}
-                inputStyle={{ width: "100%" }} />
+              <input className={inputClass} placeholder="Name"
+                value={m.name}
+                onChange={(e) => updateFamilyMember(i, "name", e.target.value)}
+              />
+              <input className={inputClass} placeholder="Relationship"
+                value={m.relationship}
+                onChange={(e) => updateFamilyMember(i, "relationship", e.target.value)}
+              />
+              <PhoneInput
+                country="in"
+                value={m.phone_number.replace("+", "")}
+                onChange={(v) =>
+                  updateFamilyMember(i, "phone_number", `+${v}`)
+                }
+                inputStyle={{ width: "100%" }}
+              />
             </div>
           ))}
 
@@ -312,9 +357,12 @@ const AddEmployee = () => {
           </button>
         </section>
 
-        <button type="submit" disabled={submitting}
-          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg">
-          {submitting ? "Creating..." : "Create Employee"}
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-blue-600 hover:bg-blue-700 text-white w-full py-3 rounded text-lg"
+        >
+          {loading ? "Creating..." : "Create Employee"}
         </button>
       </form>
     </div>

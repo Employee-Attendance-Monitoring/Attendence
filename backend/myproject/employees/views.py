@@ -1,29 +1,19 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.parsers import MultiPartParser, FormParser  # ✅ IMPORTANT
-from django.shortcuts import get_object_or_404
-from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.shortcuts import get_object_or_404
 
 from .models import EmployeeProfile
 from .serializers import (
     EmployeeProfileSerializer,
-    EmployeeDropdownSerializer
+    EmployeeDropdownSerializer,
 )
 
 from accounts.permissions import IsAdmin
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
-
-User = get_user_model()
 
 
-# =========================
-# EMPLOYEE CREATE
-# =========================
 class EmployeeCreateView(APIView):
     permission_classes = [IsAdmin]
     parser_classes = [MultiPartParser, FormParser]
@@ -35,67 +25,40 @@ class EmployeeCreateView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
         return Response(
-            {
-                "message": "Employee created successfully",
-                "employee": serializer.data,
-            },
-            status=status.HTTP_201_CREATED,
+            {"message": "Employee created successfully"},
+            status=status.HTTP_201_CREATED
         )
 
 
-# =========================
-# EMPLOYEE LIST (ADMIN)
-# =========================
 class EmployeeListView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        employees = EmployeeProfile.objects.select_related("user").all()
+        employees = EmployeeProfile.objects.all()
         serializer = EmployeeProfileSerializer(employees, many=True)
         return Response(serializer.data)
 
 
-# =========================
-# EMPLOYEE DETAIL (VIEW / UPDATE)
-# =========================
 class EmployeeDetailView(APIView):
-    """
-    ADMIN -> View / Update any employee
-    EMPLOYEE -> View own profile
-    """
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request, pk=None):
         if request.user.role == "EMPLOYEE":
             employee = get_object_or_404(
-                EmployeeProfile.objects
-                .select_related("user", "bank_detail")
-                .prefetch_related("family_members"),
-                user=request.user
+                EmployeeProfile, user=request.user
             )
         else:
             employee = get_object_or_404(
-                EmployeeProfile.objects
-                .select_related("user", "bank_detail")
-                .prefetch_related("family_members"),
-                pk=pk
+                EmployeeProfile, pk=pk
             )
 
         serializer = EmployeeProfileSerializer(employee)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data)
 
-    def put(self, request, pk=None):
-        if request.user.role != "ADMIN":
-            return Response(
-                {"detail": "Only admin can update employee"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
+    def put(self, request, pk):
         employee = get_object_or_404(EmployeeProfile, pk=pk)
-
         serializer = EmployeeProfileSerializer(
             employee,
             data=request.data,
@@ -104,135 +67,66 @@ class EmployeeDetailView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        return Response({"message": "Employee updated"})
 
-        return Response(
-            {"message": "Employee updated successfully"},
-            status=status.HTTP_200_OK
-        )
-# =========================
-# EMPLOYEE DELETE (HARD DELETE)
-# =========================
+
 class EmployeeDeleteView(APIView):
     permission_classes = [IsAdmin]
 
     def delete(self, request, pk):
         employee = get_object_or_404(EmployeeProfile, pk=pk)
-        employee.user.delete()  # cascades profile
+        employee.user.delete()
         return Response(
-            {"message": "Employee deleted successfully"},
-            status=status.HTTP_204_NO_CONTENT,
+            {"message": "Employee deleted"},
+            status=status.HTTP_204_NO_CONTENT
         )
 
 
-# =========================
-# ADMIN DASHBOARD
-# =========================
-class AdminDashboardView(APIView):
-    permission_classes = [IsAdmin]
-
-    def get(self, request):
-        total_employees = EmployeeProfile.objects.count()
-        active_employees = User.objects.filter(
-            role="EMPLOYEE",
-            is_active=True,
-        ).count()
-
-        return Response({
-            "total_employees": total_employees,
-            "active_employees": active_employees,
-            "present_today": 0,
-            "on_leave": 0,
-        })
-
-
-# =========================
-# EMPLOYEE DROPDOWN
-# =========================
 class EmployeeDropdownView(APIView):
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        employees = EmployeeProfile.objects.select_related("user")
+        employees = EmployeeProfile.objects.filter(is_active=True)
         serializer = EmployeeDropdownSerializer(employees, many=True)
         return Response(serializer.data)
 
 
-# =========================
-# CHANGE PASSWORD
-# =========================
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         user = request.user
-
         old_password = request.data.get("old_password")
         new_password = request.data.get("new_password")
 
-        if not old_password or not new_password:
-            return Response(
-                {"detail": "Old password and new password are required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         if not user.check_password(old_password):
             return Response(
-                {"detail": "Old password is incorrect"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        try:
-            validate_password(new_password, user)
-        except ValidationError as e:
-            return Response(
-                {"detail": e.messages},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"detail": "Old password incorrect"},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         user.set_password(new_password)
         user.save()
-
-        # 🔐 Invalidate old tokens
-        RefreshToken.for_user(user)
-
-        return Response(
-            {"message": "Password changed successfully"},
-            status=status.HTTP_200_OK,
-        )
+        return Response({"message": "Password changed"})
 
 
-# =========================
-# BLOOD GROUP LIST
-# =========================
 class BloodGroupListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        blood_groups = [
+        return Response([
             {"value": bg[0], "label": bg[1]}
             for bg in EmployeeProfile.BLOOD_GROUP_CHOICES
-        ]
-        return Response(blood_groups)
+        ])
 
 
-# =========================
-# EMPLOYEE RELIEVE (SOFT DELETE)
-# =========================
-@api_view(["PATCH"])
-@permission_classes([IsAdmin])
 def relieve_employee(request, id):
     employee = get_object_or_404(EmployeeProfile, id=id)
-
-    # Mark employee as relieved
     employee.is_active = False
     employee.save()
 
-    # Block login
     user = employee.user
     user.is_active = False
     user.save()
 
-    return Response(
-        {"message": "Employee relieved successfully"},
-        status=status.HTTP_200_OK,
-    )
+    return Response({"message": "Employee relieved"})

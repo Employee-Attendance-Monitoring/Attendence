@@ -19,8 +19,5 @@ urlpatterns = [
     path("dropdown/", EmployeeDropdownView.as_view()),
     path("change-password/", ChangePasswordView.as_view()),
     path("blood-groups/", BloodGroupListView.as_view()),
-
-    # ✅ FIXED RELIEVE URL
     path("<int:id>/relieve/", relieve_employee),
 ]
-
