@@ -20,6 +20,11 @@ const LeaveApproval = () => {
   const [employeeFilter, setEmployeeFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
+  /* ===== REJECT REMARK STATE ===== */
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedLeaveId, setSelectedLeaveId] = useState(null);
+  const [remark, setRemark] = useState("");
+
   /* ================= LOAD DATA ================= */
   const loadLeaves = () => {
     setLoading(true);
@@ -39,12 +44,54 @@ const LeaveApproval = () => {
 
   /* ================= ACTIONS ================= */
   const handleAction = async (id, status) => {
+    if (status === "REJECTED") {
+      setSelectedLeaveId(id);
+      setRemark("");
+      setShowRejectModal(true);
+      return;
+    }
+
     try {
       setActionLoadingId(id);
-      await updateLeaveStatus(id, status);
+      await updateLeaveStatus(id, { status: "APPROVED" });
       loadLeaves();
     } catch {
       alert("Action failed");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const confirmReject = async () => {
+    if (!remark.trim()) {
+      alert("Rejection remark is required");
+      return;
+    }
+
+    try {
+      setActionLoadingId(selectedLeaveId);
+
+      await updateLeaveStatus(selectedLeaveId, {
+        status: "REJECTED",
+        rejection_reason: remark,
+      });
+
+      /* ✅ ENSURE REASON SHOWS IMMEDIATELY */
+      setLeaves((prev) =>
+        prev.map((l) =>
+          l.id === selectedLeaveId
+            ? {
+                ...l,
+                status: "REJECTED",
+                rejection_reason: remark,
+              }
+            : l
+        )
+      );
+
+      setShowRejectModal(false);
+    } catch {
+      alert("Reject failed");
     } finally {
       setActionLoadingId(null);
     }
@@ -102,7 +149,7 @@ const LeaveApproval = () => {
   return (
     <div className="space-y-10">
 
-      {/* ===== HEADER ===== */}
+      {/* HEADER */}
       <div>
         <h2 className="text-2xl font-bold text-gray-800">
           Leave Approvals
@@ -112,7 +159,7 @@ const LeaveApproval = () => {
         </p>
       </div>
 
-      {/* ===== FILTERS ===== */}
+      {/* FILTERS */}
       <div className="bg-white p-5 rounded-xl shadow grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="text-sm font-medium">Employee</label>
@@ -143,7 +190,7 @@ const LeaveApproval = () => {
         </div>
       </div>
 
-      {/* ===== LEAVE TABLE ===== */}
+      {/* LEAVE TABLE */}
       <div className="bg-white rounded-xl shadow overflow-x-auto">
         {loading ? (
           <Loader />
@@ -208,7 +255,15 @@ const LeaveApproval = () => {
                           </button>
                         </div>
                       ) : (
-                        <StatusBadge status={leave.status} />
+                        <div className="space-y-1">
+                          <StatusBadge status={leave.status} />
+                          {leave.status === "REJECTED" &&
+                            leave.rejection_reason && (
+                              <p className="text-xs text-red-600">
+                                Reason: {leave.rejection_reason}
+                              </p>
+                            )}
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -219,7 +274,7 @@ const LeaveApproval = () => {
         )}
       </div>
 
-      {/* ===== MANAGE LEAVE TYPES (SAFE & STYLED) ===== */}
+      {/* MANAGE LEAVE TYPES */}
       <div className="bg-white p-6 rounded-xl shadow">
         <h3 className="text-lg font-semibold mb-4">
           Manage Leave Types
@@ -270,6 +325,41 @@ const LeaveApproval = () => {
           ))}
         </ul>
       </div>
+
+      {/* REJECT MODAL */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-3">
+              Reject Leave Request
+            </h3>
+
+            <textarea
+              className="w-full border rounded-md p-2 mb-4"
+              rows="4"
+              placeholder="Enter rejection reason"
+              value={remark}
+              onChange={(e) => setRemark(e.target.value)}
+            />
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowRejectModal(false)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmReject}
+                disabled={actionLoadingId === selectedLeaveId}
+                className="btn-danger"
+              >
+                Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

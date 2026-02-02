@@ -97,22 +97,38 @@ const ApplyLeave = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="label">Employee Code</label>
-            <input disabled className="input-readonly" value={employee.employee_code} />
+            <input
+              disabled
+              className="input-readonly"
+              value={employee.employee_code}
+            />
           </div>
 
           <div>
             <label className="label">Name of Company</label>
-            <input disabled className="input-readonly" value={employee.company_name} />
+            <input
+              disabled
+              className="input-readonly"
+              value={employee.company_name}
+            />
           </div>
 
           <div>
             <label className="label">Employee Name</label>
-            <input disabled className="input-readonly" value={employee.full_name} />
+            <input
+              disabled
+              className="input-readonly"
+              value={employee.full_name}
+            />
           </div>
 
           <div>
             <label className="label">Employee Contact No</label>
-            <input disabled className="input-readonly" value={employee.phone_number} />
+            <input
+              disabled
+              className="input-readonly"
+              value={employee.phone_number}
+            />
           </div>
         </div>
       </div>
@@ -168,7 +184,11 @@ const ApplyLeave = () => {
 
           <div>
             <label className="label">Leave End Date</label>
-            <input readOnly className="input-readonly" value={endDate} />
+            <input
+              readOnly
+              className="input-readonly"
+              value={endDate}
+            />
           </div>
 
           <div>
@@ -224,58 +244,87 @@ const ApplyLeave = () => {
       </form>
 
       {/* ================= LEAVE HISTORY ================= */}
-      <div className="bg-white rounded shadow">
-        <h3 className="font-semibold p-4 border-b">
-          Leave History
-        </h3>
+      <div className="bg-white rounded-xl shadow">
+  <h3 className="font-semibold p-4 border-b text-gray-700">
+    Leave History
+  </h3>
 
-        {loading ? (
-          <Loader />
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="th">Type</th>
-                <th className="th">From</th>
-                <th className="th">To</th>
-                <th className="th">Days</th>
-                <th className="th">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaves.map((l) => (
-                <tr key={l.id} className="tr">
-                  <td>{l.leave_type_name || l.leave_type}</td>
-                  <td>{l.start_date}</td>
-                  <td>{l.end_date}</td>
-                  <td>{l.leave_days}</td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        l.status === "APPROVED"
-                          ? "badge-green"
-                          : l.status === "REJECTED"
-                          ? "badge-red"
-                          : "badge-yellow"
-                      }`}
-                    >
-                      {l.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+  {loading ? (
+    <Loader />
+  ) : (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm text-gray-700">
+        <thead className="bg-gray-100 text-xs uppercase tracking-wide text-gray-600">
+          <tr>
+            <th className="px-4 py-3 text-left">Type</th>
+            <th className="px-4 py-3 text-left">From</th>
+            <th className="px-4 py-3 text-left">To</th>
+            <th className="px-4 py-3 text-center">Days</th>
+            <th className="px-4 py-3 text-center">Status</th>
+            <th className="px-4 py-3 text-left">Remark</th>
+          </tr>
+        </thead>
 
-              {leaves.length === 0 && (
-                <tr>
-                  <td colSpan="5" className="text-center py-6">
-                    No leave records
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
+        <tbody className="divide-y">
+          {leaves.map((l) => (
+            <tr key={l.id} className="hover:bg-gray-50">
+              <td className="px-4 py-3 font-medium">
+                {l.leave_type_name || l.leave_type}
+              </td>
+
+              <td className="px-4 py-3">{l.start_date}</td>
+              <td className="px-4 py-3">{l.end_date}</td>
+
+              <td className="px-4 py-3 text-center">
+                {l.leave_days}
+              </td>
+
+              {/* STATUS */}
+              <td className="px-4 py-3 text-center">
+                <span
+                  className={`inline-flex items-center justify-center min-w-[90px] px-3 py-1 rounded-full text-xs font-semibold
+                    ${
+                      l.status === "APPROVED"
+                        ? "bg-green-100 text-green-700"
+                        : l.status === "REJECTED"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }
+                  `}
+                >
+                  {l.status}
+                </span>
+              </td>
+
+              {/* REMARK */}
+              <td className="px-4 py-3">
+                {l.status === "REJECTED" && l.rejection_reason ? (
+                  <p className="text-xs text-red-600 leading-relaxed">
+                    {l.rejection_reason}
+                  </p>
+                ) : (
+                  <span className="text-gray-400 italic">—</span>
+                )}
+              </td>
+            </tr>
+          ))}
+
+          {leaves.length === 0 && (
+            <tr>
+              <td
+                colSpan="6"
+                className="px-4 py-6 text-center text-gray-500"
+              >
+                No leave records
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  )}
+</div>
+
     </div>
   );
 };

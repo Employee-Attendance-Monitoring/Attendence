@@ -37,6 +37,7 @@ class LeaveSerializer(serializers.ModelSerializer):
             "leave_type",        # ID (used for submit)
             "leave_type_name",   # LABEL (used for UI)
             "is_half_day",
+            "rejection_reason",
             "is_comp_off",
             "end_date",
             "reason",
@@ -81,18 +82,27 @@ class LeaveSerializer(serializers.ModelSerializer):
 class LeaveApprovalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Leave
-        fields = ["status","rejection_reason"]
+        fields = ["status", "rejection_reason"]
 
-    def validate_status(self, value):
-        if value not in ["APPROVED", "REJECTED"]:
-            raise serializers.ValidationError("Invalid status")
-        return value
+    def validate(self, data):
+        status_value = data.get("status")
+
+        if status_value == "REJECTED" and not data.get("rejection_reason"):
+            raise serializers.ValidationError(
+                {"rejection_reason": "Rejection reason is required"}
+            )
+        return data
 
     def update(self, instance, validated_data):
-        instance.status = validated_data["status"]
+        instance.status = validated_data.get("status", instance.status)
+        instance.rejection_reason = validated_data.get(
+            "rejection_reason", instance.rejection_reason
+        )
         instance.actioned_at = now()
         instance.save()
         return instance
+
+
 
 
 class LeaveBalanceSerializer(serializers.ModelSerializer):
@@ -108,3 +118,4 @@ class LeaveBalanceSerializer(serializers.ModelSerializer):
             "total_leaves",
             "updated_at",
         ]
+

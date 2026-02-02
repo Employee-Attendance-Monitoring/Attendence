@@ -127,35 +127,65 @@ class LeaveApprovalActionView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        status_value = request.data.get("status")
-        rejection_reason = request.data.get("rejection_reason", "")
+        serializer = LeaveApprovalSerializer(
+            leave,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-        if status_value == "REJECTED" and not rejection_reason:
-            return Response(
-                {"detail": "Rejection reason is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # ✅ CRITICAL FIX — refresh object from DB
+        leave.refresh_from_db()
 
-        leave.status = status_value
-        leave.rejection_reason = rejection_reason
-        leave.actioned_at = timezone.now()
-        leave.save()
+        # ================= NOTIFICATION =================
+        message = (
+            f"Your leave from {leave.start_date} to {leave.end_date} "
+            f"was {leave.status.lower()}."
+        )
 
-        # Notify employee
+        if leave.status == "REJECTED":
+            message += f" Reason: {leave.rejection_reason}"
+
         Notification.objects.create(
             user=leave.user,
             title="Leave Status Updated",
-            message=(
-                f"Your leave from {leave.start_date} to {leave.end_date} "
-                f"was {leave.status.lower()}."
-                + (f" Reason: {rejection_reason}" if rejection_reason else "")
-            )
+            message=message
         )
 
+        # ================= EMAIL TO EMPLOYEE (NEW) =================
+        if leave.user.email:
+            subject = "Leave Request Status Update"
+
+            email_message = (
+                f"Hello {leave.user.employee_profile.full_name},\n\n"
+                f"Your leave request has been {leave.status.lower()}.\n\n"
+                f"Leave Period: {leave.start_date} to {leave.end_date}\n"
+            )
+
+            if leave.status == "REJECTED":
+                email_message += (
+                    f"Reason for rejection:\n{leave.rejection_reason}\n\n"
+                )
+
+            email_message += "Regards,\nHR Team"
+
+            send_mail(
+                subject,
+                email_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [leave.user.email],
+                fail_silently=True
+            )
+
         return Response(
-            {"message": "Leave updated successfully"},
+            {
+                "message": "Leave updated successfully",
+                "data": LeaveSerializer(leave).data
+            },
             status=status.HTTP_200_OK
         )
+
 
 
 # ================= ADMIN LEAVE SUMMARY =================

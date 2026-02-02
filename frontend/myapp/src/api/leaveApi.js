@@ -16,8 +16,9 @@ export const getMyLeaveBalance = () =>
 export const getAllLeaves = () =>
   api.get("/leaves/admin/");
 
-export const updateLeaveStatus = (id, status) =>
-  api.put(`/leaves/admin/${id}/`, { status });
+export const updateLeaveStatus = (id, data) =>
+  api.put(`/leaves/admin/${id}/`, data);
+
 
 export const getLeaveSummary = (email) =>
   api.get("/leaves/admin/leave-summary/", {
