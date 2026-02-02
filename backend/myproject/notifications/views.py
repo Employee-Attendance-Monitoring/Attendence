@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Notification
 from .serializers import NotificationSerializer
+from django.shortcuts import get_object_or_404
 
 class MyNotificationsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -28,3 +29,15 @@ class MarkNotificationReadView(APIView):
         notification.save()
 
         return Response({"message": "Marked as read"})
+    
+class DeleteNotificationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        notification = get_object_or_404(
+            Notification,
+            pk=pk,
+            user=request.user
+        )
+        notification.delete()
+        return Response({"message": "Notification deleted"})
