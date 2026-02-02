@@ -69,9 +69,12 @@ class ResetEmployeePasswordView(APIView):
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.utils import timezone
 from accounts.permissions import IsAdmin
 from employees.models import EmployeeProfile
 from django.contrib.auth import get_user_model
+from attendance.models import Attendance
+from leaves.models import Leave
 
 User = get_user_model()
 
@@ -80,18 +83,36 @@ class AdminDashboardView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        total_employees = EmployeeProfile.objects.count()
-        active_employees = User.objects.filter(
+        today = timezone.now().date()
+
+        total_employees = User.objects.filter(
             role="EMPLOYEE",
             is_active=True
         ).count()
 
-        data = {
-            "total_employees": total_employees,
-            "active_employees": active_employees,
-            # placeholders (we will fill later)
-            "present_today": 0,
-            "on_leave": 0,
-        }
+        present_today = Attendance.objects.filter(
+            date=today,
+            status__in=["PRESENT", "HALF_DAY"]
+        ).count()
 
-        return Response(data)
+        on_leave_today = Leave.objects.filter(
+            status="APPROVED",
+            start_date__lte=today,
+            end_date__gte=today
+        ).count()
+
+        absent_today = max(
+            total_employees - present_today - on_leave_today,
+            0
+        )
+
+        pending_leave_requests = Leave.objects.filter(
+            status="PENDING"
+        ).count()
+
+        return Response({
+            "present_today": present_today,
+            "absent_today": absent_today,
+            "on_leave_today": on_leave_today,
+            "pending_leave_requests": pending_leave_requests,
+        })
