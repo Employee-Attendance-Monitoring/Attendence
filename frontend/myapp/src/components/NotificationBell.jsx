@@ -4,7 +4,7 @@ import {
   markNotificationRead,
   deleteNotification,
 } from "../api/notificationApi";
-
+import { FiBell } from "react-icons/fi";
 const NotificationBell = () => {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -53,16 +53,18 @@ const NotificationBell = () => {
     <div className="relative" ref={dropdownRef}>
       {/* Bell */}
       <button
-        onClick={() => setOpen(!open)}
-        className="relative text-2xl"
-      >
-        
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-            {unreadCount}
-          </span>
-        )}
-      </button>
+  onClick={() => setOpen(!open)}
+  className="relative text-2xl text-gray-700 hover:text-black transition"
+>
+  <FiBell />
+
+  {unreadCount > 0 && (
+    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+      {unreadCount}
+    </span>
+  )}
+</button>
+
 
       {/* Dropdown */}
       {open && (
