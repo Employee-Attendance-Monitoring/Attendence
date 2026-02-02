@@ -274,57 +274,6 @@ const LeaveApproval = () => {
         )}
       </div>
 
-      {/* MANAGE LEAVE TYPES */}
-      <div className="bg-white p-6 rounded-xl shadow">
-        <h3 className="text-lg font-semibold mb-4">
-          Manage Leave Types
-        </h3>
-
-        <div className="flex gap-2 mb-4">
-          <input
-            className="border rounded-md px-3 py-2 w-full"
-            placeholder="New leave type"
-            value={newLeaveType}
-            onChange={(e) => setNewLeaveType(e.target.value)}
-          />
-          <button onClick={handleAddLeaveType} className="btn-primary">
-            Add
-          </button>
-        </div>
-
-        <ul className="divide-y">
-          {leaveTypes.map((lt) => (
-            <li
-              key={lt.id}
-              className="flex justify-between items-center py-3"
-            >
-              <span className="font-medium">
-                {lt.name}{" "}
-                {!lt.is_active && (
-                  <span className="text-xs text-gray-500">
-                    (Inactive)
-                  </span>
-                )}
-              </span>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleToggleLeaveType(lt)}
-                  className="btn-secondary"
-                >
-                  {lt.is_active ? "Disable" : "Enable"}
-                </button>
-                <button
-                  onClick={() => handleDeleteLeaveType(lt.id)}
-                  className="btn-danger"
-                >
-                  Delete
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
 
       {/* REJECT MODAL */}
       {showRejectModal && (

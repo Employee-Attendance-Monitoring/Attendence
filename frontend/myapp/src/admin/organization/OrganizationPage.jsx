@@ -8,6 +8,7 @@ import {
 import DepartmentPage from "../department/DepartmentPage";
 import RolePage from "../role/RolePage";
 import OrganizationReport from "./OrganizationReport";// ✅ NEW
+import ManageLeaveTypes from "../leaves/ManageLeaveTypes";
 
 
 
@@ -70,7 +71,7 @@ const OrganizationPage = () => {
 
       {/* ================= TABS ================= */}
       <div className="flex gap-6 border-b">
-        {["ORG", "DEPT", "ROLE", "REPORT"].map((t) => (
+        {["ORG", "DEPT", "ROLE","LEAVE", "REPORT"].map((t) => (
           <button
             key={t}
             onClick={() => setActiveTab(t)}
@@ -81,12 +82,14 @@ const OrganizationPage = () => {
             }`}
           >
             {t === "ORG"
-              ? "Organization Info"
-              : t === "DEPT"
-              ? "Departments"
-              : t === "ROLE"
-              ? "Roles"
-              : "Organization Report"}
+  ? "Organization Info"
+  : t === "DEPT"
+  ? "Departments"
+  : t === "ROLE"
+  ? "Roles"
+  : t === "LEAVE"
+  ? "Leave Types"
+  : "Organization Report"}
           </button>
         ))}
       </div>
@@ -201,6 +204,9 @@ const OrganizationPage = () => {
 
       {/* ========== ROLES ========== */}
       {activeTab === "ROLE" && <RolePage />}
+
+     {activeTab === "LEAVE" && <ManageLeaveTypes />}
+
 
       {/* ========== ORGANIZATION REPORT ========== */}
       {activeTab === "REPORT" && (

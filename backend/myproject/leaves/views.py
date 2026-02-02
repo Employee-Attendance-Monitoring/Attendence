@@ -271,7 +271,7 @@ class LeaveTypeListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        leave_types = LeaveType.objects.filter(is_active=True)
+        leave_types = LeaveType.objects.all()
         return Response(
             [{"id": lt.id, "name": lt.name} for lt in leave_types]
         )
@@ -282,8 +282,7 @@ class LeaveTypeAdminView(APIView):
     def get(self, request):
         leave_types = LeaveType.objects.all()
         return Response(
-            [{"id": lt.id, "name": lt.name, "is_active": lt.is_active}
-             for lt in leave_types]
+            [{"id": lt.id, "name": lt.name} for lt in leave_types]
         )
 
     def post(self, request):
@@ -303,9 +302,6 @@ class LeaveTypeAdminView(APIView):
     def put(self, request, pk):
         leave_type = get_object_or_404(LeaveType, pk=pk)
         leave_type.name = request.data.get("name", leave_type.name)
-        leave_type.is_active = request.data.get(
-            "is_active", leave_type.is_active
-        )
         leave_type.save()
 
         return Response(
@@ -315,9 +311,19 @@ class LeaveTypeAdminView(APIView):
 
     def delete(self, request, pk):
         leave_type = get_object_or_404(LeaveType, pk=pk)
+
+        # 🔴 BLOCK DELETE IF USED
+        if Leave.objects.filter(leave_type=leave_type).exists():
+            return Response(
+                {
+                    "detail": "Cannot delete leave type. It is already used in leave records."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         leave_type.delete()
+
         return Response(
             {"message": "Leave type deleted successfully"},
             status=status.HTTP_200_OK
         )
-
