@@ -51,34 +51,37 @@ const ApplyLeave = () => {
   }, [form.start_date, form.leave_days]);
 
   // ================= SUBMIT =================
-  const submitLeave = async (e) => {
-    e.preventDefault();
+ const submitLeave = async (e) => {
+  e.preventDefault();
 
-    try {
-      await applyLeave({
-        leave_type: form.leave_type,
-        start_date: form.start_date,
-        leave_days:
-          form.is_half_day === "HALF" ? 0.5 : form.leave_days,
-        is_half_day: form.is_half_day,
-        is_comp_off: form.is_comp_off,
-        reason: form.reason,
-      });
+  try {
+    await applyLeave({
+      leave_type: form.leave_type,
+      start_date: form.start_date,
+      leave_days:
+        form.is_half_day === "HALF" ? 0.5 : form.leave_days,
+      is_half_day: form.is_half_day,
+      is_comp_off: form.is_comp_off,
+      reason: form.reason,
+    });
 
-      setForm({
-        leave_type: "",
-        start_date: "",
-        leave_days: 1,
-        is_half_day: "FULL",
-        is_comp_off: false,
-        reason: "",
-      });
+    alert("Leave applied successfully"); // SUCCESS ALERT
 
-      loadLeaves();
-    } catch (err) {
-      alert(err.response?.data?.detail || "Failed to apply leave");
-    }
-  };
+    setForm({
+      leave_type: "",
+      start_date: "",
+      leave_days: 1,
+      is_half_day: "FULL",
+      is_comp_off: false,
+      reason: "",
+    });
+
+    loadLeaves();
+  } catch (err) {
+    alert(err.response?.data?.detail || "Failed to apply leave");
+  }
+};
+
 
   if (!employee) return <Loader />;
 
@@ -210,7 +213,7 @@ const ApplyLeave = () => {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 mt-6">
+          {/* <div className="flex items-center gap-2 mt-6">
             <input
               type="checkbox"
               checked={form.is_comp_off}
@@ -221,7 +224,7 @@ const ApplyLeave = () => {
             <label className="text-sm font-medium">
               Add Comp Off
             </label>
-          </div>
+          </div> */}
         </div>
 
         <div className="mt-4">
