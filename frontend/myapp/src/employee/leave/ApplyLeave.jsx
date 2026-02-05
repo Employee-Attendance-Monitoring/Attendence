@@ -24,6 +24,13 @@ const ApplyLeave = () => {
     reason: "",
   });
 
+  const formatDateDMY = (dateStr) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-GB"); // DD/MM/YYYY
+};
+
+
   // ================= LOAD DATA =================
   useEffect(() => {
     getMyProfile().then((res) => setEmployee(res.data));
@@ -59,7 +66,8 @@ const ApplyLeave = () => {
       leave_type: form.leave_type,
       start_date: form.start_date,
       leave_days:
-        form.is_half_day === "HALF" ? 0.5 : form.leave_days,
+  form.is_half_day === "FULL" ? form.leave_days : 0.5,
+
       is_half_day: form.is_half_day,
       is_comp_off: form.is_comp_off,
       reason: form.reason,
@@ -163,7 +171,7 @@ const ApplyLeave = () => {
               min="0.5"
               step="0.5"
               className="input"
-              disabled={form.is_half_day === "HALF"}
+              disabled={form.is_half_day !== "FULL"}
               value={form.leave_days}
               onChange={(e) =>
                 setForm({ ...form, leave_days: e.target.value })
@@ -180,8 +188,9 @@ const ApplyLeave = () => {
                 setForm({ ...form, is_half_day: e.target.value })
               }
             >
-              <option value="FULL">No</option>
-              <option value="HALF">Yes</option>
+              <option value="FULL">Full Day</option>
+              <option value="FIRST_HALF">1st Half</option>
+              <option value="SECOND_HALF">2nd Half</option>
             </select>
           </div>
 
@@ -190,7 +199,7 @@ const ApplyLeave = () => {
             <input
               readOnly
               className="input-readonly"
-              value={endDate}
+              value={formatDateDMY(endDate)}
             />
           </div>
 
@@ -275,8 +284,9 @@ const ApplyLeave = () => {
                 {l.leave_type_name || l.leave_type}
               </td>
 
-              <td className="px-4 py-3">{l.start_date}</td>
-              <td className="px-4 py-3">{l.end_date}</td>
+              <td className="px-4 py-3">{formatDateDMY(l.start_date)}</td>
+              <td className="px-4 py-3">{formatDateDMY(l.end_date)}</td>
+
 
               <td className="px-4 py-3 text-center">
                 {l.leave_days}

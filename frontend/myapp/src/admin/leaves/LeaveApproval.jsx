@@ -233,39 +233,43 @@ const LeaveApproval = () => {
                     </td>
 
                     <td className="p-3 text-center">
-                      {leave.status === "PENDING" ? (
-                        <div className="flex justify-center gap-2">
-                          <button
-                            disabled={actionLoadingId === leave.id}
-                            onClick={() =>
-                              handleAction(leave.id, "APPROVED")
-                            }
-                            className="btn-success"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            disabled={actionLoadingId === leave.id}
-                            onClick={() =>
-                              handleAction(leave.id, "REJECTED")
-                            }
-                            className="btn-danger"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <StatusBadge status={leave.status} />
-                          {leave.status === "REJECTED" &&
-                            leave.rejection_reason && (
-                              <p className="text-xs text-red-600">
-                                Reason: {leave.rejection_reason}
-                              </p>
-                            )}
-                        </div>
-                      )}
-                    </td>
+  {leave.status === "PENDING" ? (
+    <div className="flex justify-center gap-2">
+      {/* APPROVE */}
+      <button
+        disabled={actionLoadingId === leave.id}
+        onClick={() => handleAction(leave.id, "APPROVED")}
+        className="px-4 py-1.5 text-xs font-semibold text-white bg-green-600 rounded-md
+                   hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed
+                   transition"
+      >
+        Approve
+      </button>
+
+      {/* REJECT */}
+      <button
+        disabled={actionLoadingId === leave.id}
+        onClick={() => handleAction(leave.id, "REJECTED")}
+        className="px-4 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-md
+                   hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed
+                   transition"
+      >
+        Reject
+      </button>
+    </div>
+  ) : (
+    <div className="space-y-1">
+      <StatusBadge status={leave.status} />
+
+      {leave.status === "REJECTED" && leave.rejection_reason && (
+        <p className="text-xs text-red-600">
+          Reason: {leave.rejection_reason}
+        </p>
+      )}
+    </div>
+  )}
+</td>
+
                   </tr>
                 ))
               )}
