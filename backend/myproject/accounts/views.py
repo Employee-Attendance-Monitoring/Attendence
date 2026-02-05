@@ -100,7 +100,7 @@ class AdminDashboardView(APIView):
             status__in=["PRESENT", "HALF_DAY"]
         ).values("user").distinct().count()
 
-        # Employees on approved leave today
+        # Employees on approved leave todayy
         on_leave_today = Leave.objects.filter(
             status="APPROVED",
             start_date__lte=today,

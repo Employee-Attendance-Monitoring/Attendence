@@ -97,7 +97,7 @@ class SignOutView(APIView):
 
         attendance.save()
 
-        # ✅ LOCAL TIME FOR EMAIL
+        # ✅ LOCAL TIME FOR EMAILl
         sign_out_time = localtime(attendance.sign_out)
 
         send_mail(

@@ -74,7 +74,7 @@ const AdminDashboard = () => {
   return (
     <div className="p-6 space-y-8">
        
-      {/* ================= HEADER ================= */}
+      {/* ================= HEADERr ================= */}
       <div>
         <h1 className="text-3xl font-bold text-gray-800">
           Admin Dashboard
