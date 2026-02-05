@@ -1,36 +1,38 @@
+# attendance/management/commands/auto_signout.py
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from attendance.models import Attendance
-from django.core.mail import send_mail
-from django.conf import settings
 
 class Command(BaseCommand):
-    help = "Auto sign-out employees at 6:30 PM"
+    help = "Auto sign-out employees 24 hours after sign-in if sign-out is missed"
 
     def handle(self, *args, **kwargs):
-        self.stdout.write("Auto sign-out command triggered")
         now = timezone.now()
-        today = now.date()
-
-        cutoff = now.replace(hour=18, minute=30, second=0)
-
-        if now < cutoff:
-            return
 
         records = Attendance.objects.filter(
-            date=today,
             sign_in__isnull=False,
             sign_out__isnull=True
         )
 
         for att in records:
-            att.sign_out = cutoff
-            att.is_auto_signout = True
+            elapsed = now - att.sign_in
 
-            delta = att.sign_out - att.sign_in
-            hours = round(delta.total_seconds() / 3600, 2)
+            # ✅ Only auto sign-out AFTER 24 hours
+            if elapsed.total_seconds() < 24 * 3600:
+                continue
+
+            # ✅ AUTO SIGN-OUT TIME = sign_in + 24 hours
+            auto_signout_time = att.sign_in + timezone.timedelta(hours=24)
+
+            att.sign_out = auto_signout_time
+            att.is_auto_signout = True
+            att.auto_signout_reason = "Auto sign-out due to missed sign-out"
+
+            # ✅ CAP HOURS TO MAX 24
+            hours = 24.00
             att.working_hours = hours
 
+            # ✅ STATUS RULES (HR STANDARD)
             if hours >= 8:
                 att.status = "PRESENT"
             elif hours >= 4:
@@ -40,14 +42,8 @@ class Command(BaseCommand):
 
             att.save()
 
-            send_mail(
-                subject="Auto Sign-Out at 6:30 PM",
-                message=(
-                    f"Hello {att.user.email},\n\n"
-                    f"You were automatically signed out at 6:30 PM "
-                    f"because you missed sign-out."
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[att.user.email],
-                fail_silently=True,
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Auto signed-out {att.user.email} (24.00 hrs)"
+                )
             )

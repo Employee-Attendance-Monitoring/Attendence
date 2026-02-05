@@ -104,11 +104,22 @@ const MyAttendance = () => {
               <tr key={r.id} className="border-t hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium">{r.date}</td>
                 <td className="px-4 py-3">{formatTime(r.sign_in)}</td>
-                <td className="px-4 py-3">{formatTime(r.sign_out)}</td>
+                <td className="px-4 py-3">
+  {formatTime(r.sign_out)}
+
+  {r.is_auto_signout && (
+    <div className="mt-1 text-xs font-semibold text-red-600 flex items-center gap-1">
+      🚩 Auto Sign-Out
+    </div>
+  )}
+</td>
                 <td className="px-4 py-3 text-center">{r.working_hours}</td>
-                <td className="px-4 py-3 text-center">
-                  <StatusBadge status={r.status} />
-                </td>
+                
+  <td className="px-4 py-3 text-center">
+  {/* Always show real status */}
+  <StatusBadge status={r.status} />
+</td>
+
               </tr>
             ))}
           </tbody>

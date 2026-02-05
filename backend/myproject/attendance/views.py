@@ -36,7 +36,6 @@ class SignInView(APIView):
             )
 
         attendance.sign_in = timezone.now()
-        attendance.status = "PRESENT"
         attendance.save()
 
         # ✅ LOCAL TIME FOR EMAIL
@@ -92,7 +91,7 @@ class SignOutView(APIView):
         elif hours >= 4:
           attendance.status = "HALF_DAY"
         else:
-         attendance.status = "HALF_DAY"  # or SHORT_LEAVE if you add later
+         attendance.status = "ABSENT"  # or SHORT_LEAVE if you add later
 
 
         attendance.save()
