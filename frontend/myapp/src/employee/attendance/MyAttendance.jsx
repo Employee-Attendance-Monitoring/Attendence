@@ -7,6 +7,13 @@ const MyAttendance = () => {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
 
+
+  const formatDateDMY = (dateStr) => {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-");
+  return `${day}/${month}/${year}`;
+};
+
   // 📅 Monthly filter
   const [month, setMonth] = useState(() => {
     const d = new Date();
@@ -102,7 +109,7 @@ const MyAttendance = () => {
 
             {monthlyRecords.map((r) => (
               <tr key={r.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium">{r.date}</td>
+                <td className="px-4 py-3 font-medium">{formatDateDMY(r.date)}</td>
                 <td className="px-4 py-3">{formatTime(r.sign_in)}</td>
                 <td className="px-4 py-3">
   {formatTime(r.sign_out)}

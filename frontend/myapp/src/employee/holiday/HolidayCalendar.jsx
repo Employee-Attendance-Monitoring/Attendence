@@ -8,6 +8,13 @@ const HolidayCalendar = () => {
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const formatDateDMY = (dateStr) => {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-");
+  return `${day}/${month}/${year}`;
+};
+
+
   useEffect(() => {
     Promise.all([getHolidayCalendar(), getHolidays()])
       .then(([calendarRes, holidayRes]) => {
@@ -59,7 +66,7 @@ const HolidayCalendar = () => {
             <tbody>
               {holidays.map((h) => (
                 <tr key={h.id} className="border-t">
-                  <td className="px-4 py-2">{h.date}</td>
+                  <td className="px-4 py-2">{formatDateDMY(h.date)}</td>
                   <td className="px-4 py-2">{h.name}</td>
                   <td className="px-4 py-2">{h.description || "-"}</td>
                 </tr>

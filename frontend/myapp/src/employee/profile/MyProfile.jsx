@@ -25,6 +25,13 @@ const MyProfile = () => {
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const formatDateDMY = (dateStr) => {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-");
+  return `${day}/${month}/${year}`;
+};
+
+
   /* ================= LOAD PROFILE ================= */
   useEffect(() => {
     getMyProfile()
@@ -110,7 +117,7 @@ const MyProfile = () => {
           <InfoRow label="Phone" value={profile.phone_number} />
           <InfoRow label="Gender" value={profile.gender} />
           <InfoRow label="Blood Group" value={profile.blood_group} />
-          <InfoRow label="Date of Birth" value={profile.date_of_birth} />
+          <InfoRow label="Date of Birth" value={formatDateDMY(profile.date_of_birth)} />
         </div>
 
         {/* WORK */}
@@ -120,7 +127,7 @@ const MyProfile = () => {
           <InfoRow label="Department" value={profile.department} />
           <InfoRow label="Role" value={profile.role} />
           <InfoRow label="Grade" value={profile.grade} />
-          <InfoRow label="Date of Joining" value={profile.date_of_joining} />
+          <InfoRow label="Date of Joining" value={formatDateDMY(profile.date_of_joining)} />
         </div>
 
         {/* ADDRESS */}
