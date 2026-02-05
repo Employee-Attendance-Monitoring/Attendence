@@ -297,7 +297,7 @@ class MyLeaveBalanceView(APIView):
     def get(self, request):
         balance, _ = LeaveBalance.objects.get_or_create(
             user=request.user,
-            defaults={"total_leaves": 12}
+            defaults={"total_leaves": 0}
         )
         serializer = LeaveBalanceSerializer(balance)
         return Response(serializer.data)

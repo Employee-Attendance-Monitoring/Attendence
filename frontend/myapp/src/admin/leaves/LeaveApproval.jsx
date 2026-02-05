@@ -198,7 +198,8 @@ const LeaveApproval = () => {
           <table className="min-w-full text-sm">
             <thead className="bg-gray-100">
               <tr>
-                <th className="p-3">Employee</th>
+            <th className="p-3">Name</th>
+                <th className="p-3">Employee Email</th>
                 <th className="p-3">Leave Type</th>
                 <th className="p-3">From</th>
                 <th className="p-3">To</th>
@@ -222,6 +223,7 @@ const LeaveApproval = () => {
                       i % 2 ? "bg-gray-50" : "bg-white"
                     }`}
                   >
+                     <td className="p-3">{leave.employee_name}</td>
                     <td className="p-3">{leave.employee_email}</td>
                     <td className="p-3 text-center">
                       {leave.leave_type_name}

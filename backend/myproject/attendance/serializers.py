@@ -9,7 +9,10 @@ class AttendanceSerializer(serializers.ModelSerializer):
         source="user.employee_profile.department",
         read_only=True
     )
-
+    employee_name = serializers.CharField(
+        source="user.employee_profile.full_name",
+        read_only=True
+    )
     date = serializers.DateField(format="%Y-%m-%d")
 
     sign_in = serializers.DateTimeField(
@@ -38,4 +41,5 @@ class AttendanceSerializer(serializers.ModelSerializer):
             "working_hours",
             "status",
             "status_display",
+            "employee_name",     
         ]

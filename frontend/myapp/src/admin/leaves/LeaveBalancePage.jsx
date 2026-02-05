@@ -12,7 +12,7 @@ const LeaveBalancePage = () => {
   const [search, setSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const [totalLeave, setTotalLeave] = useState(12);
+  const [totalLeave, setTotalLeave] = useState(0);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState(null);
 
@@ -173,7 +173,7 @@ const LeaveBalancePage = () => {
           <label className="text-sm">Total Leave (Year)</label>
           <input
             type="number"
-            min="1"
+            min="0"
             value={totalLeave}
             onChange={(e) => setTotalLeave(Number(e.target.value))}
             className="w-full border px-3 py-2 rounded"
