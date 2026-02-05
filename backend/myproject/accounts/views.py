@@ -85,32 +85,38 @@ class AdminDashboardView(APIView):
     def get(self, request):
         today = timezone.now().date()
 
+        # Total active employees
         total_employees = User.objects.filter(
             role="EMPLOYEE",
             is_active=True
-        ).count()
+        )
 
-        present_today = Attendance.objects.filter(
-            date=today,
+        total_count = total_employees.count()
+
+        # Employees who have attendance today
+        attendance_today = Attendance.objects.filter(date=today)
+
+        present_today = attendance_today.filter(
             status__in=["PRESENT", "HALF_DAY"]
-        ).count()
+        ).values("user").distinct().count()
 
+        # Employees on approved leave today
         on_leave_today = Leave.objects.filter(
             status="APPROVED",
             start_date__lte=today,
             end_date__gte=today
-        ).count()
+        ).values("user").distinct().count()
 
-        absent_today = max(
-            total_employees - present_today - on_leave_today,
-            0
-        )
+        # ABSENT = employees with NO attendance AND NO leave
+        absent_today = total_count - present_today - on_leave_today
+        absent_today = max(absent_today, 0)
 
         pending_leave_requests = Leave.objects.filter(
             status="PENDING"
         ).count()
 
         return Response({
+            "total_employees": total_count,
             "present_today": present_today,
             "absent_today": absent_today,
             "on_leave_today": on_leave_today,

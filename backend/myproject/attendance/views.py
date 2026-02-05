@@ -88,11 +88,12 @@ class SignOutView(APIView):
         attendance.working_hours = hours
 
         if hours >= 8:
-            attendance.status = "PRESENT"
+         attendance.status = "PRESENT"
         elif hours >= 4:
-            attendance.status = "HALF_DAY"
+          attendance.status = "HALF_DAY"
         else:
-            attendance.status = "ABSENT"
+         attendance.status = "HALF_DAY"  # or SHORT_LEAVE if you add later
+
 
         attendance.save()
 

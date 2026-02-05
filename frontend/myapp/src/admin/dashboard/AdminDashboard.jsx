@@ -33,10 +33,11 @@ const AdminDashboard = () => {
      DERIVED DATA
   ========================= */
 
-  const totalEmployees = employees.length;
+  const totalEmployees = stats.total_employees ?? 0;
 
   const presentToday = stats.present_today ?? 0;
-  const absentToday = stats.absent_today ?? totalEmployees - presentToday;
+  const absentToday = stats.absent_today ?? 0;
+
   const onLeaveToday = stats.on_leave_today ?? 0;
   const pendingLeaveRequests = stats.pending_leave_requests ?? 0;
 
