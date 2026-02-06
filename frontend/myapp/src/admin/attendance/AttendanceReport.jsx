@@ -4,25 +4,22 @@ import { getAdminAttendanceReport } from "../../api/attendanceApi";
 import { getEmployeeDropdown } from "../../api/employeeApi";
 import { getLeaveSummary } from "../../api/leaveApi";
 import Loader from "../../components/Loader";
-
+const getTodayDate = () => {
+  const today = new Date();
+  return today.toISOString().slice(0, 10);
+};
 const AttendanceReport = () => {
   const navigate = useNavigate();
-
   const [viewMode, setViewMode] = useState("DAILY"); // DAILY | MONTHLY
-  const [date, setDate] = useState("");
   const [month, setMonth] = useState("");
   const [employee, setEmployee] = useState("all");
-
-  /* ✅ NEW */
   const [department, setDepartment] = useState("all");
-
   const [employees, setEmployees] = useState([]);
-  const [departments, setDepartments] = useState([]); // ✅ NEW
-
+  const [departments, setDepartments] = useState([]); 
   const [records, setRecords] = useState([]);
   const [leaveSummary, setLeaveSummary] = useState(null);
   const [loading, setLoading] = useState(false);
-
+  const [date, setDate] = useState(getTodayDate());
   const formatTime = (dateTime) => {
   if (!dateTime) return "-";
   const d = new Date(dateTime);
