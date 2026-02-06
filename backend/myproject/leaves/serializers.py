@@ -62,14 +62,8 @@ class LeaveSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Leave days must be greater than 0")
 
         # 🔥 calculate end_date same as model
-        
-        leave_days = float(data["leave_days"])
-        if data.get("is_half_day") in ["FIRST_HALF", "SECOND_HALF"]:
-            calculated_end = start_date
-        else:
-            days = int(leave_days) - 1
-            calculated_end = start_date + timedelta(days=max(days, 0))
-
+        days = int(leave_days) - 1
+        calculated_end = start_date + timedelta(days=max(days, 0))
 
         # 🔥 overlap check
         overlap = Leave.objects.filter(

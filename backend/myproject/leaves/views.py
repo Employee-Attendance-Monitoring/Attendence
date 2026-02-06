@@ -56,22 +56,28 @@ class ApplyLeaveView(APIView):
             **serializer.validated_data
         )
 
-        # ✅ GET ADMINS
+        # ✅ SAFELY GET LEAVE TYPE NAME
+        leave_type_name = (
+            leave.leave_type.name
+            if leave.leave_type else "Leave"
+        )
+
+        # ✅ GET ADMINS (CASE INSENSITIVE)
         admins = User.objects.filter(role__iexact="ADMIN")
 
-        # ✅ NOTIFICATIONS
+        # ✅ CREATE NOTIFICATIONS (SAFE)
         for admin in admins:
             Notification.objects.create(
                 user=admin,
                 title="New Leave Request",
                 message=(
                     f"{request.user.email} applied for "
-                    f"{leave.leave_type.name} "
+                    f"{leave_type_name} "
                     f"({leave.start_date} → {leave.end_date})"
                 )
             )
 
-        # ✅ EMAIL ADMINS
+        # ✅ EMAIL ADMINS (EMPLOYEE APPLYING)
         admin_emails = admins.values_list("email", flat=True)
 
         if admin_emails:
@@ -81,21 +87,15 @@ class ApplyLeaveView(APIView):
                 else request.user.email
             )
 
-            # ✅ Day text
-            if leave.is_half_day == "FIRST_HALF":
-                day_text = "1st Half (0.5 day)"
-            elif leave.is_half_day == "SECOND_HALF":
-                day_text = "2nd Half (0.5 day)"
-            else:
-                day_text = f"Full Day ({leave.leave_days} day)"
+            days = leave.leave_days
 
             subject = "Leave Application"
 
             email_message = (
-                f"Hello Sir/Madam,\n\n"
+                f"Hello,\n\n"
                 f"{employee_name} ({request.user.email}) has applied for leave "
                 f"from {leave.start_date} to {leave.end_date} "
-                f"({day_text}).\n\n"
+                f"({days} day).\n\n"
                 f"Please log in to review the request.\n\n"
                 f"Regards,\n"
                 f"{employee_name}"
@@ -113,7 +113,6 @@ class ApplyLeaveView(APIView):
             {"message": "Leave applied successfully"},
             status=status.HTTP_201_CREATED
         )
-
 
 
 # ================= EMPLOYEE LEAVE LIST =================
