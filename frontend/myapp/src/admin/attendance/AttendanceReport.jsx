@@ -270,23 +270,9 @@ const AttendanceReport = () => {
                     <td className="p-3">{formatTime(r.sign_out)}</td>
 
                     <td className="p-3">{r.working_hours}</td>
-                    <td className="p-3 text-center">
-  {/* Always show real status */}
-  <StatusBadge status={r.status} />
-
-  {/* Auto sign-out flag */}
-  {r.is_auto_signout && (
-    <div
-      className="mt-1 inline-flex items-center gap-1
-                 px-2 py-0.5 rounded-full
-                 text-[11px] font-semibold
-                 bg-red-100 text-red-700"
-      title="Employee missed manual sign-out"
-    >
-      🚩 Auto Sign-Out
-    </div>
-  )}
-</td>
+                    <td className="p-3">
+                      <StatusBadge status={r.status} />
+                    </td>
                   </tr>
                 ))
               )}
