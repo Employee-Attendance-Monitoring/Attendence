@@ -94,7 +94,7 @@ class AdminDashboardView(APIView):
         total_count = total_employees.count()
 
         # Employees who have attendance today
-        attendance_today = Attendance.objects.filter(date=today)
+        attendance_today = Attendance.objects.filter(date=today, user__role="EMPLOYEE",)
 
         present_today = attendance_today.filter(
             status__in=["PRESENT", "HALF_DAY"]

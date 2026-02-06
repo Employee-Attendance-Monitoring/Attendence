@@ -36,6 +36,7 @@ class SignInView(APIView):
             )
 
         attendance.sign_in = timezone.now()
+        attendance.status = "PRESENT"
         attendance.save()
 
         # ✅ LOCAL TIME FOR EMAIL
