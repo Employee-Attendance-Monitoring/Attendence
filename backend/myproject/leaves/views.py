@@ -77,33 +77,13 @@ class ApplyLeaveView(APIView):
                 )
             )
 
-        # ✅ EMAIL ADMINS (EMPLOYEE APPLYING)
+        # ✅ EMAIL ADMINS (OPTIONAL)
         admin_emails = admins.values_list("email", flat=True)
-
         if admin_emails:
-            employee_name = (
-                request.user.employee_profile.full_name
-                if hasattr(request.user, "employee_profile")
-                else request.user.email
-            )
-
-            days = leave.leave_days
-
-            subject = "Leave Application"
-
-            email_message = (
-                f"Hello,\n\n"
-                f"{employee_name} ({request.user.email}) has applied for leave "
-                f"from {leave.start_date} to {leave.end_date} "
-                f"({days} day).\n\n"
-                f"Please log in to review the request.\n\n"
-                f"Regards,\n"
-                f"{employee_name}"
-            )
-
             send_mail(
-                subject,
-                email_message,
+                "New Leave Application Submitted",
+                f"{request.user.email} applied for leave "
+                f"from {leave.start_date} to {leave.end_date}",
                 settings.DEFAULT_FROM_EMAIL,
                 list(admin_emails),
                 fail_silently=True
@@ -113,7 +93,6 @@ class ApplyLeaveView(APIView):
             {"message": "Leave applied successfully"},
             status=status.HTTP_201_CREATED
         )
-
 
 # ================= EMPLOYEE LEAVE LIST =================
 class MyLeaveListView(APIView):
@@ -156,6 +135,7 @@ class LeaveApprovalActionView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
+        # ✅ CRITICAL FIX — refresh object from DB
         leave.refresh_from_db()
 
         # ================= NOTIFICATION =================
@@ -173,35 +153,22 @@ class LeaveApprovalActionView(APIView):
             message=message
         )
 
-        # ================= EMAIL TO EMPLOYEE =================
+        # ================= EMAIL TO EMPLOYEE (NEW) =================
         if leave.user.email:
-            name = (
-                leave.user.employee_profile.full_name
-                if hasattr(leave.user, "employee_profile")
-                else leave.user.email
+            subject = "Leave Request Status Update"
+
+            email_message = (
+                f"Hello {leave.user.employee_profile.full_name},\n\n"
+                f"Your leave request has been {leave.status.lower()}.\n\n"
+                f"Leave Period: {leave.start_date} to {leave.end_date}\n"
             )
 
-            days = leave.leave_days
-
-            if leave.status == "APPROVED":
-                subject = "Leave Approved – Quandatum Analytics"
-                email_message = (
-                    f"Hello {name},\n\n"
-                    f"Your leave request has been approved.\n\n"
-                    f"Leave Date: {leave.start_date} ({days} day)\n\n"
-                    f"Regards,\n"
-                    f"Quandatum Analytics – HR Team"
+            if leave.status == "REJECTED":
+                email_message += (
+                    f"Reason for rejection:\n{leave.rejection_reason}\n\n"
                 )
 
-            elif leave.status == "REJECTED":
-                subject = "Leave Request Update – Quandatum Analytics"
-                email_message = (
-                    f"Hello {name},\n\n"
-                    f"Your leave request has been rejected.\n\n"
-                    f"Reason: {leave.rejection_reason}\n\n"
-                    f"Regards,\n"
-                    f"Quandatum Analytics – HR Team"
-                )
+            email_message += "Regards,\nHR Team"
 
             send_mail(
                 subject,
@@ -218,7 +185,6 @@ class LeaveApprovalActionView(APIView):
             },
             status=status.HTTP_200_OK
         )
-
 
 
 

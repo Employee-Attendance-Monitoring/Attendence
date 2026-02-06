@@ -158,28 +158,17 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                     )
 
         send_mail(
-          subject="Your Account Login Credentials – Quandatum Analytics",
-          message=(
-        f"Hello {employee.full_name},\n\n"
-        f"Welcome to Quandatum Analytics.\n\n"
-        f"Your employee account has been successfully created. "
-        f"Please find your login credentials below:\n\n"
-        f"Email: {email}\n"
-        f"Temporary Password: {raw_password}\n\n"
-        f"For security reasons, we request you to change your password "
-        f"immediately after your first login.\n\n"
-        f"If you face any issues while accessing your account, "
-        f"please feel free to contact the HR or IT support team.\n\n"
-        f"We’re glad to have you on board and wish you a great journey "
-        f"with Quandatum Analytics.\n\n"
-        f"Best regards,\n"
-        f"Quandatum Analytics Team"
-    ),
-    from_email=settings.DEFAULT_FROM_EMAIL,
-    recipient_list=[email],
-    fail_silently=True,
-)
-
+            subject="Employee Account Created",
+            message=(
+                f"Hello {employee.full_name},\n\n"
+                f"Email: {email}\n"
+                f"Password: {raw_password}\n\n"
+                f"Please change your password after login."
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=True,
+        )
 
         return employee
 
