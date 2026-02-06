@@ -4,7 +4,10 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 from .models import EmployeeProfile
 from .serializers import (
     EmployeeProfileSerializer,
@@ -130,3 +133,63 @@ def relieve_employee(request, id):
     user.save()
 
     return Response({"message": "Employee relieved"})
+class EmployeeDashboardHighlightsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        today = timezone.now().date()
+        current_month = today.month
+        current_year = today.year
+
+        employees = EmployeeProfile.objects.select_related("user").filter(
+            user__role="EMPLOYEE",
+            is_active=True
+        )
+
+        birthdays = []
+        anniversaries = []
+        new_joiners = []
+
+        for emp in employees:
+            full_name = emp.full_name or emp.user.email
+
+
+            # 🎂 Birthday
+            if emp.date_of_birth and emp.date_of_birth.month == current_month:
+                birthdays.append({
+                    "id": emp.id,
+                    "full_name": full_name,
+                    "date": emp.date_of_birth,
+                })
+
+            # 🏆 Anniversary
+            if (
+                emp.date_of_joining
+                and emp.date_of_joining.month == current_month
+                and emp.date_of_joining.year < current_year
+            ):
+                years = current_year - emp.date_of_joining.year
+                anniversaries.append({
+                    "id": emp.id,
+                    "full_name": full_name,
+                    "date": emp.date_of_joining,
+                    "years": years,
+                })
+
+            # 🎉 New joiner
+            if (
+                emp.date_of_joining
+                and emp.date_of_joining.month == current_month
+                and emp.date_of_joining.year == current_year
+            ):
+                new_joiners.append({
+                    "id": emp.id,
+                    "full_name": full_name,
+                    "date": emp.date_of_joining,
+                })
+
+        return Response({
+            "birthdays": birthdays,
+            "anniversaries": anniversaries,
+            "new_joiners": new_joiners,
+        })

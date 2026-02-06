@@ -8,6 +8,7 @@ import {
   getMyLeaves,
   getMyLeaveBalance,
 } from "../../api/leaveApi";
+import { getEmployeeDashboardHighlights } from "../../api/employeeApi";
 import Loader from "../../components/Loader";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -22,11 +23,42 @@ const EmployeeDashboard = () => {
   const [seconds, setSeconds] = useState(0);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // ✅ NEW: dashboard highlights state
+  const [employees, setEmployees] = useState({
+    birthdays: [],
+    anniversaries: [],
+    new_joiners: [],
+  });
+
   const [leaveSummary, setLeaveSummary] = useState({
     total: 0,
     taken: 0,
     balance: 0,
   });
+
+  /* ================= HELPERS ================= */
+  const formatDateDMY = (dateStr) => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    return `${day}/${month}/${year}`;
+  };
+
+  const formatDateTime = (dt) => {
+    if (!dt) return "-";
+    return new Date(dt).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const formatTime = () => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h}h ${m}m ${s}s`;
+  };
 
   /* ================= LOAD ATTENDANCE ================= */
   const loadAttendance = async () => {
@@ -94,9 +126,25 @@ const EmployeeDashboard = () => {
     });
   };
 
+  /* ================= LOAD DASHBOARD HIGHLIGHTS ================= */
+  const loadEmployees = async () => {
+    try {
+      const res = await getEmployeeDashboardHighlights();
+      setEmployees(res.data);
+    } catch (err) {
+      console.error("Failed to load dashboard highlights", err);
+      setEmployees({
+        birthdays: [],
+        anniversaries: [],
+        new_joiners: [],
+      });
+    }
+  };
+
   useEffect(() => {
     loadAttendance();
     loadLeaveSummary();
+    loadEmployees();
   }, [location.pathname]);
 
   useEffect(() => {
@@ -106,24 +154,6 @@ const EmployeeDashboard = () => {
     }
     return () => timer && clearInterval(timer);
   }, [working]);
-
-  /* ================= HELPERS ================= */
-  const formatDateTime = (dt) => {
-    if (!dt) return "-";
-    return new Date(dt).toLocaleTimeString("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: true,
-    });
-  };
-
-  const formatTime = () => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return `${h}h ${m}m ${s}s`;
-  };
 
   const totalHours = records
     .reduce((t, r) => t + Number(r.working_hours || 0), 0)
@@ -149,7 +179,6 @@ const EmployeeDashboard = () => {
 
   return (
     <div className="space-y-8">
-
       {/* ================= LEAVE SUMMARY ================= */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <SummaryCard title="Total Leaves (Year)" value={leaveSummary.total} />
@@ -160,9 +189,7 @@ const EmployeeDashboard = () => {
 
       {/* ================= TODAY ATTENDANCE ================= */}
       <div className="bg-white p-6 rounded-xl shadow border">
-        <h3 className="text-lg font-semibold mb-4">
-          Today Attendance
-        </h3>
+        <h3 className="text-lg font-semibold mb-4">Today Attendance</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-sm">
           <Info label="Status">
@@ -177,9 +204,7 @@ const EmployeeDashboard = () => {
               <>
                 {formatDateTime(today?.sign_out)}
                 {today?.is_auto_signout && (
-                  <span className="ml-2 text-xs text-orange-600">
-                    (Auto)
-                  </span>
+                  <span className="ml-2 text-xs text-orange-600">(Auto)</span>
                 )}
               </>
             }
@@ -211,39 +236,50 @@ const EmployeeDashboard = () => {
         </div>
       </div>
 
-      {/* ================= RECENT ATTENDANCE ================= */}
-      <div className="bg-white p-6 rounded-xl shadow border">
-        <div className="flex justify-between mb-4">
-          <h3 className="font-semibold">Recent Attendance</h3>
-          <button
-            onClick={() => navigate("/employee/attendance")}
-            className="text-blue-600 text-sm"
-          >
-            View All →
-          </button>
-        </div>
+      {/* ================= TEAM HIGHLIGHTS ================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card
+          icon="🎂"
+          title="Birthdays This Month"
+          emptyText="No birthdays this month"
+          items={employees.birthdays.map((emp) => ({
+            key: emp.id,
+            avatarBg: "bg-pink-100 text-pink-600",
+            name: emp.full_name,
+            subtitle: formatDateDMY(emp.date),
+            badge: formatDateDMY(emp.date),
+            badgeStyle: "bg-pink-50 text-pink-600",
+          }))}
+        />
 
-        {records.slice(0, 3).map((r) => (
-          <div
-            key={r.id}
-            className="flex justify-between items-center border rounded p-4 mb-2"
-          >
-            <div>
-              <p className="font-medium">{r.date}</p>
-              <p className="text-xs text-gray-500">
-                {formatDateTime(r.sign_in)} → {formatDateTime(r.sign_out)}
-                {r.is_auto_signout && (
-                  <span className="ml-2 text-orange-600">(Auto)</span>
-                )}
-              </p>
-            </div>
+        <Card
+          icon="🏆"
+          title="Work Anniversaries This Month"
+          emptyText="No work anniversaries this month"
+          items={employees.anniversaries.map((emp) => ({
+            key: emp.id,
+            avatarBg: "bg-yellow-100 text-yellow-600",
+            name: emp.full_name,
+            subtitle: `${emp.years} year${emp.years > 1 ? "s" : ""}`,
+            badge: formatDateDMY(emp.date),
+            badgeStyle: "bg-yellow-50 text-yellow-600",
+          }))}
+        />
 
-            <div className="flex items-center gap-4">
-              <span>{r.working_hours} hrs</span>
-              <StatusBadge status={r.status} />
-            </div>
-          </div>
-        ))}
+        <Card
+          icon="🎉"
+          title="Welcome to the Team"
+          emptyText="No new joiners this month"
+          items={employees.new_joiners.map((emp) => ({
+            key: emp.id,
+            avatarBg:
+              "bg-gradient-to-br from-blue-400 to-indigo-500 text-white",
+            name: emp.full_name,
+            subtitle: `Joined on ${formatDateDMY(emp.date)}`,
+            badge: "New",
+            badgeStyle: "bg-indigo-50 text-indigo-600",
+          }))}
+        />
       </div>
     </div>
   );
@@ -279,5 +315,46 @@ const StatusBadge = ({ status }) => {
     </span>
   );
 };
+
+const Card = ({ icon, title, items, emptyText }) => (
+  <div className="bg-white rounded-xl shadow border">
+    <div className="px-6 py-4 border-b flex items-center gap-2">
+      <span className="text-xl">{icon}</span>
+      <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+    </div>
+
+    <div className="p-6 space-y-4">
+      {items.length === 0 ? (
+        <p className="text-gray-500 text-sm">{emptyText}</p>
+      ) : (
+        items.map((item) => (
+          <div
+            key={item.key}
+            className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition"
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${item.avatarBg}`}
+              >
+                {item.name.charAt(0)}
+              </div>
+
+              <div>
+                <p className="font-medium text-gray-700">{item.name}</p>
+                <p className="text-xs text-gray-500">{item.subtitle}</p>
+              </div>
+            </div>
+
+            <span
+              className={`text-xs px-3 py-1 rounded-full ${item.badgeStyle}`}
+            >
+              {item.badge}
+            </span>
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+);
 
 export default EmployeeDashboard;

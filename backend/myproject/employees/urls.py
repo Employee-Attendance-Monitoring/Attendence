@@ -8,6 +8,7 @@ from .views import (
     ChangePasswordView,
     BloodGroupListView,
     relieve_employee,
+    EmployeeDashboardHighlightsView,
 )
 
 urlpatterns = [
@@ -20,4 +21,7 @@ urlpatterns = [
     path("change-password/", ChangePasswordView.as_view()),
     path("blood-groups/", BloodGroupListView.as_view()),
     path("<int:id>/relieve/", relieve_employee),
+    path("employee-dashboard-highlights/", EmployeeDashboardHighlightsView.as_view(),
+         name="employee-dashboard-highlights",
+    ),
 ]

@@ -18,3 +18,6 @@ export const changePassword = (data) =>
 // blood groups
 export const getBloodGroups = () =>
   api.get("/employees/blood-groups/");
+
+export const getEmployeeDashboardHighlights = () =>
+  api.get("/employees/employee-dashboard-highlights/");
