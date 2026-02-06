@@ -6,13 +6,6 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const formatDateDMY = (dateStr) => {
-  if (!dateStr) return "";
-  const [year, month, day] = dateStr.split("-");
-  return `${day}/${month}/${year}`;
-};
-
-
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -128,8 +121,8 @@ const AdminDashboard = () => {
             key: emp.id,
             avatarBg: "bg-pink-100 text-pink-600",
             name: emp.full_name,
-            subtitle:formatDateDMY(emp.date_of_birth),
-            badge:formatDateDMY(emp.date_of_birth),
+            subtitle: emp.date_of_birth,
+            badge: emp.date_of_birth,
             badgeStyle: "bg-pink-50 text-pink-600",
           }))}
         />
@@ -149,7 +142,7 @@ const AdminDashboard = () => {
               avatarBg: "bg-yellow-100 text-yellow-600",
               name: emp.full_name,
               subtitle: `${years} year${years > 1 ? "s" : ""}`,
-              badge: formatDateDMY(emp.date_of_joining),
+              badge: emp.date_of_joining,
               badgeStyle: "bg-yellow-50 text-yellow-600",
             };
           })}
@@ -165,7 +158,7 @@ const AdminDashboard = () => {
             avatarBg:
               "bg-gradient-to-br from-blue-400 to-indigo-500 text-white",
             name: emp.full_name,
-            subtitle: `Joined on ${formatDateDMY(emp.date_of_joining)}`,
+            subtitle: `Joined on ${emp.date_of_joining}`,
             badge: "New",
             badgeStyle: "bg-indigo-50 text-indigo-600",
           }))}

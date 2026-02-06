@@ -32,11 +32,6 @@ const AttendanceReport = () => {
     hour12: true,
   });
 };
-const formatDateDMY = (dateStr) => {
-  if (!dateStr) return "";
-  const [year, month, day] = dateStr.split("-");
-  return `${day}/${month}/${year}`;
-};
 
 
   /* ================= LOAD EMPLOYEES ================= */
@@ -270,7 +265,7 @@ const formatDateDMY = (dateStr) => {
                   <tr key={r.id} className="border-t">
                     <td className="p-3">{r.employee_name}</td>
                     <td className="p-3">{r.employee_email}</td>
-                    <td className="p-3">{formatDateDMY(r.date)}</td>
+                    <td className="p-3">{r.date}</td>
                     <td className="p-3">{formatTime(r.sign_in)}</td>
                     <td className="p-3">{formatTime(r.sign_out)}</td>
 

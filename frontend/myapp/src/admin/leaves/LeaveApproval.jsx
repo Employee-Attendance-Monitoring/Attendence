@@ -37,13 +37,6 @@ const LeaveApproval = () => {
     getAdminLeaveTypes().then((res) => setLeaveTypes(res.data));
   };
 
-  const formatDateDMY = (dateStr) => {
-  if (!dateStr) return "";
-  const [year, month, day] = dateStr.split("-");
-  return `${day}/${month}/${year}`;
-};
-
-
   useEffect(() => {
     loadLeaves();
     loadLeaveTypes();
@@ -235,8 +228,8 @@ const LeaveApproval = () => {
                     <td className="p-3 text-center">
                       {leave.leave_type_name}
                     </td>
-                    <td className="p-3 text-center">{formatDateDMY(leave.start_date)}</td>
-                    <td className="p-3 text-center">{formatDateDMY(leave.end_date)}</td>
+                    <td className="p-3 text-center">{leave.start_date}</td>
+                    <td className="p-3 text-center">{leave.end_date}</td>
                     <td className="p-3 text-center">
                       {leave.reason || "-"}
                     </td>

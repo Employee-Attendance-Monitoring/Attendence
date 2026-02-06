@@ -78,12 +78,6 @@ const HolidayManagement = () => {
       loadData();
     }
   };
-  const formatDateDMY = (dateStr) => {
-  if (!dateStr) return "";
-  const [year, month, day] = dateStr.split("-");
-  return `${day}/${month}/${year}`;
-};
-
 
   return (
     <div>
@@ -187,7 +181,7 @@ const HolidayManagement = () => {
             <tbody>
               {holidays.map((h) => (
                 <tr key={h.id} className="border-t">
-                  <td className="px-4 py-2">{formatDateDMY(h.date)}</td>
+                  <td className="px-4 py-2">{h.date}</td>
                   <td className="px-4 py-2">{h.name}</td>
                   <td className="px-4 py-2">{h.description || "-"}</td>
                   <td className="px-4 py-2">
