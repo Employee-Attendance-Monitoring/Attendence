@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { getMyProfile, changePassword } from "../../api/employeeApi";
 import Loader from "../../components/Loader";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
@@ -172,33 +171,22 @@ const MyProfile = () => {
         <h2 className="font-semibold mb-4">🔐 Change Password</h2>
 
         <form onSubmit={handleChangePassword} className="space-y-4">
-          <div className="relative">
-  <input
-    type={showOld ? "text" : "password"}
-    placeholder="Old Password"
-    className="border rounded px-3 py-2 w-full pr-10"
-    value={oldPassword}
-    onChange={(e) => setOldPassword(e.target.value)}
-  />
-  </div>
+          <input
+            type={showOld ? "text" : "password"}
+            placeholder="Old Password"
+            className="border rounded px-3 py-2 w-full"
+            value={oldPassword}
+            onChange={(e) => setOldPassword(e.target.value)}
+          />
 
-  <div className="relative">
-  <input
-    type={showNew ? "text" : "password"}
-    placeholder="New Password"
-    className="border rounded px-3 py-2 w-full pr-10"
-    value={newPassword}
-    onChange={(e) => setNewPassword(e.target.value)}
-  />
+          <input
+            type={showNew ? "text" : "password"}
+            placeholder="New Password"
+            className="border rounded px-3 py-2 w-full"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
 
-  <button
-    type="button"
-    onClick={() => setShowNew(!showNew)}
-    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-  >
-    {showNew ? <FaEyeSlash /> : <FaEye />}
-  </button>
-</div>
           <button
             type="submit"
             disabled={submitting}

@@ -23,17 +23,6 @@ const AttendanceReport = () => {
   const [leaveSummary, setLeaveSummary] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const formatTime = (dateTime) => {
-  if (!dateTime) return "-";
-  const d = new Date(dateTime);
-  return d.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-};
-
-
   /* ================= LOAD EMPLOYEES ================= */
   useEffect(() => {
     getEmployeeDropdown().then((res) => {
@@ -244,7 +233,6 @@ const AttendanceReport = () => {
           <table className="min-w-full text-sm text-center">
             <thead className="bg-gray-100">
               <tr>
-                <th className="p-3">Name</th>
                 <th className="p-3">Employee</th>
                 <th className="p-3">Date</th>
                 <th className="p-3">Sign In</th>
@@ -263,12 +251,10 @@ const AttendanceReport = () => {
               ) : (
                 filteredRecords.map((r) => (
                   <tr key={r.id} className="border-t">
-                    <td className="p-3">{r.employee_name}</td>
                     <td className="p-3">{r.employee_email}</td>
                     <td className="p-3">{r.date}</td>
-                    <td className="p-3">{formatTime(r.sign_in)}</td>
-                    <td className="p-3">{formatTime(r.sign_out)}</td>
-
+                    <td className="p-3">{r.sign_in || "-"}</td>
+                    <td className="p-3">{r.sign_out || "-"}</td>
                     <td className="p-3">{r.working_hours}</td>
                     <td className="p-3">
                       <StatusBadge status={r.status} />
