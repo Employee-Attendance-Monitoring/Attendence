@@ -4,7 +4,7 @@ from django.utils import timezone
 from attendance.models import Attendance
 
 class Command(BaseCommand):
-    help = "Auto sign-out employees 24 hours after sign-in if sign-out is missed"
+    help = "Auto sign-out employees 12 hours after sign-in if sign-out is missed"
 
     def handle(self, *args, **kwargs):
         now = timezone.now()
@@ -18,18 +18,18 @@ class Command(BaseCommand):
             elapsed = now - att.sign_in
 
             # ✅ Only auto sign-out AFTER 24 hours
-            if elapsed.total_seconds() < 24 * 3600:
+            if elapsed.total_seconds() < 12 * 3600:
                 continue
 
-            # ✅ AUTO SIGN-OUT TIME = sign_in + 24 hours
-            auto_signout_time = att.sign_in + timezone.timedelta(hours=24)
+            # ✅ AUTO SIGN-OUT TIME = sign_in + 12 hours
+            auto_signout_time = att.sign_in + timezone.timedelta(hours=12)
 
             att.sign_out = auto_signout_time
             att.is_auto_signout = True
             att.auto_signout_reason = "Auto sign-out due to missed sign-out"
 
-            # ✅ CAP HOURS TO MAX 24
-            hours = 24.00
+            # ✅ CAP HOURS TO MAX 12
+            hours = 12.00
             att.working_hours = hours
 
             # ✅ STATUS RULES (HR STANDARD)
@@ -44,6 +44,6 @@ class Command(BaseCommand):
 
             self.stdout.write(
                 self.style.WARNING(
-                    f"Auto signed-out {att.user.email} (24.00 hrs)"
+                    f"Auto signed-out {att.user.email} (12.00 hrs)"
                 )
             )
