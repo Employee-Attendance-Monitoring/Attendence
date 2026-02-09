@@ -32,6 +32,7 @@ urlpatterns = [
     path("api/holidays/", include("holidays.urls")),
     path("api/organization/", include("organization.urls")),
     path("api/notifications/", include("notifications.urls")),
+    path('api/', include('policies.urls')),
 
 ]
 from django.conf import settings

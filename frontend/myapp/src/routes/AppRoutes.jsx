@@ -27,6 +27,8 @@ import MyProfile from "../employee/profile/MyProfile";
 import MyAttendance from "../employee/attendance/MyAttendance";
 import ApplyLeave from "../employee/leave/ApplyLeave";
 import HolidayCalendar from "../employee/holiday/HolidayCalendar";
+import EmployeePolicies from "../employee/policies/EmployeePolicies";
+import AdminPolicies from "../admin/policies/AdminPolicies";
 
 const AppRoutes = () => {
   return (
@@ -54,6 +56,7 @@ const AppRoutes = () => {
           <Route path="holidays" element={<HolidayManagement />} />
           <Route path="leave-balance" element={<LeaveBalancePage />} />
           <Route path="organization" element={<OrganizationPage />} />
+          <Route path="policies" element={<AdminPolicies/>}/>
         </Route>
       </Route>
 
@@ -65,6 +68,7 @@ const AppRoutes = () => {
           <Route path="attendance" element={<MyAttendance />} />
           <Route path="leave" element={<ApplyLeave />} />
           <Route path="holiday" element={<HolidayCalendar />} />
+          <Route path="policies" element={<EmployeePolicies/>}/>
         </Route>
       </Route>
 

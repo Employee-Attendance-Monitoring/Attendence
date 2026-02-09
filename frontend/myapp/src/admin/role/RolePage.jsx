@@ -9,16 +9,21 @@ import {
 const RolePage = () => {
   const [roles, setRoles] = useState([]);
   const [name, setName] = useState("");
-  const [editingId, setEditingId] = useState(null); // ✅ track selected role
+  const [editingId, setEditingId] = useState(null); 
 
   useEffect(() => {
     loadRoles();
   }, []);
 
   const loadRoles = async () => {
+  try {
     const res = await getRoles();
     setRoles(res.data || []);
-  };
+  } catch (error) {
+    console.warn("Role fetch failed:", error.response?.status);
+  }
+};
+
 
   /* ================= ADD ================= */
   const handleAdd = async () => {

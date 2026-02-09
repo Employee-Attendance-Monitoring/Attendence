@@ -9,6 +9,7 @@ const EmployeeLayout = () => {
     { label: "Attendance", to: "/employee/attendance" },
     // { label: "Apply Leave", to: "/employee/leave" },
     { label: "Holidays", to: "/employee/holiday" },
+    { label: "Company Policies", to: "/employee/policies" },
   ];
 
   return (

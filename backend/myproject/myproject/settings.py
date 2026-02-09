@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "holidays",
     "organization",
     "notifications",
+    "policies",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
