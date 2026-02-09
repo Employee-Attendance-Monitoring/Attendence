@@ -9,6 +9,7 @@ class AttendanceSerializer(serializers.ModelSerializer):
         source="user.employee_profile.department",
         read_only=True
     )
+    is_auto_signout = serializers.BooleanField(read_only=True)
     employee_name = serializers.CharField(
         source="user.employee_profile.full_name",
         read_only=True
@@ -27,6 +28,11 @@ class AttendanceSerializer(serializers.ModelSerializer):
         source="get_status_display",
         read_only=True
     )
+    auto_signout_flag = serializers.SerializerMethodField()
+
+    
+    def get_auto_signout_flag(self, obj):
+        return obj.is_auto_signout
 
     class Meta:
         model = Attendance
@@ -44,4 +50,5 @@ class AttendanceSerializer(serializers.ModelSerializer):
             "employee_name", 
             "is_auto_signout",  
             "auto_signout_reason",  
+            "auto_signout_flag",
         ]
