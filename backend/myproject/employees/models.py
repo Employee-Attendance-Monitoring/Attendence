@@ -75,6 +75,17 @@ class EmployeeProfile(models.Model):
 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    relieved_at = models.DateTimeField(null=True, blank=True)
+
+    relieved_remark = models.TextField(null=True, blank=True)
+
+    relieved_file = models.FileField(
+    upload_to="employees/relieving_docs/",
+    null=True,
+    blank=True
+    )
+
 
     def __str__(self):
         return f"{self.employee_code} - {self.full_name}"

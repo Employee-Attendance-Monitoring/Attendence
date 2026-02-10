@@ -15,6 +15,9 @@ const EmployeeRelieve = () => {
 
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [remark, setRemark] = useState("");
+const [relieveFile, setRelieveFile] = useState(null);
+const isRelieved = employee?.is_active === false;
 
   /* ================= FETCH EMPLOYEE ================= */
   useEffect(() => {
@@ -32,17 +35,45 @@ const EmployeeRelieve = () => {
   }, [empId]);
 
   /* ================= RELIEVE ================= */
-  const handleConfirmRelieve = async () => {
-    if (!window.confirm("Are you sure you want to relieve this employee?")) return;
+const handleConfirmRelieve = async () => {
+  if (isRelieved) return;
 
-    try {
-      await api.patch(`/employees/${empId}/relieve/`);
-      alert("Employee relieved successfully ✅");
-      navigate("/admin/employees", { replace: true });
-    } catch {
-      alert("Failed to relieve employee ❌");
+  if (!window.confirm("Are you sure you want to relieve this employee?")) return;
+
+  try {
+    const formData = new FormData();
+    formData.append("relieved_remark", remark);
+
+    if (relieveFile) {
+      formData.append("relieved_file", relieveFile);
     }
-  };
+
+    const res = await api.patch(
+      `/employees/${empId}/relieve/`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+
+    // UPDATE LOCAL STATE
+    setEmployee((prev) => ({
+      ...prev,
+      is_active: false,
+    }));
+
+    alert("Employee relieved successfully ✅");
+    // ✅ IMPORTANT
+    navigate("/admin/employees", {
+      state: { refreshed: true },
+      replace: true
+    });
+  } catch (error) {
+    alert(
+      error.response?.data?.detail ||
+      "Employee already relieved ❌"
+    );
+  }
+};
+
 
   if (loading) return <p className="p-6">Loading...</p>;
   if (!employee) return <p className="p-6">No employee found</p>;
@@ -127,6 +158,37 @@ const EmployeeRelieve = () => {
           </div>
         </div>
       )}
+      {/* ===== RELIEVING DETAILS ===== */}
+      {!isRelieved && (
+<div className="bg-white p-6 rounded-xl shadow">
+  <h3 className="font-semibold mb-4">Relieving Details</h3>
+
+  <div className="mb-4">
+    <label className="block text-sm text-gray-600 mb-1">
+      Relieving Remark
+    </label>
+    <textarea
+      rows="3"
+      value={remark}
+      onChange={(e) => setRemark(e.target.value)}
+      placeholder="Enter relieving remark..."
+      className="w-full border rounded px-3 py-2 text-sm"
+    />
+  </div>
+
+  <div>
+    <label className="block text-sm text-gray-600 mb-1">
+      Upload Relieving Document (optional)
+    </label>
+    <input
+      type="file"
+      onChange={(e) => setRelieveFile(e.target.files[0])}
+      className="text-sm"
+    />
+  </div>
+</div>
+      )}
+
 
       {/* ACTIONS */}
       <div className="flex justify-end gap-4">
@@ -137,12 +199,18 @@ const EmployeeRelieve = () => {
           Back
         </button>
 
-        <button
-          onClick={handleConfirmRelieve}
-          className="px-6 py-2 bg-red-600 text-white rounded"
-        >
-          Confirm Relieving
-        </button>
+       <button
+  onClick={handleConfirmRelieve}
+  disabled={isRelieved}
+  className={`px-6 py-2 rounded text-white
+    ${isRelieved
+      ? "bg-gray-400 cursor-not-allowed"
+      : "bg-red-600 hover:bg-red-700"}
+  `}
+>
+  {isRelieved ? "Relieved" : "Confirm Relieving"}
+</button>
+
       </div>
     </div>
   );

@@ -41,7 +41,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
         "role",
         "grade",
         "date_of_joining",
-        "blood_group",  
+        "blood_group",
     ]
 
     # AUTH
@@ -55,12 +55,8 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
     family_members = FamilyMemberSerializer(many=True, read_only=True)
 
     # WRITE (FormData JSON)
-    bank_detail_input = serializers.CharField(
-        write_only=True, required=False
-    )
-    family_members_input = serializers.CharField(
-        write_only=True, required=False
-    )
+    bank_detail_input = serializers.CharField(write_only=True, required=False)
+    family_members_input = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = EmployeeProfile
@@ -84,7 +80,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             "current_address",
             "permanent_address",
             "photo",
-
+            "is_active",
             # READ
             "bank_detail",
             "family_members",
@@ -94,19 +90,19 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             "family_members_input",
         ]
 
-        read_only_fields = ["employee_code"]
-        read_only_fields = ["employee_code", "company_name"] 
-       
+        # ✅ FIXED (only once)
+        read_only_fields = ["employee_code", "company_name"]
+
     # ---------- VALIDATION ----------
     def validate_email(self, value):
-    # allow same email during update
-     if self.instance:
-        return value
- 
-     if User.objects.filter(email=value).exists():
-        raise serializers.ValidationError("Email already exists")
-     return value
+        # allow same email during update
+        if self.instance:
+            return value
 
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email already exists")
+
+        return value
 
     # ---------- CREATE ----------
     def create(self, validated_data):
@@ -126,11 +122,16 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                 {"organization": "No active organization found"}
             )
 
-        count = EmployeeProfile.objects.filter(
+        # ✅ FIXED EMPLOYEE CODE GENERATION (NO DUPLICATE)
+        last_employee = EmployeeProfile.objects.filter(
             organization=organization
-        ).count()
+        ).order_by("-id").first()
 
-        employee_code = f"{organization.emp_prefix}{str(count + 1).zfill(3)}"
+        last_number = 0
+        if last_employee and last_employee.employee_code:
+            last_number = int(last_employee.employee_code[-3:])
+
+        employee_code = f"{organization.emp_prefix}{str(last_number + 1).zfill(3)}"
         validated_data["company_name"] = organization.name
 
         with transaction.atomic():
@@ -158,34 +159,26 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                     )
 
         send_mail(
-          subject="Your Account Login Credentials – Quandatum Analytics",
-          message=(
-        f"Hello {employee.full_name},\n\n"
-        f"Welcome to Quandatum Analytics.\n\n"
-        f"Your employee account has been successfully created. "
-        f"Please find your login credentials below:\n\n"
-        f"Email: {email}\n"
-        f"Temporary Password: {raw_password}\n\n"
-        f"For security reasons, we request you to change your password "
-        f"immediately after your first login.\n\n"
-        f"If you face any issues while accessing your account, "
-        f"please feel free to contact the HR or IT support team.\n\n"
-        f"We’re glad to have you on board and wish you a great journey "
-        f"with Quandatum Analytics.\n\n"
-        f"Best regards,\n"
-        f"Quandatum Analytics Team"
-    ),
-    from_email=settings.DEFAULT_FROM_EMAIL,
-    recipient_list=[email],
-    fail_silently=True,
-)
-
+            subject="Your Account Login Credentials – Quandatum Analytics",
+            message=(
+                f"Hello {employee.full_name},\n\n"
+                f"Welcome to Quandatum Analytics.\n\n"
+                f"Your employee account has been successfully created.\n\n"
+                f"Email: {email}\n"
+                f"Temporary Password: {raw_password}\n\n"
+                f"Please change your password after first login.\n\n"
+                f"Best regards,\n"
+                f"Quandatum Analytics Team"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=True,
+        )
 
         return employee
 
-    # ---------- UPDATE (🔥 THIS FIXES YOUR ISSUE) ----------
+    # ---------- UPDATE ----------
     def update(self, instance, validated_data):
-        # 🔒 freeze basic details (THIS IS ENOUGH)
         for field in self.READ_ONLY_AFTER_CREATE:
             validated_data.pop(field, None)
 
@@ -200,14 +193,12 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
 
         instance.save()
 
-        # update bank
         if bank_data is not None:
             BankDetail.objects.update_or_create(
                 employee=instance,
                 defaults=bank_data
             )
 
-        # update family
         if family_data is not None:
             instance.family_members.all().delete()
             for member in family_data:
@@ -218,6 +209,8 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                     )
 
         return instance
+
+
 # ================= EMPLOYEE DROPDOWN =================
 class EmployeeDropdownSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source="user.email")

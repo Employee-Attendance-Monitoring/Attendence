@@ -6,6 +6,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+
 
 User = get_user_model()
 from .models import EmployeeProfile
@@ -123,16 +125,44 @@ class BloodGroupListView(APIView):
         ])
 
 
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
 def relieve_employee(request, id):
     employee = get_object_or_404(EmployeeProfile, id=id)
+
+    # 🚫 BLOCK MULTIPLE RELIEVING
+    if not employee.is_active:
+        return Response(
+            {"detail": "Employee already relieved"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # ✅ FIRST TIME RELIEVE ONLY
     employee.is_active = False
+    employee.relieved_at = timezone.now()
+
+    # ✅ SAVE REMARK (optional)
+    if "relieved_remark" in request.data:
+        employee.relieved_remark = request.data.get("relieved_remark")
+
+    # ✅ SAVE FILE (optional)
+    if "relieved_file" in request.FILES:
+        employee.relieved_file = request.FILES.get("relieved_file")
+
     employee.save()
 
+    # deactivate login account
     user = employee.user
     user.is_active = False
     user.save()
 
-    return Response({"message": "Employee relieved"})
+    return Response(
+        {"message": "Employee relieved successfully"},
+        status=status.HTTP_200_OK
+    )
+
+
 class EmployeeDashboardHighlightsView(APIView):
     permission_classes = [IsAuthenticated]
 

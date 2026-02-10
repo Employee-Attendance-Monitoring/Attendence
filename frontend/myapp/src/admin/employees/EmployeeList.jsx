@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import api from "../../api/axios";
 
 const EmployeeList = () => {
@@ -7,7 +7,7 @@ const EmployeeList = () => {
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-
+const location = useLocation();
   const navigate = useNavigate();
 
   /* ================= FETCH ================= */
@@ -25,7 +25,7 @@ const EmployeeList = () => {
     };
 
     fetchEmployees();
-  }, []);
+  }, [location.state]);
 
   /* ================= SEARCH ================= */
   useEffect(() => {
@@ -159,26 +159,29 @@ const EmployeeList = () => {
 
                       {/* RELIEVE – only if NOT relieved */}
                       {!isRelieved && (
-                        <button
-                          onClick={() =>
-                            navigate(`/admin/employees/relieve/${emp.id}`)
-                          }
-                          className="bg-red-600 hover:bg-red-700
-                                     text-white px-3 py-1 rounded text-xs"
-                        >
-                          Relieving
-                        </button>
-                      )}
+  <button
+  onClick={() =>
+    navigate(`/admin/employees/relieve/${emp.id}`)
+  }
+  className="bg-red-600 hover:bg-red-700
+             text-white px-3 py-1 rounded text-xs"
+>
+  Relieve
+</button>
+
+)}
+
 
                       {/* RELIEVED BADGE */}
                       {isRelieved && (
-                        <span
-                          className="bg-gray-200 text-gray-600
-                                     px-3 py-1 rounded-full text-xs font-medium"
-                        >
-                          Relieved
-                        </span>
-                      )}
+  <span
+    className="bg-gray-200 text-gray-600
+               px-3 py-1 rounded-full text-xs font-medium"
+  >
+    Relieved
+  </span>
+)}
+
 
                       {/* DELETE – always */}
                       <button
