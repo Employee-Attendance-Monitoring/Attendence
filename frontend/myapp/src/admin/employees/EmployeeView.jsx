@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 
-const BACKEND_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
 const InfoRow = ({ label, value }) => (
   <div className="flex justify-between border-b py-2">
@@ -29,9 +27,11 @@ const EmployeeView = () => {
   if (loading) return <p className="p-6">Loading...</p>;
   if (!employee) return <p className="p-6">No employee found</p>;
 
-  const photoUrl = employee.photo
-    ? `${BACKEND_URL}${employee.photo}`
-    : "/default-avatar.png";
+  const photoUrl = employee.photo?.startsWith("http")
+  ? employee.photo
+  : employee.photo
+  ? `${import.meta.env.VITE_API_BASE_URL}${employee.photo}`
+  : "/default-avatar.png";
 
   return (
   <div className="max-w-7xl mx-auto p-6 space-y-6">

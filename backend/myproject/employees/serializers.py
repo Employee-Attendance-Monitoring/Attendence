@@ -28,6 +28,11 @@ class BankDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankDetail
         fields = ["bank_name", "account_number", "ifsc_code"]
+        extra_kwargs = {
+            "bank_name": {"required": False, "allow_blank": True},
+            "account_number": {"required": False, "allow_blank": True},
+            "ifsc_code": {"required": False, "allow_blank": True},
+        }
 
 
 # ================= EMPLOYEE PROFILE =================

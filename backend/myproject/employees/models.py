@@ -110,12 +110,14 @@ class BankDetail(models.Model):
     employee = models.OneToOneField(
         EmployeeProfile,
         on_delete=models.CASCADE,
-        related_name="bank_detail"
+        related_name="bank_detail",
+        null=True,
+        blank=True
     )
 
-    bank_name = models.CharField(max_length=100)
-    account_number = models.CharField(max_length=50)
-    ifsc_code = models.CharField(max_length=20)
+    bank_name = models.CharField(max_length=100,blank=True)
+    account_number = models.CharField(max_length=50,blank=True)
+    ifsc_code = models.CharField(max_length=20,blank=True)
 
     def __str__(self):
         return f"{self.bank_name} - {self.account_number}"
