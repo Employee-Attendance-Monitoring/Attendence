@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getPolicies, createPolicy ,deletePolicy} from "../../api/policiesApi";
+import { getPolicies, createPolicy ,deletePolicy,togglePolicyStatus,} from "../../api/policiesApi";
 
 const AdminPolicies = () => {
   const [policies, setPolicies] = useState([]);
@@ -11,6 +11,19 @@ const AdminPolicies = () => {
   const [effectiveDate, setEffectiveDate] = useState("");
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  const handleToggleStatus = async (id) => {
+  if (!window.confirm("Do you want to change policy status?")) return;
+
+  try {
+    await togglePolicyStatus(id);
+    fetchPolicies(); // refresh list
+  } catch (err) {
+    console.error("Status update failed:", err);
+    alert("Failed to update policy status");
+  }
+};
+
 
   useEffect(() => {
     fetchPolicies();
@@ -218,16 +231,25 @@ const AdminPolicies = () => {
                     {policy.effective_date}
                   </td>
                   <td className="px-6 py-4">
-                    <span
-                      className={`px-3 py-1 text-xs rounded-full font-semibold ${
-                        policy.is_active
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {policy.is_active ? "Active" : "Inactive"}
-                    </span>
-                  </td>
+  {policy.is_active ? (
+    <button
+      onClick={() => handleToggleStatus(policy.id)}
+      className="px-3 py-1 text-xs rounded-full font-semibold
+                 bg-green-100 text-green-700 hover:bg-green-200"
+    >
+      Active
+    </button>
+  ) : (
+    <button
+      onClick={() => handleToggleStatus(policy.id)}
+      className="px-3 py-1 text-xs rounded-full font-semibold
+                 bg-red-100 text-red-700 hover:bg-red-200"
+    >
+      Inactive
+    </button>
+  )}
+</td>
+
                   <td className="px-6 py-4">
   <button
     onClick={() => handleDelete(policy.id)}

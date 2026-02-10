@@ -326,6 +326,16 @@ const handleSubmit = async (e) => {
             />
           </div>
         </section>
+        {/* ID PROOF */}
+        <section>
+          <h2 className="text-lg font-semibold mb-4">
+            ID Proof <span className="text-sm text-gray-500">(Optional)</span>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input name="pancard_number" value={formData.pancard_number} onChange={handleChange} className={inputClass} placeholder="PAN Number" />
+            <input name="aadhaar_number" value={formData.aadhaar_number} onChange={handleChange} className={inputClass} placeholder="Aadhaar Number" />
+          </div>
+        </section>
 
         {/* FAMILY */}
         <section>

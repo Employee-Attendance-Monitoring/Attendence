@@ -161,19 +161,32 @@ const EmployeeDashboard = () => {
 
   /* ================= ACTIONS ================= */
   const handleSignIn = async () => {
-    setActionLoading(true);
+  if (actionLoading) return;
+
+  setActionLoading(true);
+
+  try {
     await employeeSignIn();
     await loadAttendance();
+  } finally {
     setActionLoading(false);
-  };
+  }
+};
+
 
   const handleSignOut = async () => {
-    setActionLoading(true);
+  if (actionLoading) return; 
+  setActionLoading(true);
+
+  try {
     await employeeSignOut();
     setWorking(false);
     await loadAttendance();
+  } finally {
     setActionLoading(false);
-  };
+  }
+};
+
 
   if (loading) return <Loader />;
 
@@ -216,22 +229,32 @@ const EmployeeDashboard = () => {
         <div className="mt-6">
           {!today?.sign_in && (
             <button
-              disabled={actionLoading}
-              onClick={handleSignIn}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded"
-            >
-              Sign In
-            </button>
+  disabled={actionLoading}
+  onClick={handleSignIn}
+  className={`px-6 py-2 rounded text-white
+    ${actionLoading
+      ? "bg-gray-400 cursor-not-allowed"
+      : "bg-green-600 hover:bg-green-700"}
+  `}
+>
+  {actionLoading ? "Signing In..." : "Sign In"}
+</button>
+
           )}
 
           {today?.sign_in && !today?.sign_out && (
             <button
-              disabled={actionLoading}
-              onClick={handleSignOut}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded"
-            >
-              Sign Out
-            </button>
+  disabled={actionLoading}
+  onClick={handleSignOut}
+  className={`px-6 py-2 rounded text-white
+    ${actionLoading
+      ? "bg-gray-400 cursor-not-allowed"
+      : "bg-red-600 hover:bg-red-700"}
+  `}
+>
+  {actionLoading ? "Signing Out..." : "Sign Out"}
+</button>
+
           )}
         </div>
       </div>

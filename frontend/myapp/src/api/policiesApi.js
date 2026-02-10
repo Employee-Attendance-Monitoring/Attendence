@@ -20,3 +20,6 @@ export const acknowledgePolicy = (policyId) => {
 export const deletePolicy = (id) => {
   return api.delete(`policies/${id}/`);
 };
+
+export const togglePolicyStatus = (id) =>
+  api.patch(`/policies/${id}/toggle_status/`);

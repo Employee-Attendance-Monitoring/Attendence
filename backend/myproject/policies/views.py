@@ -4,6 +4,8 @@ from rest_framework.decorators import action
 from .models import CompanyPolicy, PolicyAcknowledgement
 from .serializers import CompanyPolicySerializer
 from rest_framework.exceptions import PermissionDenied
+from rest_framework import status
+
 class CompanyPolicyViewSet(viewsets.ModelViewSet):
     serializer_class = CompanyPolicySerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -34,3 +36,23 @@ class CompanyPolicyViewSet(viewsets.ModelViewSet):
             employee=request.user
         )
         return Response({"message": "Policy acknowledged successfully"})
+    @action(
+    detail=True,
+    methods=["patch"],
+    permission_classes=[permissions.IsAdminUser]
+    )
+    def toggle_status(self, request, pk=None):
+        policy = self.get_object()
+
+    # toggle active / inactive
+        policy.is_active = not policy.is_active
+        policy.save(update_fields=["is_active"])
+
+        return Response(
+        {
+            "message": "Policy status updated successfully",
+            "is_active": policy.is_active
+        },
+        status=status.HTTP_200_OK
+    )
+
