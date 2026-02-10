@@ -29,7 +29,9 @@ class EmployeeCreateView(APIView):
             context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        employee = serializer.save(
+            is_active=True   # 🔥 IMPORTANT
+        )
         return Response(
             {"message": "Employee created successfully"},
             status=status.HTTP_201_CREATED

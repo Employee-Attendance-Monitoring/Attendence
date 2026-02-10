@@ -32,7 +32,7 @@ class BankDetailSerializer(serializers.ModelSerializer):
 
 # ================= EMPLOYEE PROFILE =================
 class EmployeeProfileSerializer(serializers.ModelSerializer):
-
+    is_active = serializers.BooleanField(read_only=True)
     READ_ONLY_AFTER_CREATE = [
         "full_name",
         "gender",
@@ -91,7 +91,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
         ]
 
         # ✅ FIXED (only once)
-        read_only_fields = ["employee_code", "company_name"]
+        read_only_fields = ["employee_code", "company_name","is_active",]
 
     # ---------- VALIDATION ----------
     def validate_email(self, value):
@@ -106,6 +106,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
 
     # ---------- CREATE ----------
     def create(self, validated_data):
+        validated_data.pop("is_active", None)
         email = validated_data.pop("email")
 
         bank_raw = validated_data.pop("bank_detail_input", None)
@@ -145,6 +146,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                 user=user,
                 organization=organization,
                 employee_code=employee_code,
+                is_active=True,
                 **validated_data
             )
 

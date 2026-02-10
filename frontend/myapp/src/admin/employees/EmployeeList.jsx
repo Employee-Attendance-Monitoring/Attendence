@@ -108,8 +108,7 @@ const location = useLocation();
             ) : (
               filteredEmployees.map((emp) => {
                 // ✅ Detect relieved employee
-                const isRelieved =
-                  emp.is_active === false || emp.user?.is_active === false;
+                const isRelieved = emp.is_active === false;
 
                 return (
                   <tr key={emp.id} className="border-t hover:bg-gray-50">
