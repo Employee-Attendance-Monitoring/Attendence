@@ -88,6 +88,10 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             # WRITE
             "bank_detail_input",
             "family_members_input",
+
+            "relieved_at",
+            "relieved_remark",
+            "relieved_file",
         ]
 
         # ✅ FIXED (only once)

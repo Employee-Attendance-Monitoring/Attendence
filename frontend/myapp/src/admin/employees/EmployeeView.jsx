@@ -11,7 +11,16 @@ const InfoRow = ({ label, value }) => (
     <span className="text-gray-900">{value || "-"}</span>
   </div>
 );
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
 
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+};
 const EmployeeView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -30,8 +39,12 @@ const EmployeeView = () => {
   if (!employee) return <p className="p-6">No employee found</p>;
 
   const photoUrl = employee.photo
-    ? `${BACKEND_URL}${employee.photo}`
-    : "/default-avatar.png";
+  ? `${BACKEND_URL}${employee.photo}`
+  : "/default-avatar.png";
+
+const relievedFileUrl = employee.relieved_file
+  ? `${BACKEND_URL}${employee.relieved_file}`
+  : null;
 
   return (
   <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -147,6 +160,58 @@ const EmployeeView = () => {
         </div>
       </div>
     )}
+    {/* ===== RELIEVING DETAILS ===== */}
+{employee.is_active === false && (
+  <div className="bg-red-50 rounded-xl shadow p-6 mt-6">
+    <h2 className="text-lg font-semibold mb-4 text-red-700">
+      🚫 Relieving Details
+    </h2>
+
+    <InfoRow
+      label="Relieved On"
+      value={
+        employee.relieved_at
+          ? formatDate(employee.relieved_at)
+          : "-"
+      }
+    />
+
+    <InfoRow
+      label="Relieving Remark"
+      value={employee.relieved_remark || "-"}
+    />
+
+    {relievedFileUrl && (
+  <div className="flex justify-between items-center border-b py-2">
+    <span className="font-medium text-gray-600">
+      Relieving Document
+    </span>
+
+    <div className="flex gap-3">
+      {/* VIEW PDF */}
+      <a
+        href={relievedFileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        View PDF
+      </a>
+
+      {/* DOWNLOAD PDF */}
+      <a
+        href={relievedFileUrl}
+        download
+        className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
+      >
+        Download
+      </a>
+    </div>
+  </div>
+)}
+
+  </div>
+)}
 
     {/* ACTIONS */}
     <div className="flex justify-end">
