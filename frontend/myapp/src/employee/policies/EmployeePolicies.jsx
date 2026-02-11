@@ -40,7 +40,8 @@ const EmployeePolicies = () => {
             <tr>
               <th className="px-6 py-3 text-left">Policy Title</th>
               <th className="px-6 py-3 text-left">Category</th>
-              <th className="px-6 py-3 text-left">Effective Date</th>
+              <th className="px-6 py-3 text-left">From Date</th>
+              <th className="px-6 py-3 text-left">End Date</th>
               <th className="px-6 py-3 text-left">Document</th>
               <th className="px-6 py-3 text-left">Status</th>
             </tr>
@@ -84,9 +85,14 @@ const EmployeePolicies = () => {
                   </td>
 
                   {/* DATE */}
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {policy.effective_date}
-                  </td>
+                 <td className="px-6 py-4 text-sm text-gray-600">
+  {policy.from_date}
+</td>
+
+<td className="px-6 py-4 text-sm text-gray-600">
+  {policy.end_date}
+</td>
+
 
                   {/* FILE */}
                   <td className="px-6 py-4">

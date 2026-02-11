@@ -7,8 +7,9 @@ const AdminPolicies = () => {
 
   // upload form state
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("HR");
-  const [effectiveDate, setEffectiveDate] = useState("");
+  const [category, setCategory] = useState("GENERAL");
+  const [fromDate, setFromDate] = useState("");
+const [endDate, setEndDate] = useState("");
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
@@ -62,7 +63,7 @@ const AdminPolicies = () => {
   const handleUpload = async (e) => {
     e.preventDefault();
 
-    if (!title || !effectiveDate || !file) {
+    if (!title || !fromDate || !endDate || !file){
       alert("All fields are required");
       return;
     }
@@ -70,7 +71,8 @@ const AdminPolicies = () => {
     const formData = new FormData();
     formData.append("title", title);
     formData.append("category", category);
-    formData.append("effective_date", effectiveDate);
+    formData.append("from_date", fromDate);
+    formData.append("end_date", endDate);
     formData.append("file", file);
 
     try {
@@ -80,8 +82,9 @@ const AdminPolicies = () => {
 
       // reset form
       setTitle("");
-      setCategory("HR");
-      setEffectiveDate("");
+      setCategory("GENERAL");
+      setFromDate("");
+      setEndDate("");
       setFile(null);
 
       fetchPolicies();
@@ -142,18 +145,33 @@ const AdminPolicies = () => {
             </select>
           </div>
 
-          {/* Effective Date */}
-          <div>
-            <label className="text-sm text-gray-600">
-              Effective Date
-            </label>
-            <input
-              type="date"
-              value={effectiveDate}
-              onChange={(e) => setEffectiveDate(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border rounded-lg"
-            />
-          </div>
+  
+          {/* From Date */}
+<div>
+  <label className="text-sm text-gray-600">
+    From Date
+  </label>
+  <input
+    type="date"
+    value={fromDate}
+    onChange={(e) => setFromDate(e.target.value)}
+    className="w-full mt-1 px-3 py-2 border rounded-lg"
+  />
+</div>
+
+{/* End Date */}
+<div>
+  <label className="text-sm text-gray-600">
+    End Date
+  </label>
+  <input
+    type="date"
+    value={endDate}
+    onChange={(e) => setEndDate(e.target.value)}
+    className="w-full mt-1 px-3 py-2 border rounded-lg"
+  />
+</div>
+
 
           {/* File */}
           <div>
@@ -187,7 +205,8 @@ const AdminPolicies = () => {
             <tr>
               <th className="px-6 py-3 text-left">Title</th>
               <th className="px-6 py-3 text-left">Category</th>
-              <th className="px-6 py-3 text-left">Effective Date</th>
+              <th className="px-6 py-3 text-left">From Date</th>
+              <th className="px-6 py-3 text-left">End Date</th>
               <th className="px-6 py-3 text-left">Status</th>
               <th className="px-6 py-3 text-left">Action</th>
 
@@ -228,8 +247,12 @@ const AdminPolicies = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {policy.effective_date}
+                    {policy.from_date}
                   </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+  {policy.end_date}
+</td>
+
                   <td className="px-6 py-4">
   {policy.is_active ? (
     <button

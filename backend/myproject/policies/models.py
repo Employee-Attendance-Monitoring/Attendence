@@ -3,16 +3,17 @@ from django.conf import settings
 
 class CompanyPolicy(models.Model):
     CATEGORY_CHOICES = (
+        ('GENERAL', 'General'),
         ('HR', 'HR'),
         ('IT', 'IT'),
         ('FINANCE', 'Finance'),
-        ('GENERAL', 'General'),
-    )
+       )
 
     title = models.CharField(max_length=255)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     file = models.FileField(upload_to='policies/')
-    effective_date = models.DateField()
+    from_date = models.DateField()
+    end_date = models.DateField()
     is_active = models.BooleanField(default=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
