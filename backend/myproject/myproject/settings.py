@@ -3,33 +3,25 @@ from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
-load_dotenv()
 import os
 
+load_dotenv()
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY')
-DEBUG = False
-
-ALLOWED_HOSTS = [
-    "hrms-backend.onrender.com",
-    "localhost",
-    "127.0.0.1",
-]
-
+DEBUG = True
+ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
-    "cloudinary_storage",
-    "cloudinary",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    
+
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",
@@ -43,21 +35,6 @@ INSTALLED_APPS = [
     "notifications",
     "policies",
 ]
-STORAGES = {
-    "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
-
-
-CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
-    "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
-    "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
-}
 
 AUTH_USER_MODEL = "accounts.User"
 
@@ -110,8 +87,8 @@ SIMPLE_JWT = {
 }
 
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 TEMPLATES = [
     {
@@ -138,9 +115,9 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
 }
-
-
-
+# settings.py
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 USE_TZ = True
-TIME_ZONE = "Asia/Kolkata"   
+TIME_ZONE = "Asia/Kolkata"   # ✅ India
 
