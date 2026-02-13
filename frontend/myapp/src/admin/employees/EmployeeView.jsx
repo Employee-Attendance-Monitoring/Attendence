@@ -199,13 +199,33 @@ const relievedFileUrl = employee.relieved_file
       </a>
 
       {/* DOWNLOAD PDF */}
-      <a
-        href={relievedFileUrl}
-        download
-        className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
-      >
-        Download
-      </a>
+  
+      <button
+  onClick={async () => {
+    try {
+      const response = await fetch(relievedFileUrl);
+      const blob = await response.blob();
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "Relieving_Document.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(url);
+
+      alert("Download successful");
+    } catch (error) {
+      alert("Download failed");
+    }
+  }}
+  className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
+>
+  Download
+</button>
+
     </div>
   </div>
 )}
