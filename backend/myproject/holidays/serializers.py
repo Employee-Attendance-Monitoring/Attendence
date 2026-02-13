@@ -8,6 +8,10 @@ class HolidaySerializer(serializers.ModelSerializer):
 
 
 class HolidayCalendarSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = HolidayCalendar
         fields = ["id", "file", "uploaded_at"]
+
+
+

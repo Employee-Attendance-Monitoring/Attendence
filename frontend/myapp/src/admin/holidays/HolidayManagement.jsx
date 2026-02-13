@@ -7,6 +7,7 @@ import {
   uploadHolidayCalendar,
 } from "../../api/holidayApi";
 import Loader from "../../components/Loader";
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const HolidayManagement = () => {
   const [holidays, setHolidays] = useState([]);
@@ -53,7 +54,8 @@ const HolidayManagement = () => {
 
   setCalendarFile(null);
   setSuccessMessage("Holiday calendar uploaded successfully ✅");
-
+console.log("BASE_URL:", BASE_URL);
+console.log("FILE:", calendar?.file);
   loadData();
 
   // auto-hide message after 3 seconds
@@ -116,15 +118,16 @@ const HolidayManagement = () => {
           </button>
 
           {calendar && (
-            <a
-              href={`http://localhost:8000${calendar.file}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View Calendar
-            </a>
+  <a
+    href={calendar.file}
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    View Calendar
+  </a>
+)}
 
-          )}
+
         </form>
       </div>
 

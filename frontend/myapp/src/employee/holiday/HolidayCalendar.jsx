@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getHolidayCalendar, getHolidays } from "../../api/holidayApi";
 import Loader from "../../components/Loader";
-const BACKEND_URL = "http://localhost:8000";
+const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const HolidayCalendar = () => {
   const [calendar, setCalendar] = useState(null);
@@ -34,9 +34,9 @@ const HolidayCalendar = () => {
       <div className="bg-white p-6 shadow rounded mb-6">
         <h3 className="font-semibold mb-2">Holiday Calendar</h3>
 
-        {calendar ? (
+        {calendar?.file ? (
           <a
-            href={`${BACKEND_URL}${calendar.file}`}
+            href={calendar.file}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 underline"
