@@ -162,7 +162,11 @@ const EmployeeDashboard = () => {
   /* ================= ACTIONS ================= */
   const handleSignIn = async () => {
   if (actionLoading) return;
+const confirmSignIn = window.confirm(
+    "Are you sure you want to sign in?"
+  );
 
+  if (!confirmSignIn) return;
   setActionLoading(true);
 
   try {
@@ -176,6 +180,11 @@ const EmployeeDashboard = () => {
 
   const handleSignOut = async () => {
   if (actionLoading) return; 
+  const confirmSignOut = window.confirm(
+    "Are you sure you want to sign out?"
+  );
+
+  if (!confirmSignOut) return;
   setActionLoading(true);
 
   try {
