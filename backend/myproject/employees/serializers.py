@@ -4,6 +4,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth import get_user_model
 import secrets, string, json
+import threading
 
 from organization.models import Organization
 from .models import EmployeeProfile, FamilyMember, BankDetail
@@ -15,6 +16,29 @@ User = get_user_model()
 def generate_password(length=10):
     chars = string.ascii_letters + string.digits + "@#$%"
     return "".join(secrets.choice(chars) for _ in range(length))
+
+
+# ================= EMAIL THREAD FUNCTION =================
+def send_employee_email(employee, email, raw_password):
+    try:
+        send_mail(
+            subject="Your Account Login Credentials – Quandatum Analytics",
+            message=(
+                f"Hello {employee.full_name},\n\n"
+                f"Welcome to Quandatum Analytics.\n\n"
+                f"Your employee account has been successfully created.\n\n"
+                f"Email: {email}\n"
+                f"Temporary Password: {raw_password}\n\n"
+                f"Please change your password after first login.\n\n"
+                f"Best regards,\n"
+                f"Quandatum Analytics Team"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=True,   # background thread → don't break API
+        )
+    except Exception as e:
+        print("EMAIL ERROR:", str(e))
 
 
 # ================= NESTED SERIALIZERS =================
@@ -29,10 +53,24 @@ class BankDetailSerializer(serializers.ModelSerializer):
         model = BankDetail
         fields = ["bank_name", "account_number", "ifsc_code"]
 
+# ================= EMPLOYEE DROPDOWN =================
+class EmployeeDropdownSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email")
+
+    class Meta:
+        model = EmployeeProfile
+        fields = [
+            "id",
+            "employee_code",
+            "full_name",
+            "email",
+            "department",
+        ]
 
 # ================= EMPLOYEE PROFILE =================
 class EmployeeProfileSerializer(serializers.ModelSerializer):
     is_active = serializers.BooleanField(read_only=True)
+
     READ_ONLY_AFTER_CREATE = [
         "full_name",
         "gender",
@@ -44,17 +82,12 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
         "blood_group",
     ]
 
-    # AUTH
     email = serializers.EmailField(write_only=True)
-    email_display = serializers.EmailField(
-        source="user.email", read_only=True
-    )
+    email_display = serializers.EmailField(source="user.email", read_only=True)
 
-    # READ
     bank_detail = BankDetailSerializer(read_only=True)
     family_members = FamilyMemberSerializer(many=True, read_only=True)
 
-    # WRITE (FormData JSON)
     bank_detail_input = serializers.CharField(write_only=True, required=False)
     family_members_input = serializers.CharField(write_only=True, required=False)
 
@@ -81,25 +114,19 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             "permanent_address",
             "photo",
             "is_active",
-            # READ
             "bank_detail",
             "family_members",
-
-            # WRITE
             "bank_detail_input",
             "family_members_input",
-
             "relieved_at",
             "relieved_remark",
             "relieved_file",
         ]
 
-        # ✅ FIXED (only once)
-        read_only_fields = ["employee_code", "company_name","is_active",]
+        read_only_fields = ["employee_code", "company_name", "is_active"]
 
     # ---------- VALIDATION ----------
     def validate_email(self, value):
-        # allow same email during update
         if self.instance:
             return value
 
@@ -127,7 +154,6 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                 {"organization": "No active organization found"}
             )
 
-        # ✅ FIXED EMPLOYEE CODE GENERATION (NO DUPLICATE)
         last_employee = EmployeeProfile.objects.filter(
             organization=organization
         ).order_by("-id").first()
@@ -164,22 +190,12 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                         **member
                     )
 
-        send_mail(
-            subject="Your Account Login Credentials – Quandatum Analytics",
-            message=(
-                f"Hello {employee.full_name},\n\n"
-                f"Welcome to Quandatum Analytics.\n\n"
-                f"Your employee account has been successfully created.\n\n"
-                f"Email: {email}\n"
-                f"Temporary Password: {raw_password}\n\n"
-                f"Please change your password after first login.\n\n"
-                f"Best regards,\n"
-                f"Quandatum Analytics Team"
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,
-        )
+        # ✅ SEND EMAIL IN BACKGROUND (FAST API RESPONSE)
+        threading.Thread(
+            target=send_employee_email,
+            args=(employee, email, raw_password),
+            daemon=True
+        ).start()
 
         return employee
 
@@ -215,18 +231,3 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                     )
 
         return instance
-
-
-# ================= EMPLOYEE DROPDOWN =================
-class EmployeeDropdownSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(source="user.email")
-
-    class Meta:
-        model = EmployeeProfile
-        fields = [
-            "id",
-            "employee_code",
-            "full_name",
-            "email",
-            "department",
-        ]
