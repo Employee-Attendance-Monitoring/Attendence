@@ -3,10 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
-from django.utils.timezone import localtime
 from django.db.models import Sum
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
 from django.conf import settings
 
 from .models import Attendance
@@ -38,22 +36,6 @@ class SignInView(APIView):
         attendance.sign_in = timezone.now()
         attendance.status = "PRESENT"
         attendance.save()
-
-        # ✅ LOCAL TIME FOR EMAIL
-        sign_in_time = localtime(attendance.sign_in)
-
-        send_mail(
-            subject="Sign In Successful",
-            message=(
-                f"Hello {request.user.email},\n\n"
-                f"You signed in at "
-                f"{sign_in_time.strftime('%I:%M %p')} "
-                f"on {sign_in_time.strftime('%Y-%m-%d')}."
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[request.user.email],
-            fail_silently=True,
-        )
 
         return Response({"message": "Sign-in successful"})
 
@@ -88,37 +70,19 @@ class SignOutView(APIView):
         attendance.working_hours = hours
 
         if hours >= 8:
-         attendance.status = "PRESENT"
+            attendance.status = "PRESENT"
         elif hours >= 4:
-          attendance.status = "HALF_DAY"
+            attendance.status = "HALF_DAY"
         else:
-         attendance.status = "ABSENT"  # or SHORT_LEAVE if you add later
-
+            attendance.status = "ABSENT"
 
         attendance.save()
-
-        # ✅ LOCAL TIME FOR EMAILl
-        sign_out_time = localtime(attendance.sign_out)
-
-        send_mail(
-            subject="Sign Out Successful",
-            message=(
-                f"Hello {request.user.email},\n\n"
-                f"You signed out at "
-                f"{sign_out_time.strftime('%I:%M %p')}.\n\n"
-                f"Working Hours: {hours}"
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[request.user.email],
-            fail_silently=True,
-        )
 
         return Response({
             "message": "Sign-out successful",
             "working_hours": hours,
             "status": attendance.status
         })
-
 
 class MyAttendanceHistoryView(APIView):
     permission_classes = [IsAuthenticated]
