@@ -66,12 +66,17 @@ class SignOutView(APIView):
         attendance.sign_out = timezone.now()
 
         delta = attendance.sign_out - attendance.sign_in
-        hours = round(delta.total_seconds() / 3600, 2)
-        attendance.working_hours = hours
 
-        if hours >= 8:
+        total_seconds = int(delta.total_seconds())
+
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        decimal_hours = round(total_seconds / 3600, 2)
+        attendance.working_hours =  decimal_hours
+
+        if decimal_hours >= 8:
             attendance.status = "PRESENT"
-        elif hours >= 4:
+        elif decimal_hours >= 4:
             attendance.status = "HALF_DAY"
         else:
             attendance.status = "ABSENT"
@@ -80,7 +85,7 @@ class SignOutView(APIView):
 
         return Response({
             "message": "Sign-out successful",
-            "working_hours": hours,
+            "working_hours": f"{hours} hrs {minutes} mins",
             "status": attendance.status
         })
 
