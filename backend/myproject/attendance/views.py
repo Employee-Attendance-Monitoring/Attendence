@@ -85,7 +85,7 @@ class SignOutView(APIView):
 
         return Response({
             "message": "Sign-out successful",
-            "working_hours": f"{hours} hrs {minutes} mins",
+            "working_hours": f"{hours}h {minutes}m",
             "status": attendance.status
         })
 
@@ -107,14 +107,23 @@ class AttendanceSummaryView(APIView):
     def get(self, request):
         qs = Attendance.objects.filter(user=request.user)
 
+        total_decimal = qs.aggregate(
+            total=Sum("working_hours")
+        )["total"] or 0
+
+        # Convert decimal hours to hours + minutes
+        total_seconds = int(total_decimal * 3600)
+
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+
         return Response({
             "present_days": qs.filter(status="PRESENT").count(),
             "absent_days": qs.filter(status="ABSENT").count(),
             "half_days": qs.filter(status="HALF_DAY").count(),
-            "total_working_hours": qs.aggregate(
-                total=Sum("working_hours")
-            )["total"] or 0,
+            "total_working_hours": f"{hours}h {minutes}m",
         })
+
 
 
 # ================= ADMIN =================

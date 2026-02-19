@@ -29,10 +29,20 @@ class AttendanceSerializer(serializers.ModelSerializer):
         read_only=True
     )
     auto_signout_flag = serializers.SerializerMethodField()
-
+    working_hours = serializers.SerializerMethodField()
     
     def get_auto_signout_flag(self, obj):
         return obj.is_auto_signout
+    def get_working_hours(self, obj):
+        if not obj.working_hours:
+            return "0h 0m"
+
+        total_seconds = int(obj.working_hours * 3600)
+
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+
+        return f"{hours}h {minutes}m"
 
     class Meta:
         model = Attendance
