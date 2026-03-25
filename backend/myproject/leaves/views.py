@@ -51,11 +51,11 @@ class ApplyLeaveView(APIView):
         taken = sum(float(l.leave_days) for l in approved_leaves)
         requested_days = float(serializer.validated_data.get("leave_days", 0))
 
-        if leave_type == "paid":
+        if "paid" in leave_type:
             limit = balance.paid_leave
-        elif leave_type == "sick":
+        elif "sick" in leave_type:
             limit = balance.sick_leave
-        elif leave_type == "casual":
+        elif "casual" in leave_type:
             limit = balance.casual_leave
         else:
             limit = 0
@@ -177,16 +177,16 @@ class LeaveApprovalActionView(APIView):
             approved_leaves = Leave.objects.filter(
                 user=leave.user,
                 status="APPROVED",
-                leave_type__name__iexact=leave_type
+                leave_type__name__icontains=leave_type.split()[0]
             ).exclude(id=leave.id)
 
             taken = sum(float(l.leave_days) for l in approved_leaves)
 
-            if leave_type == "paid":
+            if "paid" in leave_type:
                 limit = balance.paid_leave
-            elif leave_type == "sick":
+            elif "sick" in leave_type:
                 limit = balance.sick_leave
-            elif leave_type == "casual":
+            elif "casual" in leave_type:
                 limit = balance.casual_leave
             else:
                 limit = 0
