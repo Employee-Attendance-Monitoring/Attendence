@@ -221,11 +221,12 @@ class MyAttendanceDashboardSummaryView(APIView):
                 # LATE ENTRY CHECK
                 if attendance.sign_in and attendance.sign_in.time() > time(9, 45):
                     late_entries += 1
+                    late_mark = late_entries
             else:
                 absent += 1
+        late_mark = late_entries
 
-        # ✅ LATE MARK LOGIC (3 late = 1 late mark)
-        late_mark = late_entries // 3
+    
 
         # ✅ PAID DAY
         paid_day = present + paid_leave + (half_day * 0.5)

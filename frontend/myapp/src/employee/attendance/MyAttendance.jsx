@@ -88,7 +88,7 @@ const MyAttendance = () => {
 
           <SummaryCircle label="Paid Leave" value={summary.paid_leave ?? 0} color="orange" total={summary.working_days || 30} />
 
-          <SummaryCircle label="Late Mark" value={summary.late_mark ?? 0} color="pink" total={10} />
+          <SummaryCircle label="Late Mark" value={summary.late_mark ?? 0} color="pink" total={summary.working_days || 30}/>
 
           <SummaryCircle label="Half Day" value={summary.half_day ?? 0} color="gray" total={summary.working_days || 30} />
           <SummaryCircle label="Paid Day" value={summary.paid_day ?? 0} color="purple" total={summary.working_days || 30} />
