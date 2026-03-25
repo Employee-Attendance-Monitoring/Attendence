@@ -19,6 +19,7 @@ const AttendanceReport = () => {
   const [records, setRecords] = useState([]);
   const [leaveSummary, setLeaveSummary] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [date, setDate] = useState(getTodayDate());
   const formatTime = (dateTime) => {
   if (!dateTime) return "-";
@@ -81,24 +82,27 @@ const formatDateDMY = (dateStr) => {
 
   /* ================= FILTER ================= */
   const filteredRecords = useMemo(() => {
-    let data = [...records];
+  let data = [...records];
 
-    if (department !== "all") {
-      data = data.filter(
-        (r) => r.department === department
-      );
-    }
+  if (department !== "all") {
+    data = data.filter((r) => r.department === department);
+  }
 
-    if (viewMode === "MONTHLY" && month) {
-      data = data.filter((r) => r.date.startsWith(month));
-    }
+  if (viewMode === "MONTHLY" && month) {
+    data = data.filter((r) => r.date.startsWith(month));
+  }
 
-    if (viewMode === "DAILY" && date) {
-      data = data.filter((r) => r.date === date);
-    }
+  if (viewMode === "DAILY" && date) {
+    data = data.filter((r) => r.date === date);
+  }
 
-    return data;
-  }, [records, date, month, viewMode, department]);
+  // ✅ STATUS FILTER
+  if (statusFilter !== "ALL") {
+    data = data.filter((r) => r.status === statusFilter);
+  }
+
+  return data;
+}, [records, date, month, viewMode, department, statusFilter]);
 
   /* ================= MONTH SUMMARY ================= */
   const summary = useMemo(() => {
@@ -214,6 +218,21 @@ const formatDateDMY = (dateStr) => {
             ))}
           </select>
         </div>
+        {/* {present absent filter} */}
+        {/* STATUS FILTER */}
+<div>
+  <label className="text-sm">Status</label>
+  <select
+    value={statusFilter}
+    onChange={(e) => setStatusFilter(e.target.value)}
+    className="w-full border px-3 py-2 rounded"
+  >
+    <option value="ALL">All Status</option>
+    <option value="PRESENT">Present</option>
+    <option value="ABSENT">Absent</option>
+    <option value="HALF_DAY">Half Day</option>
+  </select>
+</div>
       </div>
 
       {/* ================= LEAVE BALANCE CARDS ================= */}
