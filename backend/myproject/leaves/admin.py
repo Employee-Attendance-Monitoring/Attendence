@@ -20,7 +20,10 @@ class LeaveAdmin(admin.ModelAdmin):
 class LeaveBalanceAdmin(admin.ModelAdmin):
     list_display = (
         "user",
-        "total_leaves",
+        "paid_leave",
+        "sick_leave",
+        "casual_leave",
         "updated_at",
     )
     search_fields = ("user__email",)
+    list_filter = ("updated_at",)

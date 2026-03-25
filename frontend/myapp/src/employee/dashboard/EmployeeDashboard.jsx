@@ -4,10 +4,7 @@ import {
   employeeSignOut,
   getMyAttendanceHistory,
 } from "../../api/attendanceApi";
-import {
-  getMyLeaves,
-  getMyLeaveBalance,
-} from "../../api/leaveApi";
+import { getMyLeaveBalance } from "../../api/leaveApi";
 import { getEmployeeDashboardHighlights } from "../../api/employeeApi";
 import Loader from "../../components/Loader";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -22,8 +19,8 @@ const EmployeeDashboard = () => {
   const [working, setWorking] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [actionLoading, setActionLoading] = useState(false);
-
-  // ✅ NEW: dashboard highlights state
+  const [totalHours, setTotalHours] = useState(0);
+  const [leaveCards, setLeaveCards] = useState({});
   const [employees, setEmployees] = useState({
     birthdays: [],
     anniversaries: [],
@@ -37,6 +34,7 @@ const EmployeeDashboard = () => {
   });
 
   /* ================= HELPERS ================= */
+
   const formatDateDMY = (dateStr) => {
     if (!dateStr) return "";
     const [year, month, day] = dateStr.split("-");
@@ -60,13 +58,35 @@ const EmployeeDashboard = () => {
     return `${h}h ${m}m ${s}s`;
   };
 
+  const convertToHours = (timeStr) => {
+    if (!timeStr) return 0;
+
+    const h = timeStr.match(/(\d+)h/);
+    const m = timeStr.match(/(\d+)m/);
+    const s = timeStr.match(/(\d+)s/);
+
+    const hours = h ? parseInt(h[1]) : 0;
+    const minutes = m ? parseInt(m[1]) : 0;
+    const seconds = s ? parseInt(s[1]) : 0;
+
+    return hours + minutes / 60 + seconds / 3600;
+  };
+
   /* ================= LOAD ATTENDANCE ================= */
+
   const loadAttendance = async () => {
     setLoading(true);
     try {
       const res = await getMyAttendanceHistory();
       const data = res.data || [];
       setRecords(data);
+
+      // ✅ Total hours
+      let total = 0;
+      data.forEach((r) => {
+        total += convertToHours(r.working_hours || "0h 0m");
+      });
+      setTotalHours(total.toFixed(2));
 
       const todayDate = new Date().toISOString().slice(0, 10);
       const todayRecord = data.find((r) => r.date === todayDate);
@@ -95,44 +115,36 @@ const EmployeeDashboard = () => {
     }
   };
 
-  /* ================= LOAD LEAVE SUMMARY ================= */
+  /* ================= LOAD LEAVE ================= */
+
   const loadLeaveSummary = async () => {
-    const [leaveRes, balanceRes] = await Promise.all([
-      getMyLeaves(),
-      getMyLeaveBalance(),
-    ]);
+    try {
+      const res = await getMyLeaveBalance();
+      const data = res.data || {};
 
-    const leaves = leaveRes.data || [];
-    const balance = balanceRes.data;
-    const currentYear = new Date().getFullYear();
+      setLeaveSummary({
+        total: data.total || 0,
+        taken: data.taken || 0,
+        balance: data.balance || 0,
+      });
 
-    let taken = 0;
-    leaves.forEach((leave) => {
-      if (
-        leave.status === "APPROVED" &&
-        new Date(leave.start_date).getFullYear() === currentYear
-      ) {
-        const start = new Date(leave.start_date);
-        const end = new Date(leave.end_date);
-        taken +=
-          Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-      }
-    });
-
-    setLeaveSummary({
-      total: balance.total_leaves,
-      taken,
-      balance: balance.total_leaves - taken,
-    });
+      setLeaveCards({
+        paid: data.paid || { total: 0, used: 0 },
+        sick: data.sick || { total: 0, used: 0 },
+        casual: data.casual || { total: 0, used: 0 },
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  /* ================= LOAD DASHBOARD HIGHLIGHTS ================= */
+  /* ================= LOAD HIGHLIGHTS ================= */
+
   const loadEmployees = async () => {
     try {
       const res = await getEmployeeDashboardHighlights();
       setEmployees(res.data);
-    } catch (err) {
-      console.error("Failed to load dashboard highlights", err);
+    } catch {
       setEmployees({
         birthdays: [],
         anniversaries: [],
@@ -155,61 +167,56 @@ const EmployeeDashboard = () => {
     return () => timer && clearInterval(timer);
   }, [working]);
 
-  const totalHours = records
-    .reduce((t, r) => t + Number(r.working_hours || 0), 0)
-    .toFixed(2);
-
   /* ================= ACTIONS ================= */
+
   const handleSignIn = async () => {
-  if (actionLoading) return;
-const confirmSignIn = window.confirm(
-    "Are you sure you want to sign in?"
-  );
+    if (actionLoading) return;
 
-  if (!confirmSignIn) return;
-  setActionLoading(true);
-
-  try {
-    await employeeSignIn();
-    await loadAttendance();
-  } finally {
-    setActionLoading(false);
-  }
-};
-
+    if (!window.confirm("Are you sure you want to sign in?")) return;
+    setActionLoading(true);
+    try {
+      await employeeSignIn();
+      await loadAttendance();
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleSignOut = async () => {
-  if (actionLoading) return; 
-  const confirmSignOut = window.confirm(
-    "Are you sure you want to sign out?"
-  );
+    if (actionLoading) return;
 
-  if (!confirmSignOut) return;
-  setActionLoading(true);
+    if (!window.confirm("Are you sure you want to sign out?")) return;
 
-  try {
-    await employeeSignOut();
-    setWorking(false);
-    await loadAttendance();
-  } finally {
-    setActionLoading(false);
-  }
-};
-
+    setActionLoading(true);
+    try {
+      await employeeSignOut();
+      setWorking(false);
+      await loadAttendance();
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   if (loading) return <Loader />;
 
   return (
     <div className="space-y-8">
-      {/* ================= LEAVE SUMMARY ================= */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <SummaryCard title="Total Leaves (Year)" value={leaveSummary.total} />
+
+      {/* ================= SUMMARY ================= */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+        <SummaryCard title="Total Leaves" value={leaveSummary.total} />
         <SummaryCard title="Leaves Taken" value={leaveSummary.taken} />
         <SummaryCard title="Balance Leaves" value={leaveSummary.balance} />
         <SummaryCard title="Total Hours" value={`${totalHours} hrs`} />
+
+        <SummaryCard title="Paid" value={`${leaveCards.paid?.used ?? 0}/${leaveCards.paid?.total ?? 0}`} />
+        <SummaryCard title="Sick" value={`${leaveCards.sick?.used ?? 0}/${leaveCards.sick?.total ?? 0}`} />
+        <SummaryCard title="Casual" value={`${leaveCards.casual?.used ?? 0}/${leaveCards.casual?.total ?? 0}`} />
+
       </div>
 
-      {/* ================= TODAY ATTENDANCE ================= */}
+      {/* ================= TODAY ================= */}
       <div className="bg-white p-6 rounded-xl shadow border">
         <h3 className="text-lg font-semibold mb-4">Today Attendance</h3>
 
@@ -238,86 +245,71 @@ const confirmSignIn = window.confirm(
         <div className="mt-6">
           {!today?.sign_in && (
             <button
-  disabled={actionLoading}
-  onClick={handleSignIn}
-  className={`px-6 py-2 rounded text-white
-    ${actionLoading
-      ? "bg-gray-400 cursor-not-allowed"
-      : "bg-green-600 hover:bg-green-700"}
-  `}
->
-  {actionLoading ? "Signing In..." : "Sign In"}
-</button>
-
+              disabled={actionLoading}
+              onClick={handleSignIn}
+              className="px-6 py-2 rounded text-white bg-green-600 hover:bg-green-700"
+            >
+              {actionLoading ? "Signing In..." : "Sign In"}
+            </button>
           )}
 
           {today?.sign_in && !today?.sign_out && (
             <button
-  disabled={actionLoading}
-  onClick={handleSignOut}
-  className={`px-6 py-2 rounded text-white
-    ${actionLoading
-      ? "bg-gray-400 cursor-not-allowed"
-      : "bg-red-600 hover:bg-red-700"}
-  `}
->
-  {actionLoading ? "Signing Out..." : "Sign Out"}
-</button>
-
+              disabled={actionLoading}
+              onClick={handleSignOut}
+              className="px-6 py-2 rounded text-white bg-red-600 hover:bg-red-700"
+            >
+              {actionLoading ? "Signing Out..." : "Sign Out"}
+            </button>
           )}
         </div>
       </div>
 
-      {/* ================= TEAM HIGHLIGHTS ================= */}
+      {/* ================= HIGHLIGHTS ================= */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card
-          icon="🎂"
-          title="Birthdays This Month"
-          emptyText="No birthdays this month"
+
+        <Card icon="🎂" title="Birthdays This Month"
           items={employees.birthdays.map((emp) => ({
             key: emp.id,
-            avatarBg: "bg-pink-100 text-pink-600",
             name: emp.full_name,
             subtitle: formatDateDMY(emp.date),
             badge: formatDateDMY(emp.date),
+            avatarBg: "bg-pink-100 text-pink-600",
             badgeStyle: "bg-pink-50 text-pink-600",
           }))}
+          emptyText="No birthdays this month"
         />
 
-        <Card
-          icon="🏆"
-          title="Work Anniversaries This Month"
-          emptyText="No work anniversaries this month"
+        <Card icon="🏆" title="Work Anniversaries"
           items={employees.anniversaries.map((emp) => ({
             key: emp.id,
-            avatarBg: "bg-yellow-100 text-yellow-600",
             name: emp.full_name,
-            subtitle: `${emp.years} year${emp.years > 1 ? "s" : ""}`,
+            subtitle: `${emp.years} year`,
             badge: formatDateDMY(emp.date),
+            avatarBg: "bg-yellow-100 text-yellow-600",
             badgeStyle: "bg-yellow-50 text-yellow-600",
           }))}
+          emptyText="No anniversaries"
         />
 
-        <Card
-          icon="🎉"
-          title="Welcome to the Team"
-          emptyText="No new joiners this month"
+        <Card icon="🎉" title="New Joiners"
           items={employees.new_joiners.map((emp) => ({
             key: emp.id,
-            avatarBg:
-              "bg-gradient-to-br from-blue-400 to-indigo-500 text-white",
             name: emp.full_name,
-            subtitle: `Joined on ${formatDateDMY(emp.date)}`,
+            subtitle: formatDateDMY(emp.date),
             badge: "New",
+            avatarBg: "bg-blue-500 text-white",
             badgeStyle: "bg-indigo-50 text-indigo-600",
           }))}
+          emptyText="No new joiners"
         />
+
       </div>
     </div>
   );
 };
 
-/* ================= UI COMPONENTS ================= */
+/* ================= COMPONENTS ================= */
 
 const SummaryCard = ({ title, value }) => (
   <div className="bg-white p-5 rounded-xl shadow border">
@@ -340,7 +332,6 @@ const StatusBadge = ({ status }) => {
     HALF_DAY: "bg-yellow-100 text-yellow-700",
     NOT_MARKED: "bg-gray-100 text-gray-600",
   };
-
   return (
     <span className={`px-3 py-1 text-xs rounded-full ${map[status]}`}>
       {status}
@@ -351,37 +342,17 @@ const StatusBadge = ({ status }) => {
 const Card = ({ icon, title, items, emptyText }) => (
   <div className="bg-white rounded-xl shadow border">
     <div className="px-6 py-4 border-b flex items-center gap-2">
-      <span className="text-xl">{icon}</span>
-      <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+      <span>{icon}</span>
+      <h3 className="font-semibold">{title}</h3>
     </div>
-
     <div className="p-6 space-y-4">
       {items.length === 0 ? (
         <p className="text-gray-500 text-sm">{emptyText}</p>
       ) : (
         items.map((item) => (
-          <div
-            key={item.key}
-            className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition"
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${item.avatarBg}`}
-              >
-                {item.name.charAt(0)}
-              </div>
-
-              <div>
-                <p className="font-medium text-gray-700">{item.name}</p>
-                <p className="text-xs text-gray-500">{item.subtitle}</p>
-              </div>
-            </div>
-
-            <span
-              className={`text-xs px-3 py-1 rounded-full ${item.badgeStyle}`}
-            >
-              {item.badge}
-            </span>
+          <div key={item.key} className="flex justify-between">
+            <span>{item.name}</span>
+            <span>{item.badge}</span>
           </div>
         ))
       )}

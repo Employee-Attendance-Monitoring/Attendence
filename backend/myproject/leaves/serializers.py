@@ -56,14 +56,13 @@ class LeaveSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
 
         start_date = data["start_date"]
-        leave_days = float(data["leave_days"])
+        leave_days = float(data.get("leave_days", 0))
 
         if leave_days <= 0:
             raise serializers.ValidationError("Leave days must be greater than 0")
 
         # 🔥 calculate end_date same as model
         
-        leave_days = float(data["leave_days"])
         if data.get("is_half_day") in ["FIRST_HALF", "SECOND_HALF"]:
             calculated_end = start_date
         else:
@@ -73,14 +72,16 @@ class LeaveSerializer(serializers.ModelSerializer):
 
         # 🔥 overlap check
         overlap = Leave.objects.filter(
-            user=user,
-            start_date__lte=calculated_end,
-            end_date__gte=start_date,
-            status__in=["PENDING", "APPROVED"],
-        ).exists()
+    user=user,
+    start_date__lte=calculated_end,
+    end_date__gte=start_date,
+    status__in=["PENDING", "APPROVED"],
+).exclude(id=self.instance.id if self.instance else None).exists()
 
         if overlap:
-            raise serializers.ValidationError("Overlapping leave already exists")
+            raise serializers.ValidationError(
+    {"detail": "You already have a leave in this date range"}
+)
 
         return data
 
@@ -121,7 +122,9 @@ class LeaveBalanceSerializer(serializers.ModelSerializer):
         model = LeaveBalance
         fields = [
             "employee_email",
-            "total_leaves",
+            "paid_leave",
+            "sick_leave",
+            "casual_leave",
             "updated_at",
         ]
 

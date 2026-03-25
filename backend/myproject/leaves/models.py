@@ -87,14 +87,19 @@ class Leave(models.Model):
                 self.leave_days = 0.5
                 self.end_date = self.start_date
             else:
-                # ✅ Full-day leave
-                days = int(float(self.leave_days)) - 1
+                # ✅ Full-day leave 
+                days = int(float(self.leave_days or 1)) - 1
                 self.end_date = self.start_date + timedelta(days=max(days, 0))
 
         super().save(*args, **kwargs)
 
+    @property
+    def leave_type_name(self):
+        return self.leave_type.name.lower()
+
     def __str__(self):
         return f"{self.user.email} | {self.leave_type.name} | {self.status}"
+
 
 # =========================
 # LEAVE BALANCE
@@ -106,19 +111,20 @@ class LeaveBalance(models.Model):
         related_name="leave_balance"
     )
 
-    total_leaves = models.PositiveIntegerField(default=12)
-
-    leaves_taken = models.DecimalField(
-        max_digits=5,
-        decimal_places=1,
-        default=0
-    )
+    paid_leave = models.PositiveIntegerField(default=0)
+    sick_leave = models.PositiveIntegerField(default=0)
+    casual_leave = models.PositiveIntegerField(default=0)
 
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        verbose_name = "Leave Balance"
-        verbose_name_plural = "Leave Balances"
+    
+    @property
+    def total_leaves(self):
+        return (
+            (self.paid_leave or 0) +
+            (self.sick_leave or 0) +
+            (self.casual_leave or 0)
+        )
 
     def __str__(self):
-        return f"{self.user.email} | Total: {self.total_leaves}"
+        return f"{self.user.email}"

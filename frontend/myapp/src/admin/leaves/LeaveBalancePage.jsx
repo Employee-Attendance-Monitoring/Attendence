@@ -12,7 +12,11 @@ const LeaveBalancePage = () => {
   const [search, setSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const [totalLeave, setTotalLeave] = useState(0);
+  // ✅ leave states
+  const [paid, setPaid] = useState(0);
+  const [sick, setSick] = useState(0);
+  const [casual, setCasual] = useState(0);
+
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState(null);
 
@@ -28,7 +32,6 @@ const LeaveBalancePage = () => {
     if (tab === "INDIVIDUAL" && employee) {
       getLeaveSummary(employee).then((res) => {
         setSummary(res.data);
-        setTotalLeave(res.data.total);
       });
     } else {
       setSummary(null);
@@ -37,8 +40,8 @@ const LeaveBalancePage = () => {
 
   /* ================= SAVE ================= */
   const handleSave = async () => {
-    if (!totalLeave || totalLeave <= 0) {
-      alert("Please enter valid total leave");
+    if (paid <= 0 || sick <= 0 || casual <= 0) {
+      alert("Please enter valid leave values");
       return;
     }
 
@@ -51,12 +54,18 @@ const LeaveBalancePage = () => {
       setLoading(true);
 
       if (tab === "ALL") {
-        await setLeaveBalance({ total_leaves: Number(totalLeave) });
+        await setLeaveBalance({
+          paid_leave: Number(paid),
+          sick_leave: Number(sick),
+          casual_leave: Number(casual),
+        });
         alert("Leave balance updated for all employees");
       } else {
         await setLeaveBalance({
           employee,
-          total_leaves: Number(totalLeave),
+          paid_leave: Number(paid),
+          sick_leave: Number(sick),
+          casual_leave: Number(casual),
         });
         alert("Leave balance updated for selected employee");
       }
@@ -109,9 +118,18 @@ const LeaveBalancePage = () => {
       {/* ================= SUMMARY ================= */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card title="Total Leaves" value={summary.total} />
-          <Card title="Leaves Taken" value={summary.taken} />
-          <Card title="Balance Leaves" value={summary.balance} />
+          <Card
+            title="Paid Leave"
+            value={`${summary.paid_used || 0} / ${summary.paid_leave}`}
+          />
+          <Card
+            title="Sick Leave"
+            value={`${summary.sick_used || 0} / ${summary.sick_leave}`}
+          />
+          <Card
+            title="Casual Leave"
+            value={`${summary.casual_used || 0} / ${summary.casual_leave}`}
+          />
         </div>
       )}
 
@@ -168,14 +186,33 @@ const LeaveBalancePage = () => {
           </div>
         )}
 
-        {/* ===== TOTAL LEAVE ===== */}
+        {/* ===== LEAVE INPUTS ===== */}
         <div>
-          <label className="text-sm">Total Leave (Year)</label>
+          <label className="text-sm">Paid Leave</label>
           <input
             type="number"
-            min="0"
-            value={totalLeave}
-            onChange={(e) => setTotalLeave(Number(e.target.value))}
+            value={paid}
+            onChange={(e) => setPaid(Number(e.target.value))}
+            className="w-full border px-3 py-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="text-sm">Sick Leave</label>
+          <input
+            type="number"
+            value={sick}
+            onChange={(e) => setSick(Number(e.target.value))}
+            className="w-full border px-3 py-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="text-sm">Casual Leave</label>
+          <input
+            type="number"
+            value={casual}
+            onChange={(e) => setCasual(Number(e.target.value))}
             className="w-full border px-3 py-2 rounded"
           />
         </div>
