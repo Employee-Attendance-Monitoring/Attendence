@@ -22,7 +22,8 @@ const AdminDashboard = () => {
         ]);
 
         setStats(statsRes.data);
-        setEmployees(empRes.data);
+const activeEmployees = empRes.data.filter(emp => emp.is_active === true);
+setEmployees(activeEmployees);
       } catch (err) {
         console.error("Dashboard load failed", err);
       } finally {
@@ -40,7 +41,7 @@ const AdminDashboard = () => {
      DERIVED DATA
   ========================= */
 
-  const totalEmployees = stats.total_employees ?? 0;
+  const totalEmployees = stats.active_employees ?? stats.total_employees ?? 0;
 
   const presentToday = stats.present_today ?? 0;
   const absentToday = stats.absent_today ?? 0;
@@ -114,6 +115,11 @@ const AdminDashboard = () => {
           value={pendingLeaveRequests}
           gradient="from-blue-400 to-indigo-600"
         />
+        <StatCard
+  title="Relieved Employees"
+  value={stats.relieved_employees ?? 0}
+  gradient="from-gray-400 to-gray-600"
+/>
       </div>
 
       {/* ================= BOTTOM CARDS ================= */}

@@ -7,12 +7,11 @@ const MyAttendance = () => {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
 
-
   const formatDateDMY = (dateStr) => {
-  if (!dateStr) return "";
-  const [year, month, day] = dateStr.split("-");
-  return `${day}/${month}/${year}`;
-};
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-GB");
+  };
 
   // 📅 Monthly filter
   const [month, setMonth] = useState(() => {
@@ -29,7 +28,7 @@ const MyAttendance = () => {
       api.get("/attendance/my-history/"),
     ])
       .then(([summaryRes, historyRes]) => {
-        setSummary(summaryRes.data);
+        setSummary(summaryRes.data || {});
         setRecords(historyRes.data || []);
       })
       .catch(() => alert("Failed to load attendance"))
@@ -38,14 +37,24 @@ const MyAttendance = () => {
 
   /* ================= MONTH FILTER ================= */
   const monthlyRecords = useMemo(() => {
-    return records.filter((r) => r.date.startsWith(month));
+    return records.filter((r) => {
+      if (!r.date) return false;
+      return r.date.startsWith(month);
+    });
   }, [records, month]);
+
+  /* ================= SORT ================= */
+  const sortedRecords = useMemo(() => {
+    return [...monthlyRecords].sort(
+      (a, b) => new Date(b.date) - new Date(a.date)
+    );
+  }, [monthlyRecords]);
 
   if (loading || !summary) return <Loader />;
 
   return (
     <div className="space-y-6">
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">Attendance Dashboard</h2>
@@ -67,17 +76,22 @@ const MyAttendance = () => {
         </div>
       </div>
 
-      {/* ================= SUMMARY ================= */}
+      {/* ================= CIRCLE CHART (LIKE YOUR IMAGE) ================= */}
       <div className="bg-white rounded-xl shadow p-6">
         <div className="grid grid-cols-2 md:grid-cols-8 gap-4 text-center">
-          <SummaryCircle label="Present" value={summary.present} color="green" />
-          <SummaryCircle label="Week Off" value={summary.week_off} color="pink" />
-          <SummaryCircle label="Absent" value={summary.absent} color="red" />
-          <SummaryCircle label="Paid Leave" value={summary.paid_leave} color="orange" />
-          <SummaryCircle label="Late Mark" value={summary.late_mark} color="yellow" />
-          <SummaryCircle label="Half Day" value={summary.half_day} color="blue" />
-          <SummaryCircle label="OD Day" value={summary.od_day} color="gray" />
-          <SummaryCircle label="Paid Day" value={summary.paid_day} color="purple" />
+
+          <SummaryCircle label="Present" value={summary.present ?? 0} color="green" total={summary.working_days || 30} />
+
+          <SummaryCircle label="Week Off" value={summary.week_off ?? 0} color="pink" total={30} />
+
+          <SummaryCircle label="Absent" value={summary.absent ?? 0} color="blue" total={summary.working_days || 30} />
+
+          <SummaryCircle label="Paid Leave" value={summary.paid_leave ?? 0} color="orange" total={summary.working_days || 30} />
+
+          <SummaryCircle label="Late Mark" value={summary.late_mark ?? 0} color="pink" total={10} />
+
+          <SummaryCircle label="Half Day" value={summary.half_day ?? 0} color="gray" total={summary.working_days || 30} />
+          <SummaryCircle label="Paid Day" value={summary.paid_day ?? 0} color="purple" total={summary.working_days || 30} />
         </div>
       </div>
 
@@ -99,7 +113,7 @@ const MyAttendance = () => {
           </thead>
 
           <tbody>
-            {monthlyRecords.length === 0 && (
+            {sortedRecords.length === 0 && (
               <tr>
                 <td colSpan="5" className="text-center py-8 text-gray-500">
                   No attendance records for this month
@@ -107,26 +121,38 @@ const MyAttendance = () => {
               </tr>
             )}
 
-            {monthlyRecords.map((r) => (
-              <tr key={r.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium">{formatDateDMY(r.date)}</td>
-                <td className="px-4 py-3">{formatTime(r.sign_in)}</td>
+            {sortedRecords.map((r, index) => (
+              <tr
+                key={r.id || index}
+                className={`border-t hover:bg-gray-50 ${
+                  r.status === "ABSENT" ? "bg-red-50" : ""
+                }`}
+              >
+                <td className="px-4 py-3 font-medium">
+                  {formatDateDMY(r.date)}
+                </td>
+
                 <td className="px-4 py-3">
-  {formatTime(r.sign_out)}
+                  {formatTime(r.sign_in)}
+                </td>
 
-  {r.is_auto_signout && (
-    <div className="mt-1 text-xs font-semibold text-red-600 flex items-center gap-1">
-      🚩 Auto Sign-Out
-    </div>
-  )}
-</td>
-                <td className="px-4 py-3 text-center">{r.working_hours}</td>
-                
-  <td className="px-4 py-3 text-center">
-  {/* Always show real status */}
-  <StatusBadge status={r.status} />
-</td>
+                <td className="px-4 py-3">
+                  {formatTime(r.sign_out)}
 
+                  {r.is_auto_signout && (
+                    <div className="mt-1 text-xs font-semibold text-red-600">
+                      🚩 Auto Sign-Out
+                    </div>
+                  )}
+                </td>
+
+                <td className="px-4 py-3 text-center">
+                  {r.working_hours || "0h 0m"}
+                </td>
+
+                <td className="px-4 py-3 text-center">
+                  <StatusBadge status={r.status} />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -148,25 +174,63 @@ const formatTime = (value) => {
   });
 };
 
-const SummaryCircle = ({ label, value, color }) => {
+/* 🔥 UPDATED CIRCLE (MAIN FIX) */
+const SummaryCircle = ({ label, value, color, total = 30 }) => {
   const colors = {
-    green: "text-green-600",
-    red: "text-red-600",
-    blue: "text-blue-600",
-    orange: "text-orange-500",
-    yellow: "text-yellow-500",
-    gray: "text-gray-500",
-    pink: "text-pink-500",
-    purple: "text-purple-600",
+    green: "#22c55e",
+    red: "#ef4444",
+    blue: "#3b82f6",
+    orange: "#f97316",
+    yellow: "#eab308",
+    gray: "#9ca3af",
+    pink: "#ec4899",
+    purple: "#8b5cf6",
   };
 
+  const radius = 28;
+  const stroke = 6;
+  const normalizedRadius = radius - stroke * 0.5;
+  const circumference = normalizedRadius * 2 * Math.PI;
+
+  const progress = value / total;
+  const strokeDashoffset = circumference - progress * circumference;
+
   return (
-    <div>
-      <div
-        className={`mx-auto w-16 h-16 rounded-full border-4 flex items-center justify-center text-xl font-bold ${colors[color]}`}
-      >
-        {value}
-      </div>
+    <div className="flex flex-col items-center">
+      <svg height={radius * 2} width={radius * 2}>
+        <circle
+          stroke="#e5e7eb"
+          fill="transparent"
+          strokeWidth={stroke}
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+        />
+
+        <circle
+          stroke={colors[color]}
+          fill="transparent"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${circumference} ${circumference}`}
+          style={{ strokeDashoffset }}
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+          transform={`rotate(-90 ${radius} ${radius})`}
+        />
+
+        <text
+          x="50%"
+          y="50%"
+          dominantBaseline="middle"
+          textAnchor="middle"
+          className="text-sm font-bold fill-gray-700"
+        >
+          {value}
+        </text>
+      </svg>
+
       <p className="mt-2 text-xs text-gray-600">{label}</p>
     </div>
   );
@@ -177,6 +241,7 @@ const StatusBadge = ({ status }) => {
     PRESENT: "bg-green-100 text-green-700",
     ABSENT: "bg-red-100 text-red-700",
     HALF_DAY: "bg-yellow-100 text-yellow-700",
+    WEEK_OFF: "bg-gray-100 text-gray-700",
   };
 
   return (

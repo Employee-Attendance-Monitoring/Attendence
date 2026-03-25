@@ -4,46 +4,78 @@ import { getAdminAttendanceReport } from "../../api/attendanceApi";
 import { getEmployeeDropdown } from "../../api/employeeApi";
 import { getLeaveSummary } from "../../api/leaveApi";
 import Loader from "../../components/Loader";
+
 const getTodayDate = () => {
   const today = new Date();
   return today.toISOString().slice(0, 10);
 };
+
 const AttendanceReport = () => {
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState("DAILY"); // DAILY | MONTHLY
+
+  const [viewMode, setViewMode] = useState("DAILY");
   const [month, setMonth] = useState("");
   const [employee, setEmployee] = useState("all");
   const [department, setDepartment] = useState("all");
+
   const [employees, setEmployees] = useState([]);
-  const [departments, setDepartments] = useState([]); 
+  const [departments, setDepartments] = useState([]);
+
   const [records, setRecords] = useState([]);
   const [leaveSummary, setLeaveSummary] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [date, setDate] = useState(getTodayDate());
-  const formatTime = (dateTime) => {
-  if (!dateTime) return "-";
-  const d = new Date(dateTime);
-  return d.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-};
-const formatDateDMY = (dateStr) => {
-  if (!dateStr) return "";
-  const [year, month, day] = dateStr.split("-");
-  return `${day}/${month}/${year}`;
-};
 
+  /* ================= HELPERS ================= */
+
+  const formatTime = (dateTime) => {
+    if (!dateTime) return "-";
+    const d = new Date(dateTime);
+    return d.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const formatDateDMY = (dateStr) => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    return `${day}/${month}/${year}`;
+  };
+
+  const convertToHours = (timeStr) => {
+    if (!timeStr) return 0;
+
+    const h = timeStr.match(/(\d+)h/);
+    const m = timeStr.match(/(\d+)m/);
+
+    const hours = h ? parseInt(h[1]) : 0;
+    const minutes = m ? parseInt(m[1]) : 0;
+
+    return hours + minutes / 60;
+  };
+  const totalLeave =
+  (leaveSummary?.paid_leave || 0) +
+  (leaveSummary?.sick_leave || 0) +
+  (leaveSummary?.casual_leave || 0);
+
+const takenLeave =
+  (leaveSummary?.paid_used || 0) +
+  (leaveSummary?.sick_used || 0) +
+  (leaveSummary?.casual_used || 0);
+
+const balanceLeave = totalLeave - takenLeave;
 
   /* ================= LOAD EMPLOYEES ================= */
+
   useEffect(() => {
     getEmployeeDropdown().then((res) => {
       const data = res.data || [];
       setEmployees(data);
 
-      // ✅ extract unique departments
       const uniqueDepartments = [
         ...new Set(data.map((e) => e.department).filter(Boolean)),
       ];
@@ -52,24 +84,33 @@ const formatDateDMY = (dateStr) => {
   }, []);
 
   /* ================= LOAD ATTENDANCE ================= */
+
   useEffect(() => {
     loadAttendance();
   }, [date, month, employee, viewMode]);
 
   const loadAttendance = async () => {
-    try {
-      setLoading(true);
-      const res = await getAdminAttendanceReport(
-        viewMode === "DAILY" ? date : "",
-        employee
-      );
-      setRecords(res.data || []);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    if (viewMode === "MONTHLY" && !month) return;
+
+    setLoading(true);
+
+    const params =
+      viewMode === "DAILY"
+        ? { date, employee }
+        : { month, employee };
+
+    const res = await getAdminAttendanceReport(params);
+    setRecords(res.data || []);
+  } catch (err) {
+    console.error("API ERROR", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   /* ================= LOAD LEAVE SUMMARY ================= */
+
   useEffect(() => {
     if (employee !== "all") {
       getLeaveSummary(employee)
@@ -81,30 +122,35 @@ const formatDateDMY = (dateStr) => {
   }, [employee]);
 
   /* ================= FILTER ================= */
+
   const filteredRecords = useMemo(() => {
-  let data = [...records];
+    let data = [...records];
 
-  if (department !== "all") {
-    data = data.filter((r) => r.department === department);
-  }
+    if (department !== "all") {
+      data = data.filter((r) => r.department === department);
+    }
 
-  if (viewMode === "MONTHLY" && month) {
-    data = data.filter((r) => r.date.startsWith(month));
-  }
+    if (employee !== "all") {
+      data = data.filter((r) => r.employee_email === employee);
+    }
 
-  if (viewMode === "DAILY" && date) {
-    data = data.filter((r) => r.date === date);
-  }
+    if (viewMode === "MONTHLY" && month) {
+      data = data.filter((r) => r.date.startsWith(month));
+    }
 
-  // ✅ STATUS FILTER
-  if (statusFilter !== "ALL") {
-    data = data.filter((r) => r.status === statusFilter);
-  }
+    if (viewMode === "DAILY" && date) {
+      data = data.filter((r) => r.date === date);
+    }
 
-  return data;
-}, [records, date, month, viewMode, department, statusFilter]);
+    if (statusFilter !== "ALL") {
+      data = data.filter((r) => r.status === statusFilter);
+    }
 
-  /* ================= MONTH SUMMARY ================= */
+    return data;
+  }, [records, date, month, viewMode, department, employee, statusFilter]);
+
+  /* ================= SUMMARY ================= */
+
   const summary = useMemo(() => {
     let present = 0;
     let absent = 0;
@@ -115,7 +161,8 @@ const formatDateDMY = (dateStr) => {
       if (r.status === "PRESENT") present++;
       else if (r.status === "ABSENT") absent++;
       else if (r.status === "HALF_DAY") half++;
-      hours += Number(r.working_hours || 0);
+
+      hours += convertToHours(r.working_hours);
     });
 
     return { present, absent, half, hours };
@@ -127,7 +174,8 @@ const formatDateDMY = (dateStr) => {
         Attendance Report (Admin)
       </h2>
 
-      {/* ================= VIEW MODE BUTTONS ================= */}
+      {/* ================= VIEW MODE ================= */}
+
       <div className="flex gap-3">
         <button
           onClick={() => setViewMode("DAILY")}
@@ -160,9 +208,11 @@ const formatDateDMY = (dateStr) => {
       </div>
 
       {/* ================= FILTERS ================= */}
+
       <div className="bg-white p-4 rounded shadow grid grid-cols-1 md:grid-cols-4 gap-4">
+
         {viewMode === "DAILY" && (
-          <div>
+         <div>
             <label className="text-sm">Date</label>
             <input
               type="date"
@@ -170,11 +220,10 @@ const formatDateDMY = (dateStr) => {
               onChange={(e) => setDate(e.target.value)}
               className="w-full border px-3 py-2 rounded"
             />
-          </div>
-        )}
+          </div>        )}
 
         {viewMode === "MONTHLY" && (
-          <div>
+         <div>
             <label className="text-sm">Month</label>
             <input
               type="month"
@@ -182,8 +231,7 @@ const formatDateDMY = (dateStr) => {
               onChange={(e) => setMonth(e.target.value)}
               className="w-full border px-3 py-2 rounded"
             />
-          </div>
-        )}
+          </div>        )}
 
         {/* ✅ DEPARTMENT FILTER */}
         <div>
@@ -201,7 +249,6 @@ const formatDateDMY = (dateStr) => {
             ))}
           </select>
         </div>
-
         {/* EMPLOYEE FILTER */}
         <div>
           <label className="text-sm">Employee</label>
@@ -218,8 +265,8 @@ const formatDateDMY = (dateStr) => {
             ))}
           </select>
         </div>
-        {/* {present absent filter} */}
-        {/* STATUS FILTER */}
+
+       {/* STATUS FILTER */}
 <div>
   <label className="text-sm">Status</label>
   <select
@@ -235,29 +282,45 @@ const formatDateDMY = (dateStr) => {
 </div>
       </div>
 
-      {/* ================= LEAVE BALANCE CARDS ================= */}
-      {leaveSummary && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <LeaveCard title="Total Leave" value={leaveSummary.total} />
-          <LeaveCard title="Leave Taken" value={leaveSummary.taken} />
-          <LeaveCard title="Leave Balance" value={leaveSummary.balance} />
-        </div>
-      )}
+      {/* ================= LEAVE CARDS ================= */}
+
+{leaveSummary && (
+  <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+
+    <LeaveCard title="Total Leave" value={totalLeave} />
+    <LeaveCard title="Leave Taken" value={takenLeave} />
+    <LeaveCard title="Leave Balance" value={balanceLeave} />
+
+    <LeaveCard
+      title="Paid Leave"
+      value={`${leaveSummary.paid_used || 0} / ${leaveSummary.paid_leave || 0}`}
+    />
+
+    <LeaveCard
+      title="Sick Leave"
+      value={`${leaveSummary.sick_used || 0} / ${leaveSummary.sick_leave || 0}`}
+    />
+
+    <LeaveCard
+      title="Casual Leave"
+      value={`${leaveSummary.casual_used || 0} / ${leaveSummary.casual_leave || 0}`}
+    />
+  </div>
+)}
 
       {/* ================= MONTH SUMMARY ================= */}
+
       {viewMode === "MONTHLY" && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Summary title="Present Days" value={summary.present} />
-          <Summary title="Absent Days" value={summary.absent} />
-          <Summary title="Half Days" value={summary.half} />
-          <Summary
-            title="Total Hours"
-            value={`${summary.hours.toFixed(2)} hrs`}
-          />
+        <div className="grid grid-cols-4 gap-4">
+          <Summary title="Present" value={summary.present} />
+          <Summary title="Absent" value={summary.absent} />
+          <Summary title="Half Day" value={summary.half} />
+          <Summary title="Total Hours" value={`${summary.hours.toFixed(2)} hrs`} />
         </div>
       )}
 
       {/* ================= TABLE ================= */}
+
       {loading ? (
         <Loader />
       ) : (
@@ -283,7 +346,7 @@ const formatDateDMY = (dateStr) => {
                 </tr>
               ) : (
                 filteredRecords.map((r) => (
-                  <tr key={r.id} className="border-t">
+                <tr className="border-t" key={r.id || `${r.employee_email}-${r.date}`}>
                     <td className="p-3">{r.employee_name}</td>
                     <td className="p-3">{r.employee_email}</td>
                     <td className="p-3">{formatDateDMY(r.date)}</td>

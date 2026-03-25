@@ -5,14 +5,16 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django.db.models import Sum
 from django.contrib.auth import get_user_model
-from django.conf import settings
+from calendar import monthrange
+from datetime import time
 
 from .models import Attendance
 from .serializers import AttendanceSerializer
 from accounts.permissions import IsAdmin
-from calendar import monthrange
 from leaves.models import Leave
+
 User = get_user_model()
+
 
 # ================= EMPLOYEE =================
 
@@ -57,6 +59,12 @@ class SignOutView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        if not attendance.sign_in:
+            return Response(
+                {"detail": "You must sign in first"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         if attendance.sign_out:
             return Response(
                 {"detail": "Already signed out"},
@@ -66,20 +74,24 @@ class SignOutView(APIView):
         attendance.sign_out = timezone.now()
 
         delta = attendance.sign_out - attendance.sign_in
-
         total_seconds = int(delta.total_seconds())
 
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60
         decimal_hours = round(total_seconds / 3600, 2)
-        attendance.working_hours =  decimal_hours
 
-        if decimal_hours >= 8:
+        attendance.working_hours = decimal_hours
+
+        # WEEKEND LOGIC
+        if today.weekday() in (5, 6):
             attendance.status = "PRESENT"
-        elif decimal_hours >= 4:
-            attendance.status = "HALF_DAY"
         else:
-            attendance.status = "ABSENT"
+            if decimal_hours >= 8:
+                attendance.status = "PRESENT"
+            elif decimal_hours >= 4:
+                attendance.status = "HALF_DAY"
+            else:
+                attendance.status = "ABSENT"
 
         attendance.save()
 
@@ -89,41 +101,154 @@ class SignOutView(APIView):
             "status": attendance.status
         })
 
+
+# ================= EMPLOYEE HISTORY =================
+
 class MyAttendanceHistoryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        records = Attendance.objects.filter(
-            user=request.user
-        ).order_by("-date")
+        today = timezone.now().date()
 
-        serializer = AttendanceSerializer(records, many=True)
-        return Response(serializer.data)
+        start_date = today.replace(day=1)
+        end_date = today
+
+        records = []
+        current = start_date
+
+        while current <= end_date:
+            attendance = Attendance.objects.filter(
+                user=request.user,
+                date=current
+            ).first()
+
+            if attendance:
+                records.append(AttendanceSerializer(attendance).data)
+            else:
+                # ✅ FIXED LOGIC
+                if current.weekday() in (5, 6):
+                    status_value = "WEEK_OFF"
+                else:
+                    status_value = "ABSENT"
+
+                records.append({
+                    "id": None,
+                    "date": current.strftime("%Y-%m-%d"),
+                    "sign_in": None,
+                    "sign_out": None,
+                    "working_hours": 0,
+                    "status": status_value,
+                    "status_display": status_value.replace("_", " ").title(),
+                    "is_auto_signout": False,
+                    "auto_signout_reason": "",
+                    "auto_signout_flag": False,
+                })
+
+            current += timezone.timedelta(days=1)
+
+        return Response(records)
 
 
-class AttendanceSummaryView(APIView):
+# ================= SUMMARY =================
+
+class MyAttendanceDashboardSummaryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        qs = Attendance.objects.filter(user=request.user)
+        month = request.query_params.get("month")
 
-        total_decimal = qs.aggregate(
-            total=Sum("working_hours")
-        )["total"] or 0
+        if month:
+            year, m = map(int, month.split("-"))
+        else:
+            today = timezone.now().date()
+            year, m = today.year, today.month
 
-        # Convert decimal hours to hours + minutes
-        total_seconds = int(total_decimal * 3600)
+        total_days = monthrange(year, m)[1]
 
-        hours = total_seconds // 3600
-        minutes = (total_seconds % 3600) // 60
+        present = 0
+        absent = 0
+        half_day = 0
+        week_off = 0
+        paid_leave = 0
+        working_days = 0
+        late_entries = 0
 
+        for day in range(1, total_days + 1):
+            date = timezone.datetime(year, m, day).date()
+
+            # WEEKEND
+            if date.weekday() in (5, 6):
+                attendance = Attendance.objects.filter(
+                    user=request.user,
+                    date=date
+                ).first()
+
+                if attendance and attendance.sign_in:
+                    present += 1
+                else:
+                    week_off += 1
+                continue
+
+            # COUNT WORKING DAY
+            working_days += 1
+
+            # LEAVE CHECK
+            leave = Leave.objects.filter(
+                user=request.user,
+                status="APPROVED",
+                start_date__lte=date,
+                end_date__gte=date
+            ).exists()
+
+            if leave:
+                paid_leave += 1
+                continue
+
+            attendance = Attendance.objects.filter(
+                user=request.user,
+                date=date
+            ).first()
+
+            if attendance:
+                # STATUS
+                if attendance.status == "PRESENT":
+                    present += 1
+                elif attendance.status == "HALF_DAY":
+                    half_day += 1
+                elif attendance.status == "ABSENT":
+                    absent += 1
+
+                # LATE ENTRY CHECK
+                if attendance.sign_in and attendance.sign_in.time() > time(9, 45):
+                    late_entries += 1
+            else:
+                absent += 1
+
+        # ✅ LATE MARK LOGIC (3 late = 1 late mark)
+        late_mark = late_entries // 3
+
+        # ✅ PAID DAY
+        paid_day = present + paid_leave + (half_day * 0.5)
         return Response({
-            "present_days": qs.filter(status="PRESENT").count(),
-            "absent_days": qs.filter(status="ABSENT").count(),
-            "half_days": qs.filter(status="HALF_DAY").count(),
-            "total_working_hours": f"{hours}h {minutes}m",
-        })
+            "present": present,
+            "absent": absent,
+            "half_day": half_day,
+            "paid_leave": paid_leave,
+            "week_off": week_off,
+            "working_days": working_days,
+            "late_mark": late_mark,
+            "paid_day": paid_day,
 
+            # 🔥 CHART DATA
+            "chart_data": [
+                {"name": "Present", "value": present},
+                {"name": "Absent", "value": absent},
+                {"name": "Week Off", "value": week_off},
+                {"name": "Paid Leave", "value": paid_leave},
+                {"name": "Half Day", "value": half_day},
+                {"name": "Late Mark", "value": late_mark},
+            ]
+        })
 
 
 # ================= ADMIN =================
@@ -135,79 +260,71 @@ class AttendanceReportAdminView(APIView):
         employee_email = request.query_params.get("employee")
         date = request.query_params.get("date")
 
-        qs = Attendance.objects.select_related("user").all()
+        if not date:
+            date = timezone.now().date()
+        else:
+            date = timezone.datetime.strptime(date, "%Y-%m-%d").date()
 
-        if employee_email and employee_email != "all":
-            qs = qs.filter(user__email=employee_email)
+        employees = User.objects.filter(
+            role="EMPLOYEE",
+            employee_profile__is_active=True
+        ).select_related("employee_profile")
 
-        if date:
-            qs = qs.filter(date=date)
+        result = []
 
-        serializer = AttendanceSerializer(qs, many=True)
-        return Response(serializer.data)
+        for user in employees:
+            attendance = Attendance.objects.filter(
+                user=user,
+                date=date
+            ).first()
 
+            if not attendance:
+                # ✅ WEEKEND FIX
+                if date.weekday() in (5, 6):
+                    status_value = "WEEK_OFF"
+                else:
+                    status_value = "ABSENT"
 
-class MyAttendanceDashboardSummaryView(APIView):
+                result.append({
+                    "id": None,
+                    "employee_id": user.id,
+                    "employee_email": user.email,
+                    "employee_name": user.employee_profile.full_name,
+                    "department": user.employee_profile.department,
+                    "date": date,
+                    "sign_in": None,
+                    "sign_out": None,
+                    "working_hours": 0,
+                    "status": status_value,
+                    "status_display": status_value.replace("_", " ").title(),
+                    "is_auto_signout": False,
+                    "auto_signout_reason": "",
+                    "auto_signout_flag": False,
+                })
+            else:
+                result.append(AttendanceSerializer(attendance).data)
+
+        return Response(result)
+class AttendanceSummaryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """
-        month format: YYYY-MM
-        example: 2025-10
-        """
-        month = request.query_params.get("month")
-
         qs = Attendance.objects.filter(user=request.user)
-        leave_qs = Leave.objects.filter(
-            user=request.user,
-            status="APPROVED"
-        )
 
-        if month:
-            year, m = map(int, month.split("-"))
+        total_decimal = qs.aggregate(
+            total=Sum("working_hours")
+        )["total"] or 0
 
-            qs = qs.filter(date__year=year, date__month=m)
-            leave_qs = leave_qs.filter(
-                start_date__year=year
-            )
+        total_seconds = int(total_decimal * 3600)
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
 
-            total_days = monthrange(year, m)[1]
-        else:
-            total_days = qs.count()
-
-        present = qs.filter(status="PRESENT").count()
-        absent = qs.filter(status="ABSENT").count()
-        half_day = qs.filter(status="HALF_DAY").count()
-
-        paid_leave = leave_qs.count()
-
-        # Week off = Saturdays + Sundays (simple HRMS logic)
-        week_off = 0
-        if month:
-            for day in range(1, total_days + 1):
-                d = timezone.datetime(year, m, day).date()
-                if d.weekday() in (5, 6):  # Sat, Sun
-                    week_off += 1
-
-        # Late mark (basic logic: sign_in after 10:15 AM)
-        late_mark = qs.filter(
-            sign_in__time__gt=timezone.datetime.strptime(
-                "10:15", "%H:%M"
-            ).time()
-        ).count()
-
-        # OD Day (future-proof, currently 0)
-        od_day = 0
-
-        paid_day = present + paid_leave
+        absent = qs.exclude(date__week_day__in=[1, 7])\
+                   .filter(status="ABSENT").count()
 
         return Response({
-            "present": present,
-            "absent": absent,
-            "half_day": half_day,
-            "paid_leave": paid_leave,
-            "week_off": week_off,
-            "late_mark": late_mark,
-            "od_day": od_day,
-            "paid_day": paid_day,
+            "present_days": qs.filter(status="PRESENT").count(),
+            "absent_days": absent,
+            "half_days": qs.filter(status="HALF_DAY").count(),
+            "total_working_hours": f"{hours}h {minutes}m",
         })

@@ -85,30 +85,43 @@ class AdminDashboardView(APIView):
     def get(self, request):
         today = timezone.now().date()
 
-        # Total active employees
-        total_employees = User.objects.filter(
-            role="EMPLOYEE",
-            is_active=True
+        # ✅ ACTIVE EMPLOYEES (FROM EmployeeProfile)
+        active_employees_qs = EmployeeProfile.objects.filter(
+            is_active=True,
+            user__role="EMPLOYEE"
         )
+        active_count = active_employees_qs.count()
 
-        total_count = total_employees.count()
+        # ✅ RELIEVED EMPLOYEES
+        relieved_count = EmployeeProfile.objects.filter(
+            is_active=False,
+            user__role="EMPLOYEE"
+        ).count()
 
-        # Employees who have attendance today
-        attendance_today = Attendance.objects.filter(date=today, user__role="EMPLOYEE",)
+        # ✅ TOTAL EMPLOYEES
+        total_count = active_count + relieved_count
+
+        # ✅ ATTENDANCE (ONLY ACTIVE USERS)
+        attendance_today = Attendance.objects.filter(
+            date=today,
+            user__employee_profile__is_active=True,
+            user__role="EMPLOYEE"
+        )
 
         present_today = attendance_today.filter(
             status__in=["PRESENT", "HALF_DAY"]
         ).values("user").distinct().count()
 
-        # Employees on approved leave todayy
+        # ✅ LEAVE (ONLY ACTIVE USERS)
         on_leave_today = Leave.objects.filter(
             status="APPROVED",
             start_date__lte=today,
-            end_date__gte=today
+            end_date__gte=today,
+            user__employee_profile__is_active=True
         ).values("user").distinct().count()
 
-        # ABSENT = employees with NO attendance AND NO leave
-        absent_today = total_count - present_today - on_leave_today
+        # ✅ ABSENT
+        absent_today = active_count - present_today - on_leave_today
         absent_today = max(absent_today, 0)
 
         pending_leave_requests = Leave.objects.filter(
@@ -116,7 +129,12 @@ class AdminDashboardView(APIView):
         ).count()
 
         return Response({
+            # ✅ NEW (IMPORTANT)
+            "active_employees": active_count,
+            "relieved_employees": relieved_count,
             "total_employees": total_count,
+
+            # existing fields (unchanged)
             "present_today": present_today,
             "absent_today": absent_today,
             "on_leave_today": on_leave_today,
