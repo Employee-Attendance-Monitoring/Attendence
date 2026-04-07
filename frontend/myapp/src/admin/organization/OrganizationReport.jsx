@@ -60,8 +60,9 @@ const OrganizationReport = () => {
     <div className="space-y-8">
 
       {/* ================= SUMMARY CARDS ================= */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <SummaryCard title="Total Employees" value={report.summary.total_employees} />
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <SummaryCard title="Current Employees" value={report.summary.current_employees} />
+        <SummaryCard title="Relieved Employees" value={report.summary.relieved_employees} />
         <SummaryCard title="Male" value={report.summary.male_employees} />
         <SummaryCard title="Female" value={report.summary.female_employees} />
         <SummaryCard title="Average Age" value={report.summary.average_age} />

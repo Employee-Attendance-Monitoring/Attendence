@@ -147,7 +147,8 @@ class OrganizationReportView(APIView):
         )
 
         # ---------------- BASIC COUNTS ----------------
-        total_employees = employees.count()
+        current_employees = employees.filter(is_active=True).count()
+        relieved_employees = employees.filter(is_active=False).count()
 
         male_count = employees.filter(gender="MALE").count()
         female_count = employees.filter(gender="FEMALE").count()
@@ -210,7 +211,8 @@ class OrganizationReportView(APIView):
             },
 
             "summary": {
-                "total_employees": total_employees,
+                "current_employees": current_employees,
+                "relieved_employees": relieved_employees,
                 "male_employees": male_count,
                 "female_employees": female_count,
                 "other_employees": other_count,
