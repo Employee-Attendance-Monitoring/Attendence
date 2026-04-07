@@ -168,6 +168,50 @@ const balanceLeave = totalLeave - takenLeave;
     return { present, absent, half, hours };
   }, [filteredRecords]);
 
+  /* ================= EXPORT CSV ================= */
+
+  const handleExportCSV = () => {
+    if (filteredRecords.length === 0) {
+      alert("No data available to export");
+      return;
+    }
+
+    const headers = [
+      "Name",
+      "Employee Email",
+      "Date",
+      "Sign In",
+      "Sign Out",
+      "Hours",
+      "Status",
+    ];
+
+    const rows = filteredRecords.map((r) => [
+      `"${r.employee_name || ""}"`,
+      `"${r.employee_email || ""}"`,
+      `"${formatDateDMY(r.date) || ""}"`,
+      `"${formatTime(r.sign_in).replace(/"/g, '""') || ""}"`,
+      `"${formatTime(r.sign_out).replace(/"/g, '""') || ""}"`,
+      `"${r.working_hours || ""}"`,
+      `"${r.status || ""}"`,
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `Attendance_Report_${viewMode === "DAILY" ? date : month}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">
@@ -280,6 +324,17 @@ const balanceLeave = totalLeave - takenLeave;
     <option value="HALF_DAY">Half Day</option>
   </select>
 </div>
+      </div>
+
+      {/* ================= EXPORT CSV ================= */}
+
+      <div className="flex justify-end">
+        <button
+          onClick={handleExportCSV}
+          className="px-4 py-2 rounded bg-green-600 text-white font-medium hover:bg-green-700 shadow transition"
+        >
+          Export CSV
+        </button>
       </div>
 
       {/* ================= LEAVE CARDS ================= */}
