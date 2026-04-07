@@ -22,27 +22,23 @@ export const getMyAttendanceSummary = () =>
 /* ================= ADMIN ================= */
 
 // ✅ FIXED Admin attendance report
-export const getAdminAttendanceReport = (
-  date,
-  employee,
-  department,
-  status
-) => {
+export const getAdminAttendanceReport = (queryParams) => {
   let params = {};
 
-  if (date) params.date = date;
+  if (queryParams.date) params.date = queryParams.date;
+  if (queryParams.month) params.month = queryParams.month;
 
   // ✅ do NOT send "all"
-  if (employee && employee !== "all") {
-    params.employee = employee;
+  if (queryParams.employee && queryParams.employee !== "all") {
+    params.employee = queryParams.employee;
   }
 
-  if (department && department !== "ALL") {
-    params.department = department;
+  if (queryParams.department && queryParams.department !== "ALL" && queryParams.department !== "all") {
+    params.department = queryParams.department;
   }
 
-  if (status && status !== "ALL") {
-    params.status = status;
+  if (queryParams.status && queryParams.status !== "ALL") {
+    params.status = queryParams.status;
   }
 
   return api.get("/attendance/admin-report/", { params });

@@ -252,51 +252,93 @@ class AttendanceReportAdminView(APIView):
 
     def get(self, request):
         employee_email = request.query_params.get("employee")
-        date = request.query_params.get("date")
-
-        if not date:
-            date = timezone.now().date()
-        else:
-            date = timezone.datetime.strptime(date, "%Y-%m-%d").date()
+        date_param = request.query_params.get("date")
+        month_param = request.query_params.get("month")
 
         employees = User.objects.filter(
             role="EMPLOYEE",
             employee_profile__is_active=True
         ).select_related("employee_profile")
 
+        if employee_email and employee_email != 'all':
+             employees = employees.filter(email=employee_email)
+
         result = []
 
-        for user in employees:
-            attendance = Attendance.objects.filter(
-                user=user,
-                date=date
-            ).first()
+        if month_param:
+            year, m = map(int, month_param.split("-"))
+            start_date = timezone.datetime(year, m, 1).date()
+            end_date = timezone.datetime(year, m, monthrange(year, m)[1]).date()
 
-            if not attendance:
-                # ✅ WEEKEND FIX
-                if date.weekday() in (5, 6):
-                    status_value = "WEEK_OFF"
-                else:
-                    status_value = "ABSENT"
+            for user in employees:
+                current = start_date
+                while current <= end_date:
+                    attendance = Attendance.objects.filter(
+                        user=user,
+                        date=current
+                    ).first()
 
-                result.append({
-                    "id": None,
-                    "employee_id": user.id,
-                    "employee_email": user.email,
-                    "employee_name": user.employee_profile.full_name,
-                    "department": user.employee_profile.department,
-                    "date": date,
-                    "sign_in": None,
-                    "sign_out": None,
-                    "working_hours": 0,
-                    "status": status_value,
-                    "status_display": status_value.replace("_", " ").title(),
-                    "is_auto_signout": False,
-                    "auto_signout_reason": "",
-                    "auto_signout_flag": False,
-                })
+                    if not attendance:
+                        if current.weekday() in (5, 6):
+                            status_value = "WEEK_OFF"
+                        else:
+                            status_value = "ABSENT"
+
+                        result.append({
+                            "id": None,
+                            "employee_id": user.id,
+                            "employee_email": user.email,
+                            "employee_name": user.employee_profile.full_name,
+                            "department": user.employee_profile.department,
+                            "date": current,
+                            "sign_in": None,
+                            "sign_out": None,
+                            "working_hours": 0,
+                            "status": status_value,
+                            "status_display": status_value.replace("_", " ").title(),
+                            "is_auto_signout": False,
+                            "auto_signout_reason": "",
+                            "auto_signout_flag": False,
+                        })
+                    else:
+                        result.append(AttendanceSerializer(attendance).data)
+                    current += timezone.timedelta(days=1)
+        else:
+            if not date_param:
+                date_val = timezone.now().date()
             else:
-                result.append(AttendanceSerializer(attendance).data)
+                date_val = timezone.datetime.strptime(date_param, "%Y-%m-%d").date()
+
+            for user in employees:
+                attendance = Attendance.objects.filter(
+                    user=user,
+                    date=date_val
+                ).first()
+
+                if not attendance:
+                    if date_val.weekday() in (5, 6):
+                        status_value = "WEEK_OFF"
+                    else:
+                        status_value = "ABSENT"
+
+                    result.append({
+                        "id": None,
+                        "employee_id": user.id,
+                        "employee_email": user.email,
+                        "employee_name": user.employee_profile.full_name,
+                        "department": user.employee_profile.department,
+                        "date": date_val,
+                        "sign_in": None,
+                        "sign_out": None,
+                        "working_hours": 0,
+                        "status": status_value,
+                        "status_display": status_value.replace("_", " ").title(),
+                        "is_auto_signout": False,
+                        "auto_signout_reason": "",
+                        "auto_signout_flag": False,
+                    })
+                else:
+                    result.append(AttendanceSerializer(attendance).data)
 
         return Response(result)
 class AttendanceSummaryView(APIView):
