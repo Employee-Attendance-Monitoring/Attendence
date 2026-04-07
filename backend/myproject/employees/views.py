@@ -142,7 +142,14 @@ def relieve_employee(request, id):
 
     # ✅ FIRST TIME RELIEVE ONLY
     employee.is_active = False
-    employee.relieved_at = timezone.now()
+    
+    if "relieved_date" in request.data and request.data.get("relieved_date"):
+        try:
+            employee.relieved_at = timezone.datetime.strptime(request.data.get("relieved_date"), "%Y-%m-%d")
+        except ValueError:
+            employee.relieved_at = timezone.now()
+    else:
+        employee.relieved_at = timezone.now()
 
     # ✅ SAVE REMARK (optional)
     if "relieved_remark" in request.data:

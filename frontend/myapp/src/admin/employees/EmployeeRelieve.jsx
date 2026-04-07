@@ -9,6 +9,16 @@ const InfoRow = ({ label, value }) => (
   </div>
 );
 
+const formatDateDMY = (dateStr) => {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+    return `${day}/${month}/${year}`;
+  }
+  return dateStr;
+};
+
 const EmployeeRelieve = () => {
   const { empId } = useParams();
   const navigate = useNavigate();
@@ -17,6 +27,8 @@ const EmployeeRelieve = () => {
   const [loading, setLoading] = useState(true);
   const [remark, setRemark] = useState("");
 const [relieveFile, setRelieveFile] = useState(null);
+const [relieveDate, setRelieveDate] = useState(new Date().toISOString().slice(0, 10));
+const [dateFocused, setDateFocused] = useState(false);
 const isRelieved = employee?.is_active === false;
 
   /* ================= FETCH EMPLOYEE ================= */
@@ -43,6 +55,7 @@ const handleConfirmRelieve = async () => {
   try {
     const formData = new FormData();
     formData.append("relieved_remark", remark);
+    formData.append("relieved_date", relieveDate);
 
     if (relieveFile) {
       formData.append("relieved_file", relieveFile);
@@ -104,7 +117,7 @@ const handleConfirmRelieve = async () => {
           <InfoRow label="Full Name" value={employee.full_name} />
           <InfoRow label="Gender" value={employee.gender} />
           <InfoRow label="Blood Group" value={employee.blood_group} />
-          <InfoRow label="Date of Birth" value={employee.date_of_birth} />
+          <InfoRow label="Date of Birth" value={formatDateDMY(employee.date_of_birth)} />
           <InfoRow label="Phone Number" value={employee.phone_number} />
         </div>
 
@@ -115,7 +128,7 @@ const handleConfirmRelieve = async () => {
           <InfoRow label="Department" value={employee.department} />
           <InfoRow label="Role" value={employee.role} />
           <InfoRow label="Grade" value={employee.grade} />
-          <InfoRow label="Date of Joining" value={employee.date_of_joining} />
+          <InfoRow label="Date of Joining" value={formatDateDMY(employee.date_of_joining)} />
         </div>
 
         {/* ADDRESS */}
@@ -165,23 +178,22 @@ const handleConfirmRelieve = async () => {
       Relieving Details
     </h3>
 
-    {/* RELIEVING DATE (AUTO – READ ONLY) */}
+    {/* RELIEVING DATE (MANUAL) */}
     <div className="mb-4">
       <label className="block text-sm text-gray-600 mb-1">
         Relieving Date
       </label>
       <input
-        type="text"
-        value={new Date().toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })}
-        disabled
-        className="w-full border rounded px-3 py-2 text-sm bg-gray-100 cursor-not-allowed"
+        type={dateFocused ? "date" : "text"}
+        onFocus={() => setDateFocused(true)}
+        onBlur={() => setDateFocused(false)}
+        value={dateFocused ? relieveDate : formatDateDMY(relieveDate)}
+        onChange={(e) => setRelieveDate(e.target.value)}
+        className="w-full border rounded px-3 py-2 text-sm bg-white"
+        placeholder="DD/MM/YYYY"
       />
       <p className="text-xs text-gray-400 mt-1">
-        This date will be saved automatically
+        Select the date this employee was relieved.
       </p>
     </div>
 
