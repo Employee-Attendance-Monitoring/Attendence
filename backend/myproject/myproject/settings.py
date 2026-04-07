@@ -28,7 +28,7 @@ INSTALLED_APPS = [
 
     "accounts",
     "employees",
-    "attendance",
+    'attendance.apps.AttendanceConfig',
     "leaves",
     "holidays",
     "organization",

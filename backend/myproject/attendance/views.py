@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django.db.models import Sum
 from django.contrib.auth import get_user_model
-from calendar import monthrange
+from calendar import month, monthrange
 from datetime import time
 
 from .models import Attendance
@@ -108,14 +108,17 @@ class MyAttendanceHistoryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        today = timezone.now().date()
+        month = request.query_params.get("month")
 
-        start_date = today.replace(day=1)
-        end_date = today
-
+        if month:
+            year, m = map(int, month.split("-"))
+        else:
+            today = timezone.now().date()
+            year, m = today.year, today.month
+        start_date = timezone.datetime(year, m, 1).date()
+        end_date = timezone.datetime(year, m, monthrange(year, m)[1]).date()
         records = []
         current = start_date
-
         while current <= end_date:
             attendance = Attendance.objects.filter(
                 user=request.user,
@@ -125,7 +128,7 @@ class MyAttendanceHistoryView(APIView):
             if attendance:
                 records.append(AttendanceSerializer(attendance).data)
             else:
-                # ✅ FIXED LOGIC
+             
                 if current.weekday() in (5, 6):
                     status_value = "WEEK_OFF"
                 else:
@@ -147,7 +150,6 @@ class MyAttendanceHistoryView(APIView):
             current += timezone.timedelta(days=1)
 
         return Response(records)
-
 
 # ================= SUMMARY =================
 
@@ -175,8 +177,6 @@ class MyAttendanceDashboardSummaryView(APIView):
 
         for day in range(1, total_days + 1):
             date = timezone.datetime(year, m, day).date()
-
-            # WEEKEND
             if date.weekday() in (5, 6):
                 attendance = Attendance.objects.filter(
                     user=request.user,
@@ -188,11 +188,7 @@ class MyAttendanceDashboardSummaryView(APIView):
                 else:
                     week_off += 1
                 continue
-
-            # COUNT WORKING DAY
             working_days += 1
-
-            # LEAVE CHECK
             leave = Leave.objects.filter(
                 user=request.user,
                 status="APPROVED",
@@ -210,7 +206,6 @@ class MyAttendanceDashboardSummaryView(APIView):
             ).first()
 
             if attendance:
-                # STATUS
                 if attendance.status == "PRESENT":
                     present += 1
                 elif attendance.status == "HALF_DAY":
@@ -239,8 +234,6 @@ class MyAttendanceDashboardSummaryView(APIView):
             "working_days": working_days,
             "late_mark": late_mark,
             "paid_day": paid_day,
-
-            # 🔥 CHART DATA
             "chart_data": [
                 {"name": "Present", "value": present},
                 {"name": "Absent", "value": absent},

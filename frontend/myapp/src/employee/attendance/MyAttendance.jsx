@@ -25,7 +25,7 @@ const MyAttendance = () => {
 
     Promise.all([
       api.get(`/attendance/my-dashboard-summary/?month=${month}`),
-      api.get("/attendance/my-history/"),
+      api.get(`/attendance/my-history/?month=${month}`),
     ])
       .then(([summaryRes, historyRes]) => {
         setSummary(summaryRes.data || {});
