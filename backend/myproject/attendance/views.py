@@ -117,6 +117,9 @@ class MyAttendanceHistoryView(APIView):
             year, m = today.year, today.month
         start_date = timezone.datetime(year, m, 1).date()
         end_date = timezone.datetime(year, m, monthrange(year, m)[1]).date()
+        today = timezone.now().date()
+        if end_date > today:
+            end_date = today
         records = []
         current = start_date
         while current <= end_date:
