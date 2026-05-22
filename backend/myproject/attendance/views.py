@@ -161,11 +161,10 @@ class MyAttendanceDashboardSummaryView(APIView):
 
     def get(self, request):
         month = request.query_params.get("month")
-
+        today = timezone.now().date()
         if month:
             year, m = map(int, month.split("-"))
         else:
-            today = timezone.now().date()
             year, m = today.year, today.month
 
         total_days = monthrange(year, m)[1]
@@ -180,6 +179,8 @@ class MyAttendanceDashboardSummaryView(APIView):
 
         for day in range(1, total_days + 1):
             date = timezone.datetime(year, m, day).date()
+            if date > today:
+                continue
             if date.weekday() in (5, 6):
                 attendance = Attendance.objects.filter(
                     user=request.user,
