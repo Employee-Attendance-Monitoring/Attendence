@@ -86,7 +86,7 @@ class SignOutView(APIView):
         if today.weekday() in (5, 6):
             attendance.status = "PRESENT"
         else:
-            if decimal_hours >= 8:
+            if decimal_hours >= 7:
                 attendance.status = "PRESENT"
             elif decimal_hours >= 4:
                 attendance.status = "HALF_DAY"
